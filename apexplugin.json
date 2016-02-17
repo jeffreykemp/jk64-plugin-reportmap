@@ -1,0 +1,33 @@
+{
+  "name" : "jk64ReportMap",
+  "version" : "0.1",
+  "description" : "Google Map Report region plugin",
+  "keywords" : ["map"],
+  "homepage" : "https://github.com/jeffreykemp/jk64-plugin-reportmap",
+  "bugs" : {
+    "url" : "https://github.com/jeffreykemp/jk64-plugin-reportmap/issues",
+    "email" : "jeffrey.kemp@jk64.com"
+  },
+  "license" : "MIT",
+  "author" : {
+    "name" : "Jeffrey Kemp",
+    "email" : "jeffrey.kemp@jk64.com",
+    "url" : "http://jeffkemponoracle.com/"
+  },
+  "repository" : {
+    "type" : "git",
+    "url" : "https://github.com/jeffreykemp/jk64-plugin-reportmap"
+  },
+ "oracle" : {
+    "versions" : ["11.2.0.1", "12.1.0.1"],
+    "apex" : {
+      "versions" : ["5.0.2"],
+      "plugin" : {
+        "internalName" : "COM.JK64.REPORT_GOOGLE_MAP",
+        "type" : "region",
+        "demo" : "https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP",
+        "previewImage" : "https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/plugin-reportmap-preview.png"
+      }
+    }
+  }
+}
