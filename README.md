@@ -4,7 +4,7 @@ This allows you to add a Google Map region to any page, showing a number of mark
 
 ** PLEASE send me your feedback! [jeffrey.kemp@jk64.com](mailto:jeffrey.kemp@jk64.com) **
 
-![plugin-reportmap-preview.png](https://bitbucket.org/repo/7bp9eb/images/985199100-plugin-reportmap-preview.png)
+![plugin-reportmap-preview.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/plugin-reportmap-preview.png)
 
 The user can click any marker to see a popup info window for it. You can have the region synchronize the map with an item you nominate - if so, the corresponding ID for the marker they click will be copied to the item.
 
