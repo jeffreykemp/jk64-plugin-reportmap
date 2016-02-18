@@ -18,6 +18,7 @@ as
     l_lng_max      NUMBER;
     l_southwest    VARCHAR2(200);
     l_northeast    VARCHAR2(200);
+    l_icon         VARCHAR2(4000);
 
     l_column_value_list  apex_plugin_util.t_column_value_list;
 
@@ -39,7 +40,7 @@ BEGIN
         l_column_value_list := apex_plugin_util.get_data
             (p_sql_statement  => p_region.source
             ,p_min_columns    => 5
-            ,p_max_columns    => 5
+            ,p_max_columns    => 6
             ,p_component_name => p_region.name
             ,p_max_rows       => 1000);
 
@@ -51,6 +52,10 @@ BEGIN
             
             l_lat  := TO_NUMBER(l_column_value_list(1)(i));
             l_lng  := TO_NUMBER(l_column_value_list(2)(i));
+            
+            IF l_column_value_list.EXISTS(6) THEN
+              l_icon := l_column_value_list(6)(i);
+            END IF;
     
             l_markers_data := l_markers_data
               || '{id:'   || APEX_ESCAPE.js_literal(l_column_value_list(4)(i))
@@ -58,6 +63,7 @@ BEGIN
               || ',info:' || APEX_ESCAPE.js_literal(l_column_value_list(5)(i))
               || ',lat:'  || APEX_ESCAPE.js_literal(l_lat)
               || ',lng:'  || APEX_ESCAPE.js_literal(l_lng)
+              || ',icon:' || APEX_ESCAPE.js_literal(l_icon)
               || '}';
         
             l_lat_min := LEAST   (NVL(l_lat_min, l_lat), l_lat);
@@ -87,7 +93,8 @@ function addMarker(map,pData) {
   marker = new google.maps.Marker({
                 map: map,
                 position: new google.maps.LatLng(pData.lat, pData.lng),
-                title: pData.name
+                title: pData.name,
+                icon: pData.icon
             });
  
   google.maps.event.addListener(marker, 'click', function () {

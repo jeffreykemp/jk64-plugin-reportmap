@@ -55,6 +55,7 @@ wwv_flow_api.create_plugin(
 '    l_lng_max      NUMBER;',
 '    l_southwest    VARCHAR2(200);',
 '    l_northeast    VARCHAR2(200);',
+'    l_icon         VARCHAR2(4000);',
 '',
 '    l_column_value_list  apex_plugin_util.t_column_value_list;',
 '',
@@ -76,7 +77,7 @@ wwv_flow_api.create_plugin(
 '        l_column_value_list := apex_plugin_util.get_data',
 '            (p_sql_statement  => p_region.source',
 '            ,p_min_columns    => 5',
-'            ,p_max_columns    => 5',
+'            ,p_max_columns    => 6',
 '            ,p_component_name => p_region.name',
 '            ,p_max_rows       => 1000);',
 '',
@@ -88,6 +89,10 @@ wwv_flow_api.create_plugin(
 '            ',
 '            l_lat  := TO_NUMBER(l_column_value_list(1)(i));',
 '            l_lng  := TO_NUMBER(l_column_value_list(2)(i));',
+'            ',
+'            IF l_column_value_list.EXISTS(6) THEN',
+'              l_icon := l_column_value_list(6)(i);',
+'            END IF;',
 '    ',
 '            l_markers_data := l_markers_data',
 '              || ''{id:''   || APEX_ESCAPE.js_literal(l_column_value_list(4)(i))',
@@ -95,6 +100,7 @@ wwv_flow_api.create_plugin(
 '              || '',info:'' || APEX_ESCAPE.js_literal(l_column_value_list(5)(i))',
 '              || '',lat:''  || APEX_ESCAPE.js_literal(l_lat)',
 '              || '',lng:''  || APEX_ESCAPE.js_literal(l_lng)',
+'              || '',icon:'' || APEX_ESCAPE.js_literal(l_icon)',
 '              || ''}'';',
 '        ',
 '            l_lat_min := LEAST   (NVL(l_lat_min, l_lat), l_lat);',
@@ -124,7 +130,8 @@ wwv_flow_api.create_plugin(
 '  marker = new google.maps.Marker({',
 '                map: map,',
 '                position: new google.maps.LatLng(pData.lat, pData.lng),',
-'                title: pData.name',
+'                title: pData.name,',
+'                icon: pData.icon',
 '            });',
 ' ',
 '  google.maps.event.addListener(marker, ''click'', function () {',
@@ -183,18 +190,39 @@ wwv_flow_api.create_plugin(
 '    return l_result;',
 'END render_map;    '))
 ,p_render_function=>'render_map'
-,p_standard_attributes=>'SOURCE_SQL'
+,p_standard_attributes=>'SOURCE_SQL:SOURCE_REQUIRED:AJAX_ITEMS_TO_SUBMIT'
 ,p_sql_min_column_count=>5
-,p_sql_max_column_count=>5
-,p_sql_examples=>'SELECT lat, lng, name, id, info FROM mydata'
+,p_sql_max_column_count=>6
+,p_sql_examples=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'<pre>SELECT lat, lng, name, id, info FROM mydata;</pre>',
+'<p>',
+'<pre>SELECT lat, lng, name, id, info, icon FROM mydata;</pre>'))
 ,p_substitute_attributes=>true
 ,p_subscribe_plugin_settings=>true
 ,p_help_text=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
 'This plugin renders a Google Map, showing a number of pins based on a query you supply with Latitude, Longitude, Name (pin hovertext), id (returned to an item you specify, if required), and Info.',
 '<P>',
-'When the user clicks any pin, the map pans to that point, and (optionally) zooms into it. An info window pops up with the Info you supply in the query. This can include HTML code including links, for example.'))
-,p_version_identifier=>'0.1'
-,p_plugin_comment=>'Get latest version, send feedback and raise issues at: https://bitbucket.org/jk64/jk64-plugin-reportmap'
+'When the user clicks any pin, the map pans to that point, and (optionally) zooms into it. An info window pops up with the Info you supply in the query. This can include HTML code including links, for example.',
+'<P>',
+'If the query includes the 6th column (icon), it must refer to an image file that will be used instead of the standard red pin (<img src="http://maps.google.com/mapfiles/ms/icons/red-dot.png">). You can refer to pins like these, or refer to your own i'
+||'mages.',
+'<P>',
+'If icons are supplied they need to be fully-qualified URIs to an icon image to be used. e.g.',
+'<P>',
+'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/purple-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/ylw-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/blue-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/grn-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/ltblu-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/pink-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/purple-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/red-pushpin.png'))
+,p_version_identifier=>'0.2'
+,p_about_url=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 );
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(68314714782229877)
