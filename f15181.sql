@@ -13,10 +13,10 @@ whenever sqlerror exit sql.sqlcode rollback
 begin
 wwv_flow_api.import_begin (
  p_version_yyyy_mm_dd=>'2013.01.01'
-,p_release=>'5.0.3.00.03'
-,p_default_workspace_id=>69160808430820669492
+,p_release=>'5.0.2.00.07'
+,p_default_workspace_id=>20749515040658038
 ,p_default_application_id=>15181
-,p_default_owner=>'JK64'
+,p_default_owner=>'SAMPLE'
 );
 end;
 /
@@ -27,23 +27,24 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   10:50 Wednesday February 17, 2016
---   Exported By:     JEFFREY.KEMP@JK64.COM
+--   Date and Time:   21:23 Monday March 14, 2016
+--   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
---   Version:         5.0.3.00.03
---   Instance ID:     63113759365424
+--   Version:         5.0.2.00.07
+--   Instance ID:     61916131238277
 --
 
 -- Application Statistics:
---   Pages:                      2
---     Items:                    4
---     Processes:                5
---     Regions:                  4
---     Buttons:                  1
---     Dynamic Actions:          1
+--   Pages:                      4
+--     Items:                    6
+--     Processes:                4
+--     Regions:                 11
+--     Buttons:                  4
+--     Dynamic Actions:          4
 --   Shared Components:
 --     Logic:
+--       Processes:              1
 --     Navigation:
 --       Lists:                  2
 --       Breadcrumbs:            1
@@ -106,8 +107,8 @@ wwv_flow_api.create_flow(
 ,p_browser_frame=>'D'
 ,p_rejoin_existing_sessions=>'N'
 ,p_csv_encoding=>'Y'
-,p_last_updated_by=>'JEFFREY.KEMP@JK64.COM'
-,p_last_upd_yyyymmddhh24miss=>'20160217104933'
+,p_last_updated_by=>'JEFF'
+,p_last_upd_yyyymmddhh24miss=>'20160314212042'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_ui_type_name => null
 );
@@ -123,10 +124,26 @@ wwv_flow_api.create_list(
 wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(25186305489555505552)
 ,p_list_item_display_sequence=>10
-,p_list_item_link_text=>'Home'
-,p_list_item_link_target=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:'
+,p_list_item_link_text=>'Report Map'
+,p_list_item_link_target=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.::::'
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'1'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(75077164709945156)
+,p_list_item_display_sequence=>20
+,p_list_item_link_text=>'Circle Filter'
+,p_list_item_link_target=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'2'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(75088489437959564)
+,p_list_item_display_sequence=>30
+,p_list_item_link_text=>'Sync with Report'
+,p_list_item_link_target=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'3'
 );
 wwv_flow_api.create_list(
  p_id=>wwv_flow_api.id(25186303809636505463)
@@ -135,10 +152,11 @@ wwv_flow_api.create_list(
 );
 wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(25186304053690505464)
-,p_list_item_display_sequence=>10
+,p_list_item_display_sequence=>100
 ,p_list_item_link_text=>'Log Out'
 ,p_list_item_link_target=>'&LOGOUT_URL.'
-,p_list_item_current_for_pages=>'&LOGOUT_URL.'
+,p_list_item_icon=>'fa-sign-out'
+,p_list_item_current_type=>'TARGET_PAGE'
 );
 end;
 /
@@ -181,7 +199,39 @@ end;
 /
 prompt --application/shared_components/logic/application_processes
 begin
-null;
+wwv_flow_api.create_flow_process(
+ p_id=>wwv_flow_api.id(75112338222146653)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'INITDATA'
+,p_process_sql_clob=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'DECLARE',
+'  id NUMBER := 0;',
+'  PROCEDURE m (name IN VARCHAR2, lat IN NUMBER, lng IN NUMBER) IS',
+'  BEGIN',
+'    id := id + 1;',
+'    APEX_COLLECTION.add_member(''MAP'',TO_CHAR(id),name,TO_CHAR(lat,''fm999.9999999999999999''),TO_CHAR(lng,''fm999.9999999999999999''));',
+'  END m;',
+'BEGIN',
+'APEX_COLLECTION.create_or_truncate_collection(''MAP'');',
+'m(''home'',-32.11620272297015,116.06547117233276);',
+'m(''Stratton'',-31.86972210984067,116.03485107421875);',
+'m(''Wyalkatchem'',-31.181378229061053,117.38033294677734);',
+'m(''boss''''s office'',-31.958206638801293,115.86434841156006);',
+'m(''Wattle Grove'',-32.01384376242402,116.00114107131958);',
+'m(''Rottnest Island'',-31.998759371947305,115.5380630493164);',
+'m(''Busselton'',-33.645277933867895,115.3425407409668);',
+'m(''Esperance'',-33.852597383121406,121.89708709716797);',
+'m(''Carnarvon'',-24.884879265673792,113.65665435791016);',
+'m(''Cable Beach'',-17.96093474972286,122.2122573852539);',
+'m(''Hillarys Boat Harbour'',-31.82475514059112,115.73980808258057);',
+'m(''Wave Rock'',-32.441371888673494,118.89739036560059);',
+'m(''Araluen Botanical Park'',-32.12347204914411,116.10103726387024);',
+'END;'))
+,p_process_when=>'NOT APEX_COLLECTION.collection_exists(''MAP'')'
+,p_process_when_type=>'PLSQL_EXPRESSION'
+);
 end;
 /
 prompt --application/shared_components/logic/application_items
@@ -7539,24 +7589,104 @@ end;
 prompt --application/shared_components/plugins/region_type/com_jk64_report_google_map
 begin
 wwv_flow_api.create_plugin(
- p_id=>wwv_flow_api.id(25267950171406782114)
+ p_id=>wwv_flow_api.id(143390021789160501)
 ,p_plugin_type=>'REGION TYPE'
 ,p_name=>'COM.JK64.REPORT_GOOGLE_MAP'
 ,p_display_name=>'JK64 Report Google Map'
-,p_supported_ui_types=>'DESKTOP'
+,p_supported_ui_types=>'DESKTOP:JQM_SMARTPHONE'
 ,p_image_prefix => nvl(wwv_flow_application_install.get_static_plugin_file_prefix('REGION TYPE','COM.JK64.REPORT_GOOGLE_MAP'),'')
-,p_javascript_file_urls=>'https://maps.googleapis.com/maps/api/js'
 ,p_plsql_code=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
-'function render_map (',
-'    p_region in apex_plugin.t_region,',
-'    p_plugin in apex_plugin.t_plugin,',
-'    p_is_printer_friendly in boolean )',
-'return apex_plugin.t_region_render_result',
-'as',
-'    subtype plugin_attr is varchar2(32767);',
+'PROCEDURE set_map_extents',
+'    (p_lat     IN NUMBER',
+'    ,p_lng     IN NUMBER',
+'    ,p_lat_min IN OUT NUMBER',
+'    ,p_lat_max IN OUT NUMBER',
+'    ,p_lng_min IN OUT NUMBER',
+'    ,p_lng_max IN OUT NUMBER',
+'    ) IS',
+'BEGIN',
+'    p_lat_min := LEAST   (NVL(p_lat_min, p_lat), p_lat);',
+'    p_lat_max := GREATEST(NVL(p_lat_max, p_lat), p_lat);',
+'    p_lng_min := LEAST   (NVL(p_lng_min, p_lng), p_lng);',
+'    p_lng_max := GREATEST(NVL(p_lng_max, p_lng), p_lng);',
+'END set_map_extents;',
+'',
+'FUNCTION latlng2ch (lat IN NUMBER, lng IN NUMBER) RETURN VARCHAR2 IS',
+'BEGIN',
+'  RETURN ''"lat":''',
+'      || TO_CHAR(lat, ''fm999.9999999999999999'')',
+'      || '',"lng":''',
+'      || TO_CHAR(lng, ''fm999.9999999999999999'');',
+'END latlng2ch;',
+'',
+'FUNCTION get_markers',
+'    (p_region  IN APEX_PLUGIN.t_region',
+'    ,p_lat_min IN OUT NUMBER',
+'    ,p_lat_max IN OUT NUMBER',
+'    ,p_lng_min IN OUT NUMBER',
+'    ,p_lng_max IN OUT NUMBER',
+'    ) RETURN VARCHAR2 IS',
+'',
+'    l_markers_data       VARCHAR2(32767);',
+'    l_lat                NUMBER;',
+'    l_lng                NUMBER;',
+'    l_icon               VARCHAR2(4000);',
+'    l_column_value_list  APEX_PLUGIN_UTIL.t_column_value_list;',
+'',
+'BEGIN',
+'',
+'    l_column_value_list := APEX_PLUGIN_UTIL.get_data',
+'        (p_sql_statement  => p_region.source',
+'        ,p_min_columns    => 5',
+'        ,p_max_columns    => 6',
+'        ,p_component_name => p_region.name',
+'        ,p_max_rows       => 1000);',
+'  ',
+'    FOR i IN 1..l_column_value_list(1).count LOOP',
+'  ',
+'        IF l_markers_data IS NOT NULL THEN',
+'            l_markers_data := l_markers_data || '','';',
+'        END IF;',
+'        ',
+'        l_lat  := TO_NUMBER(l_column_value_list(1)(i));',
+'        l_lng  := TO_NUMBER(l_column_value_list(2)(i));',
+'        ',
+'        IF l_column_value_list.EXISTS(6) THEN',
+'          l_icon := l_column_value_list(6)(i);',
+'        END IF;',
+'  ',
+'        l_markers_data := l_markers_data',
+'          || ''{"id":''   || APEX_ESCAPE.js_literal(l_column_value_list(4)(i),''"'')',
+'          || '',"name":'' || APEX_ESCAPE.js_literal(l_column_value_list(3)(i),''"'')',
+'          || '',"info":'' || APEX_ESCAPE.js_literal(l_column_value_list(5)(i),''"'')',
+'          || '',''        || latlng2ch(l_lat,l_lng)',
+'          || '',"icon":'' || APEX_ESCAPE.js_literal(l_icon,''"'')',
+'          || ''}'';',
 '    ',
-'    -- Variables',
-'    l_result       apex_plugin.t_region_render_result;',
+'        set_map_extents',
+'          (p_lat     => l_lat',
+'          ,p_lng     => l_lng',
+'          ,p_lat_min => p_lat_min',
+'          ,p_lat_max => p_lat_max',
+'          ,p_lng_min => p_lng_min',
+'          ,p_lng_max => p_lng_max',
+'          );',
+'      ',
+'    END LOOP;',
+'',
+'    RETURN l_markers_data;',
+'END get_markers;',
+'',
+'FUNCTION render_map',
+'    (p_region IN APEX_PLUGIN.t_region',
+'    ,p_plugin IN APEX_PLUGIN.t_plugin',
+'    ,p_is_printer_friendly IN BOOLEAN',
+'    ) RETURN APEX_PLUGIN.t_region_render_result IS',
+'',
+'    SUBTYPE plugin_attr is VARCHAR2(32767);',
+'    ',
+'    l_result       APEX_PLUGIN.t_region_render_result;',
+'',
 '    l_lat          NUMBER;',
 '    l_lng          NUMBER;',
 '    l_html         VARCHAR2(32767);',
@@ -7565,152 +7695,500 @@ wwv_flow_api.create_plugin(
 '    l_lat_max      NUMBER;',
 '    l_lng_min      NUMBER;',
 '    l_lng_max      NUMBER;',
-'    l_southwest    VARCHAR2(200);',
-'    l_northeast    VARCHAR2(200);',
-'',
-'    l_column_value_list  apex_plugin_util.t_column_value_list;',
+'    l_ajax_items   VARCHAR2(1000);',
 '',
 '    -- Component attributes',
 '    l_map_height    plugin_attr := p_region.attribute_01;',
-'    l_item_name     plugin_attr := p_region.attribute_02;',
+'    l_id_item       plugin_attr := p_region.attribute_02;',
 '    l_click_zoom    plugin_attr := p_region.attribute_03;    ',
+'    l_sync_item     plugin_attr := p_region.attribute_04;',
+'    l_markericon    plugin_attr := p_region.attribute_05;',
+'    l_latlong       plugin_attr := p_region.attribute_06;',
+'    l_dist_item     plugin_attr := p_region.attribute_07;',
+'    l_api_key       plugin_attr := p_region.attribute_08;',
+'    ',
 'BEGIN',
 '    -- debug information will be included',
-'    if apex_application.g_debug then',
-'        apex_plugin_util.debug_region (',
-'            p_plugin => p_plugin,',
-'            p_region => p_region,',
-'            p_is_printer_friendly => p_is_printer_friendly);',
-'    end if;',
-'    ',
+'    IF APEX_APPLICATION.g_debug then',
+'        APEX_PLUGIN_UTIL.debug_region',
+'          (p_plugin => p_plugin',
+'          ,p_region => p_region',
+'          ,p_is_printer_friendly => p_is_printer_friendly);',
+'    END IF;',
+'',
+'    APEX_JAVASCRIPT.add_library',
+'      (p_name           => ''js'' || CASE WHEN l_api_key IS NOT NULL THEN ''?key='' || l_api_key END',
+'      ,p_directory      => ''https://maps.googleapis.com/maps/api/''',
+'      ,p_version        => null',
+'      ,p_skip_extension => true);',
+'',
 '    IF p_region.source IS NOT NULL THEN',
 '',
-'        l_column_value_list := apex_plugin_util.get_data',
-'            (p_sql_statement  => p_region.source',
-'            ,p_min_columns    => 5',
-'            ,p_max_columns    => 5',
-'            ,p_component_name => p_region.name',
-'            ,p_max_rows       => 1000);',
-'',
-'        FOR i IN 1..l_column_value_list(1).count LOOP',
-'    ',
-'            IF l_markers_data IS NOT NULL THEN',
-'                l_markers_data := l_markers_data || '','';',
-'            END IF;',
-'            ',
-'            l_lat  := TO_NUMBER(l_column_value_list(1)(i));',
-'            l_lng  := TO_NUMBER(l_column_value_list(2)(i));',
-'    ',
-'            l_markers_data := l_markers_data',
-'              || ''{id:''   || APEX_ESCAPE.js_literal(l_column_value_list(4)(i))',
-'              || '',name:'' || APEX_ESCAPE.js_literal(l_column_value_list(3)(i))',
-'              || '',info:'' || APEX_ESCAPE.js_literal(l_column_value_list(5)(i))',
-'              || '',lat:''  || APEX_ESCAPE.js_literal(l_lat)',
-'              || '',lng:''  || APEX_ESCAPE.js_literal(l_lng)',
-'              || ''}'';',
-'        ',
-'            l_lat_min := LEAST   (NVL(l_lat_min, l_lat), l_lat);',
-'            l_lat_max := GREATEST(NVL(l_lat_max, l_lat), l_lat);',
-'            l_lng_min := LEAST   (NVL(l_lng_min, l_lng), l_lng);',
-'            l_lng_max := GREATEST(NVL(l_lng_max, l_lng), l_lng);',
-'          ',
-'        END LOOP;',
+'      l_markers_data := get_markers',
+'        (p_region  => p_region',
+'        ,p_lat_min => l_lat_min',
+'        ,p_lat_max => l_lat_max',
+'        ,p_lng_min => l_lng_min',
+'        ,p_lng_max => l_lng_max',
+'        );',
 '        ',
 '    END IF;',
 '    ',
+'    -- if sync item is set, include its position in the initial map extent',
+'    IF l_sync_item IS NOT NULL THEN',
+'      l_latlong := NVL(v(l_sync_item),l_latlong);',
+'    END IF;',
+'    ',
+'    IF l_latlong IS NOT NULL THEN',
+'      l_lat := TO_NUMBER(SUBSTR(l_latlong,1,INSTR(l_latlong,'','')-1));',
+'      l_lng := TO_NUMBER(SUBSTR(l_latlong,INSTR(l_latlong,'','')+1));',
+'    END IF;',
+'    ',
+'    IF l_lat IS NOT NULL THEN',
+'      set_map_extents',
+'        (p_lat     => l_lat',
+'        ,p_lng     => l_lng',
+'        ,p_lat_min => l_lat_min',
+'        ,p_lat_max => l_lat_max',
+'        ,p_lng_min => l_lng_min',
+'        ,p_lng_max => l_lng_max',
+'        );',
+'',
 '    -- show entire map if no points to show',
-'    IF l_markers_data IS NULL THEN',
+'    ELSIF l_markers_data IS NULL THEN',
+'      l_lat := 0;',
+'      l_lng := 0;',
+'      l_latlong := ''0,0'';',
 '      l_lat_min := -90;',
 '      l_lat_max := 90;',
 '      l_lng_min := -180;',
 '      l_lng_max := 180;',
+'',
 '    END IF;',
 '    ',
-'    l_southwest := ''{lat:''||TO_CHAR(l_lat_min)||'',lng:''||TO_CHAR(l_lng_min)||''}'';',
-'    l_northeast := ''{lat:''||TO_CHAR(l_lat_max)||'',lng:''||TO_CHAR(l_lng_max)||''}'';',
+'    IF l_sync_item IS NOT NULL THEN',
+'      l_ajax_items := ''#'' || l_sync_item;',
+'    END IF;',
+'    IF l_dist_item IS NOT NULL THEN',
+'      IF l_ajax_items IS NOT NULL THEN',
+'        l_ajax_items := l_ajax_items || '','';',
+'      END IF;',
+'      l_ajax_items := l_ajax_items || ''#'' || l_dist_item;',
+'    END IF;',
 '    ',
 '    l_html := q''[',
 '<script>',
-'var map, iw, marker, mapdata;',
-'function addMarker(map,pData) {',
-'  marker = new google.maps.Marker({',
-'                map: map,',
-'                position: new google.maps.LatLng(pData.lat, pData.lng),',
-'                title: pData.name',
-'            });',
-' ',
-'  google.maps.event.addListener(marker, ''click'', function () {',
-'    if (iw) {',
-'      iw.close();',
+'var map_#REGION#, iw_#REGION#, reppin_#REGION#, userpin_#REGION#, distcircle_#REGION#, mapdata_#REGION#;',
+'function r_#REGION#(f){/in/.test(document.readyState)?setTimeout("r_#REGION#("+f+")",9):f()}',
+'function repPin_#REGION#(pData) {',
+'  var reppin = new google.maps.Marker({',
+'                 map: map_#REGION#,',
+'                 position: new google.maps.LatLng(pData.lat, pData.lng),',
+'                 title: pData.name,',
+'                 icon: pData.icon',
+'               });',
+'  google.maps.event.addListener(reppin, "click", function () {',
+'    console.log("#REGION# repPin clicked "+pData.id);',
+'    if (iw_#REGION#) {',
+'      iw_#REGION#.close();',
 '    } else {',
-'      iw = new google.maps.InfoWindow();',
+'      iw_#REGION# = new google.maps.InfoWindow();',
 '    }',
-'    iw.setOptions({',
+'    iw_#REGION#.setOptions({',
 '       content: pData.info',
 '      });',
-'    iw.open(map, this);',
-'    map.panTo(this.getPosition());',
+'    iw_#REGION#.open(map_#REGION#, this);',
+'    map_#REGION#.panTo(this.getPosition());',
 '    if ("#CLICKZOOM#" != "") {',
-'      map.setZoom(#CLICKZOOM#);',
+'      map_#REGION#.setZoom(#CLICKZOOM#);',
 '    }',
-'    if ("#ITEMNAME#" !== "") {',
-'      $s("#ITEMNAME#",pData.id);',
+'    if ("#IDITEM#" !== "") {',
+'      $s("#IDITEM#",pData.id);',
 '    }',
-'    apex.jQuery("##REGION_ID#").trigger("mapclick", {id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng});',
+'    apex.jQuery("##REGION#").trigger("markerclick", {id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng});',
 '  });',
+'  if (!reppin_#REGION#) { reppin_#REGION# = []; }',
+'  reppin_#REGION#.push({"id":pData.id,"marker":reppin});',
 '}',
-'function initMap() {',
-'  var bounds = new google.maps.LatLngBounds(#SOUTHWEST#,#NORTHEAST#);',
+'function repPins_#REGION#() {',
+'  for (var i = 0; i < mapdata_#REGION#.length; i++) {',
+'    repPin_#REGION#(mapdata_#REGION#[i]);',
+'  }',
+'}',
+'function click_#REGION#(id) {',
+'  var found = false;',
+'  for (var i = 0; i < reppin_#REGION#.length; i++) {',
+'    if (reppin_#REGION#[i].id == id) {',
+'      new google.maps.event.trigger(reppin_#REGION#[i].marker,"click");',
+'      found = true;',
+'      break;',
+'    }',
+'  }',
+'  if (!found) {',
+'    console.log("#REGION# id not found:"+id);',
+'  }',
+'}',
+'function setCircle_#REGION#(pos) {',
+'  if ("#DISTITEM#" !== "") {',
+'    if (distcircle_#REGION#) {',
+'      console.log("#REGION# move circle");',
+'      distcircle_#REGION#.setCenter(pos);',
+'      distcircle_#REGION#.setMap(map_#REGION#);',
+'    } else {',
+'      var radius_km = parseFloat($v("#DISTITEM#"));',
+'      console.log("#REGION# create circle radius="+radius_km);',
+'      distcircle_#REGION# = new google.maps.Circle({',
+'          strokeColor: "#5050FF",',
+'          strokeOpacity: 0.5,',
+'          strokeWeight: 2,',
+'          fillColor: "#0000FF",',
+'          fillOpacity: 0.05,',
+'          clickable: false,',
+'          editable: true,',
+'          map: map_#REGION#,',
+'          center: pos,',
+'          radius: radius_km*1000',
+'        });',
+'      google.maps.event.addListener(distcircle_#REGION#, "radius_changed", function (event) {',
+'        var radius_km = distcircle_#REGION#.getRadius()/1000;',
+'        console.log("#REGION# circle radius changed "+radius_km);',
+'        $s("#DISTITEM#", radius_km);',
+'        refreshMap_#REGION#();',
+'      });',
+'      google.maps.event.addListener(distcircle_#REGION#, "center_changed", function (event) {',
+'        var latlng = distcircle_#REGION#.getCenter().lat()+","+distcircle_#REGION#.getCenter().lng();',
+'        console.log("#REGION# circle center changed "+latlng);',
+'        if ("#SYNCITEM#" !== "") {',
+'          $s("#SYNCITEM#",latlng);',
+'          refreshMap_#REGION#();',
+'        }',
+'      });',
+'    }',
+'  }',
+'}',
+'function userPin_#REGION#(lat,lng) {',
+'  if (lat !== null && lng !== null) {',
+'    var oldpos = userpin_#REGION#?userpin_#REGION#.getPosition():new google.maps.LatLng(0,0);',
+'    if (lat == oldpos.lat() && lng == oldpos.lng()) {',
+'      console.log("#REGION# userpin not changed");',
+'    } else {',
+'      var pos = new google.maps.LatLng(lat,lng);',
+'      if (userpin_#REGION#) {',
+'        console.log("#REGION# move existing pin to new position on map "+lat+","+lng);',
+'        userpin_#REGION#.setMap(map_#REGION#);',
+'        userpin_#REGION#.setPosition(pos);',
+'        setCircle_#REGION#(pos);',
+'      } else {',
+'        console.log("#REGION# create userpin "+lat+","+lng);',
+'        userpin_#REGION# = new google.maps.Marker({map: map_#REGION#, position: pos, icon: "#ICON#"});',
+'        setCircle_#REGION#(pos);',
+'      }',
+'    }',
+'  } else if (userpin_#REGION#) {',
+'    console.log("#REGION# move existing pin off the map");',
+'    userpin_#REGION#.setMap(null);',
+'    if (distcircle_#REGION#) {',
+'      console.log("#REGION# move distcircle off the map");',
+'      distcircle_#REGION#.setMap(null);',
+'    }',
+'  }',
+'}',
+'function initMap_#REGION#() {',
+'  console.log("#REGION# initMap");',
 '  var myOptions = {',
+'    zoom: 1,',
+'    center: new google.maps.LatLng(#LATLNG#),',
 '    mapTypeId: google.maps.MapTypeId.ROADMAP',
 '  };',
-'  map = new google.maps.Map(document.getElementById("#REGION_ID#_map"),myOptions);',
-'  for (var i = 0; i < mapdata.length; i++) {',
-'    addMarker(map,mapdata[i]);',
+'  map_#REGION# = new google.maps.Map(document.getElementById("map_#REGION#_container"),myOptions);',
+'  map_#REGION#.fitBounds(new google.maps.LatLngBounds({#SOUTHWEST#},{#NORTHEAST#}));',
+'  if ("#SYNCITEM#" !== "") {',
+'    var val = $v("#SYNCITEM#");',
+'    if (val !== null && val.indexOf(",") > -1) {',
+'      var arr = val.split(",");',
+'      console.log("#REGION# init from item "+val);',
+'      var pos = new google.maps.LatLng(arr[0],arr[1]);',
+'      userpin_#REGION# = new google.maps.Marker({map: map_#REGION#, position: pos, icon: "#ICON#"});',
+'      setCircle_#REGION#(pos);',
+'    }',
+'    //if the lat/long item is changed, move the pin',
+'    $("##SYNCITEM#").change(function(){ ',
+'      var latlng = this.value;',
+'      if (latlng !== null && latlng !== undefined && latlng.indexOf(",") > -1) {',
+'        console.log("#REGION# item changed "+latlng);',
+'        var arr = latlng.split(",");',
+'        userPin_#REGION#(arr[0],arr[1]);',
+'      }',
+'    });',
 '  }',
-'  map.fitBounds(bounds);',
+'  if ("#DISTITEM#" != "") {',
+'    //if the distance item is changed, redraw the circle',
+'    $("##DISTITEM#").change(function(){',
+'      var radius_metres = parseFloat(this.value)*1000;',
+'      if (distcircle_#REGION#.getRadius() !== radius_metres) {',
+'        console.log("#REGION# distitem changed "+this.value);',
+'        distcircle_#REGION#.setRadius(radius_metres);',
+'      }',
+'    });',
+'  }',
+'  repPins_#REGION#();',
+'  google.maps.event.addListener(map_#REGION#, "click", function (event) {',
+'    var lat = event.latLng.lat()',
+'       ,lng = event.latLng.lng();',
+'    console.log("#REGION# map clicked "+lat+","+lng);',
+'    if ("#SYNCITEM#" !== "") {',
+'      userPin_#REGION#(lat,lng);',
+'      $s("#SYNCITEM#",lat+","+lng);',
+'      refreshMap_#REGION#();',
+'    }',
+'    apex.jQuery("##REGION#").trigger("mapclick", {lat:lat, lng:lng});',
+'  });',
+'  console.log("#REGION# initMap finished");',
 '}',
-'window.onload = function() {',
-'  mapdata = [#MAPDATA#];',
-'  initMap();',
+'function refreshMap_#REGION#() {',
+'  console.log("#REGION# refreshMap");',
+'  apex.jQuery("##REGION#").trigger("apexbeforerefresh");',
+'  apex.server.plugin',
+'    ("#AJAX_IDENTIFIER#"',
+'    ,{ pageItems: "#AJAX_ITEMS#" }',
+'    ,{ dataType: "json"',
+'      ,success: function( pData ) {',
+'          console.log("#REGION# success pData="+pData.southwest.lat+","+pData.southwest.lng+" "+pData.northeast.lat+","+pData.northeast.lng);',
+'          map_#REGION#.fitBounds(',
+'            {south:pData.southwest.lat',
+'            ,west:pData.southwest.lng',
+'            ,north:pData.northeast.lat',
+'            ,east:pData.northeast.lng});',
+'          if (iw_#REGION#) {',
+'            iw_#REGION#.close();',
+'          }',
+'          console.log("#REGION# remove all report pins");',
+'          for (var i = 0; i < reppin_#REGION#.length; i++) {',
+'            var marker = reppin_#REGION#[i].marker; ',
+'            marker.setMap(null);',
+'          }',
+'          console.log("pData.mapdata.length="+pData.mapdata.length);',
+'          mapdata_#REGION# = pData.mapdata;',
+'          repPins_#REGION#();',
+'          if ("#SYNCITEM#" !== "") {',
+'            var val = $v("#SYNCITEM#");',
+'            if (val !== null && val.indexOf(",") > -1) {',
+'              var arr = val.split(",");',
+'              console.log("#REGION# init from item "+val);',
+'              userPin_#REGION#(arr[0],arr[1]);',
+'            }',
+'          }',
+'          apex.jQuery("##REGION#").trigger("apexafterrefresh");',
+'       }',
+'     } );',
+'  console.log("#REGION# refreshMap finished");',
 '}',
+'r_#REGION#(function(){',
+'  mapdata_#REGION# = [#MAPDATA#];',
+'  initMap_#REGION#();',
+'  apex.jQuery("##REGION#").bind("apexrefresh", function(){refreshMap_#REGION#();});',
+'});',
 '</script>',
-'<div id="#REGION_ID#_map" style="min-height:#MAPHEIGHT#px"></div>]'';',
+'<div id="map_#REGION#_container" style="min-height:#MAPHEIGHT#px"></div>]'';',
 '',
-'    l_html := REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(l_html',
-'      ,''#SOUTHWEST#'', l_southwest)',
-'      ,''#NORTHEAST#'', l_northeast)',
+'    l_html := REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(',
+'              REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(',
+'              REPLACE(REPLACE(REPLACE(',
+'      l_html',
+'      ,''#SOUTHWEST#'', latlng2ch(l_lat_min,l_lng_min))',
+'      ,''#NORTHEAST#'', latlng2ch(l_lat_max,l_lng_max))',
 '      ,''#MAPDATA#'',   l_markers_data)',
 '      ,''#MAPHEIGHT#'', l_map_height)',
-'      ,''#ITEMNAME#'',  l_item_name)',
+'      ,''#IDITEM#'',    l_id_item)',
 '      ,''#CLICKZOOM#'', l_click_zoom)',
-'      ,''#REGION_ID#'', CASE',
+'      ,''#REGION#'',    CASE',
 '                      WHEN p_region.static_id IS NOT NULL',
 '                      THEN p_region.static_id',
 '                      ELSE ''R''||p_region.id',
-'                      END);',
+'                      END)',
+'      ,''#LATLNG#'',    l_latlong)',
+'      ,''#SYNCITEM#'',  l_sync_item)',
+'      ,''#ICON#'',      l_markericon)',
+'      ,''#DISTITEM#'',  l_dist_item)',
+'      ,''#AJAX_IDENTIFIER#'', APEX_PLUGIN.get_ajax_identifier)',
+'      ,''#AJAX_ITEMS#'', l_ajax_items);',
 '      ',
-'    sys.htp.p(l_html);',
+'    SYS.HTP.p(l_html);',
 '  ',
-'    return l_result;',
-'END render_map;    '))
+'    RETURN l_result;',
+'END render_map;',
+'',
+'FUNCTION ajax',
+'    (p_region IN APEX_PLUGIN.t_region',
+'    ,p_plugin IN APEX_PLUGIN.t_plugin',
+'    ) RETURN APEX_PLUGIN.t_region_ajax_result IS',
+'',
+'    SUBTYPE plugin_attr is VARCHAR2(32767);',
+'',
+'    l_result APEX_PLUGIN.t_region_ajax_result;',
+'',
+'    l_lat          NUMBER;',
+'    l_lng          NUMBER;',
+'    l_markers_data VARCHAR2(32767);',
+'    l_lat_min      NUMBER;',
+'    l_lat_max      NUMBER;',
+'    l_lng_min      NUMBER;',
+'    l_lng_max      NUMBER;',
+'',
+'    -- Component attributes',
+'    l_map_height    plugin_attr := p_region.attribute_01;',
+'    l_id_item       plugin_attr := p_region.attribute_02;',
+'    l_click_zoom    plugin_attr := p_region.attribute_03;    ',
+'    l_sync_item     plugin_attr := p_region.attribute_04;',
+'    l_markericon    plugin_attr := p_region.attribute_05;',
+'    l_latlong       plugin_attr := p_region.attribute_06;',
+'    l_dist_item     plugin_attr := p_region.attribute_07;',
+'',
+'BEGIN',
+'    -- debug information will be included',
+'    IF APEX_APPLICATION.g_debug then',
+'        APEX_PLUGIN_UTIL.debug_region',
+'          (p_plugin => p_plugin',
+'          ,p_region => p_region);',
+'    END IF;',
+'',
+'    IF p_region.source IS NOT NULL THEN',
+'',
+'      l_markers_data := get_markers',
+'        (p_region  => p_region',
+'        ,p_lat_min => l_lat_min',
+'        ,p_lat_max => l_lat_max',
+'        ,p_lng_min => l_lng_min',
+'        ,p_lng_max => l_lng_max',
+'        );',
+'        ',
+'    END IF;',
+'    ',
+'    -- if sync item is set, include its position in the initial map extent',
+'    IF l_sync_item IS NOT NULL THEN',
+'      l_latlong := NVL(v(l_sync_item),l_latlong);',
+'    END IF;',
+'    ',
+'    IF l_latlong IS NOT NULL THEN',
+'      l_lat := TO_NUMBER(SUBSTR(l_latlong,1,INSTR(l_latlong,'','')-1));',
+'      l_lng := TO_NUMBER(SUBSTR(l_latlong,INSTR(l_latlong,'','')+1));',
+'    END IF;',
+'    ',
+'    IF l_lat IS NOT NULL THEN',
+'      set_map_extents',
+'        (p_lat     => l_lat',
+'        ,p_lng     => l_lng',
+'        ,p_lat_min => l_lat_min',
+'        ,p_lat_max => l_lat_max',
+'        ,p_lng_min => l_lng_min',
+'        ,p_lng_max => l_lng_max',
+'        );',
+'',
+'    -- show entire map if no points to show',
+'    ELSIF l_markers_data IS NULL THEN',
+'      l_lat := 0;',
+'      l_lng := 0;',
+'      l_latlong := ''0,0'';',
+'      l_lat_min := -90;',
+'      l_lat_max := 90;',
+'      l_lng_min := -180;',
+'      l_lng_max := 180;',
+'',
+'    END IF;',
+'',
+'    SYS.OWA_UTIL.mime_header(''text/plain'', false);',
+'    SYS.HTP.p(''Cache-Control: no-cache'');',
+'    SYS.HTP.p(''Pragma: no-cache'');',
+'    SYS.OWA_UTIL.http_header_close;',
+'    ',
+'    SYS.HTP.p(''{"southwest":{''',
+'      || latlng2ch(l_lat_min,l_lng_min)',
+'      || ''},"northeast":{''',
+'      || latlng2ch(l_lat_max,l_lng_max)',
+'      || ''},"mapdata":[''',
+'      || l_markers_data',
+'      || '']}'');',
+'',
+'    RETURN l_result;',
+'END ajax;'))
 ,p_render_function=>'render_map'
-,p_standard_attributes=>'SOURCE_SQL'
+,p_ajax_function=>'ajax'
+,p_standard_attributes=>'SOURCE_SQL:AJAX_ITEMS_TO_SUBMIT'
 ,p_sql_min_column_count=>5
-,p_sql_max_column_count=>5
-,p_sql_examples=>'SELECT lat, lng, name, id, info FROM mydata'
+,p_sql_max_column_count=>6
+,p_sql_examples=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'<pre>SELECT lat, lng, name, id, info FROM mydata;</pre>',
+'<p>',
+'<em>Show each point with a selected icon:</em>',
+'<p>',
+'<pre>SELECT lat, lng, name, id, info, icon FROM mydata;</pre>',
+'<p>',
+'<em>Get only the data within a certain distance from a chosen point:</em>',
+'<p>',
+'<pre>',
+'SELECT t.lat AS lat',
+'      ,t.lng AS lng',
+'      ,t.name',
+'      ,t.id AS id',
+'      ,t.info',
+'      ,'''' AS icon',
+'FROM   mytable t',
+'WHERE  t.lat IS NOT NULL',
+'AND    t.lng IS NOT NULL',
+'AND    (:P1_LATLNG IS NULL',
+'     OR :P1_RADIUS IS NULL',
+'     OR SDO_GEOM.sdo_distance',
+'          (geom1 => SDO_GEOMETRY',
+'            (sdo_gtype     => 2001 /* 2-dimensional point */',
+'            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
+'            ,sdo_point     => SDO_POINT_TYPE(t.lng, t.lat, NULL)',
+'            ,sdo_elem_info => NULL',
+'            ,sdo_ordinates => NULL)',
+'          ,geom2 => SDO_GEOMETRY',
+'            (sdo_gtype     => 2001 /* 2-dimensional point */',
+'            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
+'            ,sdo_point     => SDO_POINT_TYPE',
+'               (TO_NUMBER(SUBSTR(:P1_LATLNG,INSTR(:P1_LATLNG,'','')+1))',
+'               ,TO_NUMBER(SUBSTR(:P1_LATLNG,1,INSTR(:P1_LATLNG,'','')-1)), NULL)',
+'            ,sdo_elem_info => NULL',
+'            ,sdo_ordinates => NULL)',
+'          ,tol   => 0.0001 /*metres*/',
+'          ,unit  => ''unit=KM'') < :P1_RADIUS)',
+'</pre>'))
 ,p_substitute_attributes=>true
 ,p_subscribe_plugin_settings=>true
 ,p_help_text=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
 'This plugin renders a Google Map, showing a number of pins based on a query you supply with Latitude, Longitude, Name (pin hovertext), id (returned to an item you specify, if required), and Info.',
 '<P>',
-'When the user clicks any pin, the map pans to that point, and (optionally) zooms into it. An info window pops up with the Info you supply in the query. This can include HTML code including links, for example.'))
-,p_version_identifier=>'0.1'
-,p_plugin_comment=>'Get latest version, send feedback and raise issues at: https://bitbucket.org/jk64/jk64-plugin-reportmap'
+'When the user clicks any pin, the map pans to that point, and (optionally) zooms into it. An info window pops up with the Info you supply in the query. This can include HTML code including links, for example. The markerClick event will be fired when '
+||'this happens (you can create a dynamic action to respond to this if you want).',
+'<P>',
+'If you supply a Sync Item and a Distance item, the map will allow the user to click any point on the map, drag out the radius of a circle, and then re-run the query (e.g. to show only those pins within the indicated circle. Look at the SQL Query exam'
+||'ples for how to do this.',
+'<P>',
+'If the query includes the 6th column (icon), it must refer to an image file that will be used instead of the standard red pin (<img src="http://maps.google.com/mapfiles/ms/icons/red-dot.png">). You can refer to pins like these, or refer to your own i'
+||'mages.',
+'<P>',
+'If icons are supplied they need to be fully-qualified URIs to an icon image to be used. e.g.',
+'<P>',
+'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/purple-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/ylw-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/blue-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/grn-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/ltblu-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/pink-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/purple-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/red-pushpin.png'))
+,p_version_identifier=>'0.3'
+,p_about_url=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(25267950963619789638)
-,p_plugin_id=>wwv_flow_api.id(25267950171406782114)
+ p_id=>wwv_flow_api.id(143390814002168025)
+,p_plugin_id=>wwv_flow_api.id(143390021789160501)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>1
 ,p_display_sequence=>10
@@ -7719,26 +8197,24 @@ wwv_flow_api.create_plugin_attribute(
 ,p_is_required=>true
 ,p_default_value=>'400'
 ,p_unit=>'pixels'
-,p_supported_ui_types=>'DESKTOP'
 ,p_is_translatable=>false
 ,p_help_text=>'Desired height (in pixels) of the map region. Note: the width will adjust according to the available area of the containing window.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(25267951308490793199)
-,p_plugin_id=>wwv_flow_api.id(25267950171406782114)
+ p_id=>wwv_flow_api.id(143391158873171586)
+,p_plugin_id=>wwv_flow_api.id(143390021789160501)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>2
 ,p_display_sequence=>20
 ,p_prompt=>'Set Item Name to ID on Click'
 ,p_attribute_type=>'PAGE ITEM'
 ,p_is_required=>false
-,p_supported_ui_types=>'DESKTOP'
 ,p_is_translatable=>false
 ,p_help_text=>'When the user clicks on a map marker, the corresponding ID from your data will be copied to this page item.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(25267951645663798384)
-,p_plugin_id=>wwv_flow_api.id(25267950171406782114)
+ p_id=>wwv_flow_api.id(143391496046176771)
+,p_plugin_id=>wwv_flow_api.id(143390021789160501)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>3
 ,p_display_sequence=>30
@@ -7747,15 +8223,97 @@ wwv_flow_api.create_plugin_attribute(
 ,p_is_required=>false
 ,p_default_value=>'13'
 ,p_unit=>'(0-23)'
-,p_supported_ui_types=>'DESKTOP'
 ,p_is_translatable=>false
-,p_help_text=>'When the user clicks on a map marker, zoom the map to this level. Set to blank to not zoom on click.'
+,p_help_text=>'When the user clicks on a map marker, or adds a new marker, zoom the map to this level. Set to blank to not zoom on click.'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(148475921495578205)
+,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>4
+,p_display_sequence=>40
+,p_prompt=>'Synchronize with Item'
+,p_attribute_type=>'PAGE ITEM'
+,p_is_required=>false
+,p_is_translatable=>false
+,p_help_text=>'Position of the marker will be retrieved from and stored in this item as a Lat,Long value.'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(148479233507624660)
+,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>5
+,p_display_sequence=>50
+,p_prompt=>'Marker Icon'
+,p_attribute_type=>'TEXT'
+,p_is_required=>false
+,p_is_translatable=>false
+,p_examples=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/purple-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+'http://maps.google.com/mapfiles/ms/icons/ylw-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/blue-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/grn-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/ltblu-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/pink-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/purple-pushpin.png',
+'http://maps.google.com/mapfiles/ms/icons/red-pushpin.png'))
+,p_help_text=>'URL to the icon to show for the marker. Leave blank for the default red Google pin.'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(148485854897413717)
+,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>6
+,p_display_sequence=>60
+,p_prompt=>'Initial Map Position'
+,p_attribute_type=>'TEXT'
+,p_is_required=>false
+,p_unit=>'lat,long'
+,p_is_translatable=>false
+,p_help_text=>'Set the latitude and longitude as a pair of numbers to be used to position the map on page load, if no pin coordinates have been provided by the page item.'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(148488218208114011)
+,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>7
+,p_display_sequence=>70
+,p_prompt=>'Circle Radius Item'
+,p_attribute_type=>'PAGE ITEM'
+,p_is_required=>false
+,p_is_translatable=>false
+,p_depending_on_attribute_id=>wwv_flow_api.id(148475921495578205)
+,p_depending_on_condition_type=>'NOT_NULL'
+,p_help_text=>'Set to an item which contains the distance (in Kilometres) to draw a circle around the click point. Leave blank to not draw a circle. If the item is changed, the circle will be updated. If you set this attribute, you must also set Synchronize with It'
+||'em.'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(150090701435391463)
+,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>8
+,p_display_sequence=>80
+,p_prompt=>'Google API Key'
+,p_attribute_type=>'TEXT'
+,p_is_required=>false
+,p_is_translatable=>false
+,p_help_text=>'Optional. If you don''t set this, you may get a "Google Maps API warning: NoApiKeys" warning in the console log. Refer: https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key'
 );
 wwv_flow_api.create_plugin_event(
- p_id=>wwv_flow_api.id(25267950487978785397)
-,p_plugin_id=>wwv_flow_api.id(25267950171406782114)
+ p_id=>wwv_flow_api.id(143390338361163784)
+,p_plugin_id=>wwv_flow_api.id(143390021789160501)
 ,p_name=>'mapclick'
 ,p_display_name=>'mapClick'
+);
+wwv_flow_api.create_plugin_event(
+ p_id=>wwv_flow_api.id(150106917639179900)
+,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+,p_name=>'markerclick'
+,p_display_name=>'markerClick'
 );
 end;
 /
@@ -7792,7 +8350,7 @@ begin
 wwv_flow_api.create_page(
  p_id=>1
 ,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
-,p_name=>'Home'
+,p_name=>'Report Map'
 ,p_page_mode=>'NORMAL'
 ,p_step_title=>'Demo Report Map Plugin'
 ,p_step_sub_title=>'Home'
@@ -7803,12 +8361,43 @@ wwv_flow_api.create_page(
 ,p_page_is_public_y_n=>'N'
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
-,p_last_updated_by=>'JEFFREY.KEMP@JK64.COM'
-,p_last_upd_yyyymmddhh24miss=>'20160217104933'
+,p_last_updated_by=>'JEFF'
+,p_last_upd_yyyymmddhh24miss=>'20160314205955'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(73507635119238450)
+,p_plug_name=>'Notes'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>30
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'<strong>Click a pin to get data about it.</strong>',
+'<p>',
+'Source: <a href="https://bitbucket.org/jk64/jk64-plugin-reportmap">https://bitbucket.org/jk64/jk64-plugin-reportmap</a>',
+'<p>',
+'The map region has static id "mymap".',
+'<p>',
+'Query for map plugin:',
+'<code>',
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'</code>',
+'<p>',
+'<ul>',
+'<li>Plugin attribute <strong>Set Item Name to ID on Click</strong> is set to P1_ID.</li>',
+'<li>Dynamic action on plugin event <strong>markerClick</strong> sets P1_CLICKED.</li>',
+'</ul>'))
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_attribute_01=>'N'
+,p_attribute_02=>'HTML'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(3214474053693807630)
-,p_plug_name=>'Report Google Map Plugin'
+,p_plug_name=>'Report Google Map Plugin ("mymap")'
+,p_region_name=>'mymap'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>wwv_flow_api.id(25186277719855505424)
 ,p_plug_display_sequence=>10
@@ -7820,13 +8409,8 @@ wwv_flow_api.create_page_plug(
 'from apex_collections',
 'where collection_name = ''MAP'''))
 ,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP'
+,p_plug_query_row_template=>1
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
-,p_plug_header=>'Source: <a href="https://bitbucket.org/jk64/jk64-plugin-reportmap">https://bitbucket.org/jk64/jk64-plugin-reportmap</a>'
-,p_plug_footer=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
-'<ul>',
-'<li>Plugin attribute <strong>Set Item Name to ID on Click</strong> is set to P1_ID.</li>',
-'<li>Dynamic action on plugin event <strong>mapClick</strong> sets P1_CLICKED.</li>',
-'</ul>'))
 ,p_attribute_01=>'400'
 ,p_attribute_02=>'P1_ID'
 ,p_attribute_03=>'13'
@@ -7839,19 +8423,13 @@ wwv_flow_api.create_report_region(
 ,p_include_in_reg_disp_sel_yn=>'Y'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
+,p_new_grid_row=>false
 ,p_display_point=>'BODY'
 ,p_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
-'select c003 as lat, c004 as lng, c002 as name, c001 as id',
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
 'from apex_collections',
 'where collection_name = ''MAP'''))
 ,p_source_type=>'NATIVE_SQL_REPORT'
-,p_header=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
-'Query for map plugin:',
-'<code>',
-'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
-'from apex_collections',
-'where collection_name = ''MAP''',
-'</code>'))
 ,p_ajax_enabled=>'Y'
 ,p_query_row_template=>wwv_flow_api.id(25186286576607505432)
 ,p_query_num_rows=>15
@@ -7908,6 +8486,17 @@ wwv_flow_api.create_report_columns(
 ,p_derived_column=>'N'
 ,p_include_in_export=>'Y'
 );
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75061271489626107)
+,p_query_column_id=>5
+,p_column_alias=>'INFO'
+,p_column_display_sequence=>5
+,p_column_heading=>'Info'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(25186305844402505553)
 ,p_plug_name=>'Breadcrumbs'
@@ -7922,11 +8511,25 @@ wwv_flow_api.create_page_plug(
 ,p_menu_template_id=>wwv_flow_api.id(25186299214327505447)
 ,p_plug_query_row_template=>1
 );
+wwv_flow_api.create_page_button(
+ p_id=>wwv_flow_api.id(75060605874626101)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_api.id(3214474053693807630)
+,p_button_name=>'REFRESH'
+,p_button_action=>'DEFINED_BY_DA'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconRight'
+,p_button_template_id=>wwv_flow_api.id(25186298860096505445)
+,p_button_image_alt=>'Refresh'
+,p_button_position=>'BELOW_BOX'
+,p_button_alignment=>'LEFT'
+,p_button_execute_validations=>'N'
+,p_icon_css_classes=>'fa-refresh'
+);
 wwv_flow_api.create_page_item(
  p_id=>wwv_flow_api.id(3214474776663807637)
 ,p_name=>'P1_ID'
 ,p_item_sequence=>10
-,p_item_plug_id=>wwv_flow_api.id(3214474053693807630)
+,p_item_plug_id=>wwv_flow_api.id(3214474250168807632)
 ,p_prompt=>'P1_ID'
 ,p_display_as=>'NATIVE_DISPLAY_ONLY'
 ,p_field_template=>wwv_flow_api.id(25186298275602505444)
@@ -7939,7 +8542,7 @@ wwv_flow_api.create_page_item(
  p_id=>wwv_flow_api.id(3214474856975807638)
 ,p_name=>'P1_CLICKED'
 ,p_item_sequence=>20
-,p_item_plug_id=>wwv_flow_api.id(3214474053693807630)
+,p_item_plug_id=>wwv_flow_api.id(3214474250168807632)
 ,p_prompt=>'P1_CLICKED'
 ,p_display_as=>'NATIVE_DISPLAY_ONLY'
 ,p_field_template=>wwv_flow_api.id(25186298275602505444)
@@ -7955,33 +8558,528 @@ wwv_flow_api.create_page_da_event(
 ,p_triggering_element_type=>'REGION'
 ,p_triggering_region_id=>wwv_flow_api.id(3214474053693807630)
 ,p_bind_type=>'bind'
-,p_bind_event_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP|REGION TYPE|mapclick'
+,p_bind_event_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP|REGION TYPE|markerclick'
 );
 wwv_flow_api.create_page_da_action(
  p_id=>wwv_flow_api.id(3214475003576807640)
 ,p_event_id=>wwv_flow_api.id(3214474913618807639)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
-,p_execute_on_page_init=>'Y'
+,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>'$s("P1_CLICKED", "this.data.id="+this.data.id+" this.data.name="+this.data.name+" this.data.lat="+this.data.lat+" this.data.lng="+this.data.lng);'
 );
-wwv_flow_api.create_page_process(
- p_id=>wwv_flow_api.id(3214474129753807631)
-,p_process_sequence=>10
-,p_process_point=>'BEFORE_HEADER'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'New'
-,p_process_sql_clob=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
-'BEGIN',
-'  APEX_COLLECTION.create_or_truncate_collection(''MAP'');',
-'  APEX_COLLECTION.add_member(''MAP'',''1'',''home'',''-32.11620272297015'',''116.06547117233276'');',
-'  APEX_COLLECTION.add_member(''MAP'',''2'',''Stratton'',''-31.86972210984067'',''116.03485107421875'');',
-'  APEX_COLLECTION.add_member(''MAP'',''3'',''Wyalkatchem'',''-31.181378229061053'',''117.38033294677734'');',
-'  APEX_COLLECTION.add_member(''MAP'',''4'',''boss''''s office'',''-31.958206638801293'',''115.86434841156006'');',
-'  APEX_COLLECTION.add_member(''MAP'',''5'',''Wattle Grove'',''-32.01384376242402'',''116.00114107131958'');',
-'END;'))
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+wwv_flow_api.create_page_da_event(
+ p_id=>wwv_flow_api.id(75060745431626102)
+,p_name=>'onclickrefresh'
+,p_event_sequence=>20
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_api.id(75060605874626101)
+,p_bind_type=>'bind'
+,p_bind_event_type=>'click'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(75061159527626106)
+,p_event_id=>wwv_flow_api.id(75060745431626102)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_api.id(3214474250168807632)
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(75060894112626103)
+,p_event_id=>wwv_flow_api.id(75060745431626102)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_api.id(3214474053693807630)
+);
+end;
+/
+prompt --application/pages/page_00002
+begin
+wwv_flow_api.create_page(
+ p_id=>2
+,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
+,p_name=>'Circle Filter'
+,p_page_mode=>'NORMAL'
+,p_step_title=>'Circle Filter'
+,p_step_sub_title=>'Circle Filter'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_first_item=>'NO_FIRST_ITEM'
+,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
+,p_overwrite_navigation_list=>'N'
+,p_page_is_public_y_n=>'N'
+,p_cache_mode=>'NOCACHE'
+,p_help_text=>'No help is available for this page.'
+,p_last_updated_by=>'JEFF'
+,p_last_upd_yyyymmddhh24miss=>'20160314210002'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(75077584221945158)
+,p_plug_name=>'Report Google Map Plugin ("mymap")'
+,p_region_name=>'mymap'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>10
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_item_display_point=>'BELOW'
+,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'and (:P2_CENTER IS NULL',
+'     OR :P2_DISTANCE IS NULL',
+'     OR SDO_GEOM.sdo_distance',
+'          (geom1 => SDO_GEOMETRY',
+'            (sdo_gtype     => 2001 /* 2-dimensional point */',
+'            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
+'            ,sdo_point     => SDO_POINT_TYPE(c004, c003, NULL)',
+'            ,sdo_elem_info => NULL',
+'            ,sdo_ordinates => NULL)',
+'          ,geom2 => SDO_GEOMETRY',
+'            (sdo_gtype     => 2001 /* 2-dimensional point */',
+'            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
+'            ,sdo_point     => SDO_POINT_TYPE',
+'               (TO_NUMBER(SUBSTR(:P2_CENTER,INSTR(:P2_CENTER,'','')+1))',
+'               ,TO_NUMBER(SUBSTR(:P2_CENTER,1,INSTR(:P2_CENTER,'','')-1)), NULL)',
+'            ,sdo_elem_info => NULL',
+'            ,sdo_ordinates => NULL)',
+'          ,tol   => 0.0001 /*metres*/',
+'          ,unit  => ''unit=KM'') < :P2_DISTANCE)'))
+,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP'
+,p_ajax_items_to_submit=>'P2_DISTANCE,P2_CENTER'
+,p_plug_query_row_template=>1
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_attribute_01=>'400'
+,p_attribute_03=>'13'
+,p_attribute_04=>'P2_CENTER'
+,p_attribute_07=>'P2_DISTANCE'
+);
+wwv_flow_api.create_report_region(
+ p_id=>wwv_flow_api.id(75078349728945164)
+,p_name=>'Source data'
+,p_template=>wwv_flow_api.id(25186277719855505424)
+,p_display_sequence=>20
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
+,p_new_grid_row=>false
+,p_display_point=>'BODY'
+,p_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'and (:P2_CENTER IS NULL',
+'     OR :P2_DISTANCE IS NULL',
+'     OR SDO_GEOM.sdo_distance',
+'          (geom1 => SDO_GEOMETRY',
+'            (sdo_gtype     => 2001 /* 2-dimensional point */',
+'            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
+'            ,sdo_point     => SDO_POINT_TYPE(c004, c003, NULL)',
+'            ,sdo_elem_info => NULL',
+'            ,sdo_ordinates => NULL)',
+'          ,geom2 => SDO_GEOMETRY',
+'            (sdo_gtype     => 2001 /* 2-dimensional point */',
+'            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
+'            ,sdo_point     => SDO_POINT_TYPE',
+'               (TO_NUMBER(SUBSTR(:P2_CENTER,INSTR(:P2_CENTER,'','')+1))',
+'               ,TO_NUMBER(SUBSTR(:P2_CENTER,1,INSTR(:P2_CENTER,'','')-1)), NULL)',
+'            ,sdo_elem_info => NULL',
+'            ,sdo_ordinates => NULL)',
+'          ,tol   => 0.0001 /*metres*/',
+'          ,unit  => ''unit=KM'') < :P2_DISTANCE)'))
+,p_source_type=>'NATIVE_SQL_REPORT'
+,p_ajax_enabled=>'Y'
+,p_ajax_items_to_submit=>'P2_CENTER,P2_DISTANCE'
+,p_query_row_template=>wwv_flow_api.id(25186286576607505432)
+,p_query_num_rows=>15
+,p_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_query_show_nulls_as=>'-'
+,p_query_num_rows_type=>'ROW_RANGES_IN_SELECT_LIST'
+,p_pagination_display_position=>'BOTTOM_RIGHT'
+,p_csv_output=>'N'
+,p_prn_output=>'N'
+,p_sort_null=>'L'
+,p_plug_query_strip_html=>'N'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75078746149945166)
+,p_query_column_id=>1
+,p_column_alias=>'LAT'
+,p_column_display_sequence=>1
+,p_column_heading=>'Lat'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75079136485945166)
+,p_query_column_id=>2
+,p_column_alias=>'LNG'
+,p_column_display_sequence=>2
+,p_column_heading=>'Lng'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75079540813945166)
+,p_query_column_id=>3
+,p_column_alias=>'NAME'
+,p_column_display_sequence=>3
+,p_column_heading=>'Name'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75079959259945167)
+,p_query_column_id=>4
+,p_column_alias=>'ID'
+,p_column_display_sequence=>4
+,p_column_heading=>'Id'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75080372889945167)
+,p_query_column_id=>5
+,p_column_alias=>'INFO'
+,p_column_display_sequence=>5
+,p_column_heading=>'Info'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(75082733802945170)
+,p_plug_name=>'Notes'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>30
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'<strong>Click the map to set the center, then drag from that point to set a radius (distance).</strong> Then, click Refresh to see the results of your filter. You can also manually change the lat,lng and distance using the text items, the map will au'
+||'tomatically pick up changes.',
+'<p>',
+'Source: <a href="https://bitbucket.org/jk64/jk64-plugin-reportmap">https://bitbucket.org/jk64/jk64-plugin-reportmap</a>',
+'<p>',
+'Query for map plugin:',
+'<code>',
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'and (:P2_LATLNG IS NULL',
+'     OR :P2_DISTANCE IS NULL',
+'     OR SDO_GEOM.sdo_distance',
+'          (geom1 => SDO_GEOMETRY',
+'            (sdo_gtype     => 2001 /* 2-dimensional point */',
+'            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
+'            ,sdo_point     => SDO_POINT_TYPE(c004, c003, NULL)',
+'            ,sdo_elem_info => NULL',
+'            ,sdo_ordinates => NULL)',
+'          ,geom2 => SDO_GEOMETRY',
+'            (sdo_gtype     => 2001 /* 2-dimensional point */',
+'            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
+'            ,sdo_point     => SDO_POINT_TYPE',
+'               (TO_NUMBER(SUBSTR(:P2_LATLNG,INSTR(:P2_LATLNG,'','')+1))',
+'               ,TO_NUMBER(SUBSTR(:P2_LATLNG,1,INSTR(:P2_LATLNG,'','')-1)), NULL)',
+'            ,sdo_elem_info => NULL',
+'            ,sdo_ordinates => NULL)',
+'          ,tol   => 0.0001 /*metres*/',
+'          ,unit  => ''unit=KM'') < :P2_DISTANCE)',
+'</code>',
+'<p>',
+'The Refresh button simply does a normal apex Refresh on the region; the plugin responds by re-executing your SQL Query in an ajax call. If a circle has been drawn, the query above returns only those pins that fall within the circle.'))
+,p_plug_query_row_template=>1
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_attribute_01=>'N'
+,p_attribute_02=>'HTML'
+);
+wwv_flow_api.create_page_button(
+ p_id=>wwv_flow_api.id(75077912522945160)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_api.id(75077584221945158)
+,p_button_name=>'REFRESH'
+,p_button_action=>'DEFINED_BY_DA'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconRight'
+,p_button_template_id=>wwv_flow_api.id(25186298860096505445)
+,p_button_image_alt=>'Refresh'
+,p_button_position=>'BELOW_BOX'
+,p_button_alignment=>'LEFT'
+,p_button_execute_validations=>'N'
+,p_icon_css_classes=>'fa-refresh'
+);
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(75081539480945169)
+,p_name=>'P2_CENTER'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_api.id(75078349728945164)
+,p_prompt=>'P2_CENTER'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>60
+,p_field_template=>wwv_flow_api.id(25186298275602505444)
+,p_item_template_options=>'#DEFAULT#'
+,p_attribute_01=>'N'
+,p_attribute_02=>'N'
+,p_attribute_04=>'TEXT'
+,p_attribute_05=>'BOTH'
+);
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(75081913226945169)
+,p_name=>'P2_DISTANCE'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_api.id(75078349728945164)
+,p_prompt=>'P2_DISTANCE'
+,p_post_element_text=>'km'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>60
+,p_field_template=>wwv_flow_api.id(25186298275602505444)
+,p_item_template_options=>'#DEFAULT#'
+,p_attribute_01=>'N'
+,p_attribute_02=>'N'
+,p_attribute_04=>'TEXT'
+,p_attribute_05=>'BOTH'
+);
+wwv_flow_api.create_page_da_event(
+ p_id=>wwv_flow_api.id(75084780416945176)
+,p_name=>'onclickrefresh'
+,p_event_sequence=>20
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_api.id(75077912522945160)
+,p_bind_type=>'bind'
+,p_bind_event_type=>'click'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(75085248790945177)
+,p_event_id=>wwv_flow_api.id(75084780416945176)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_api.id(75078349728945164)
+,p_stop_execution_on_error=>'Y'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(75085776547945177)
+,p_event_id=>wwv_flow_api.id(75084780416945176)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_api.id(75077584221945158)
+,p_stop_execution_on_error=>'Y'
+);
+end;
+/
+prompt --application/pages/page_00003
+begin
+wwv_flow_api.create_page(
+ p_id=>3
+,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
+,p_name=>'Sync with Report'
+,p_page_mode=>'NORMAL'
+,p_step_title=>'Sync with Report'
+,p_step_sub_title=>'Sync with Report'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_first_item=>'NO_FIRST_ITEM'
+,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
+,p_overwrite_navigation_list=>'N'
+,p_page_is_public_y_n=>'N'
+,p_cache_mode=>'NOCACHE'
+,p_help_text=>'No help is available for this page.'
+,p_last_updated_by=>'JEFF'
+,p_last_upd_yyyymmddhh24miss=>'20160314210009'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(75088889966959565)
+,p_plug_name=>'Report Google Map Plugin ("mymap")'
+,p_region_name=>'mymap'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>10
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_item_display_point=>'BELOW'
+,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
+'from apex_collections',
+'where collection_name = ''MAP'''))
+,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP'
+,p_plug_query_row_template=>1
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_attribute_01=>'400'
+,p_attribute_03=>'13'
+);
+wwv_flow_api.create_report_region(
+ p_id=>wwv_flow_api.id(75089679997959566)
+,p_name=>'Source data'
+,p_template=>wwv_flow_api.id(25186277719855505424)
+,p_display_sequence=>20
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
+,p_new_grid_row=>false
+,p_display_point=>'BODY'
+,p_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
+'from apex_collections',
+'where collection_name = ''MAP'''))
+,p_source_type=>'NATIVE_SQL_REPORT'
+,p_ajax_enabled=>'Y'
+,p_query_row_template=>wwv_flow_api.id(25186286576607505432)
+,p_query_num_rows=>15
+,p_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_query_show_nulls_as=>'-'
+,p_query_num_rows_type=>'ROW_RANGES_IN_SELECT_LIST'
+,p_pagination_display_position=>'BOTTOM_RIGHT'
+,p_csv_output=>'N'
+,p_prn_output=>'N'
+,p_sort_null=>'L'
+,p_plug_query_strip_html=>'N'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75090094828959567)
+,p_query_column_id=>1
+,p_column_alias=>'LAT'
+,p_column_display_sequence=>1
+,p_column_heading=>'Lat'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75090455967959568)
+,p_query_column_id=>2
+,p_column_alias=>'LNG'
+,p_column_display_sequence=>2
+,p_column_heading=>'Lng'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75090850583959568)
+,p_query_column_id=>3
+,p_column_alias=>'NAME'
+,p_column_display_sequence=>3
+,p_column_heading=>'Name'
+,p_column_link=>'javascript:click_mymap("#ID#")'
+,p_column_linktext=>'#NAME#'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75091257552959568)
+,p_query_column_id=>4
+,p_column_alias=>'ID'
+,p_column_display_sequence=>4
+,p_column_heading=>'Id'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(75091614835959569)
+,p_query_column_id=>5
+,p_column_alias=>'INFO'
+,p_column_display_sequence=>5
+,p_column_heading=>'Info'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(75093680814959571)
+,p_plug_name=>'Notes'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>30
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'<strong>Click on location name in the report (on the right)</strong> executes this:',
+'<code>javascript:click_mymap("#ID#")</code>',
+'<p>',
+'Source: <a href="https://bitbucket.org/jk64/jk64-plugin-reportmap">https://bitbucket.org/jk64/jk64-plugin-reportmap</a>',
+'<p>',
+'Query for map plugin:',
+'<code>',
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'</code>'))
+,p_plug_query_row_template=>1
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_attribute_01=>'N'
+,p_attribute_02=>'HTML'
+);
+wwv_flow_api.create_page_button(
+ p_id=>wwv_flow_api.id(75089206447959566)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_api.id(75088889966959565)
+,p_button_name=>'REFRESH'
+,p_button_action=>'DEFINED_BY_DA'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconRight'
+,p_button_template_id=>wwv_flow_api.id(25186298860096505445)
+,p_button_image_alt=>'Refresh'
+,p_button_position=>'BELOW_BOX'
+,p_button_alignment=>'LEFT'
+,p_button_execute_validations=>'N'
+,p_icon_css_classes=>'fa-refresh'
+);
+wwv_flow_api.create_page_da_event(
+ p_id=>wwv_flow_api.id(75094415453959572)
+,p_name=>'onclickrefresh'
+,p_event_sequence=>20
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_api.id(75089206447959566)
+,p_bind_type=>'bind'
+,p_bind_event_type=>'click'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(75094949600959573)
+,p_event_id=>wwv_flow_api.id(75094415453959572)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_api.id(75089679997959566)
+,p_stop_execution_on_error=>'Y'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(75095498897959573)
+,p_event_id=>wwv_flow_api.id(75094415453959572)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_api.id(75088889966959565)
+,p_stop_execution_on_error=>'Y'
 );
 end;
 /

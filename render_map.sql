@@ -33,9 +33,9 @@ END set_map_extents;
 FUNCTION latlng2ch (lat IN NUMBER, lng IN NUMBER) RETURN VARCHAR2 IS
 BEGIN
   RETURN '"lat":'
-      || TO_CHAR(lat, 'fm999D9999999999999999')
+      || TO_CHAR(lat, 'fm999.9999999999999999')
       || ',"lng":'
-      || TO_CHAR(lng, 'fm999D9999999999999999');
+      || TO_CHAR(lng, 'fm999.9999999999999999');
 END latlng2ch;
 
 FUNCTION get_markers
@@ -114,6 +114,7 @@ FUNCTION render_map
     l_lat_max      NUMBER;
     l_lng_min      NUMBER;
     l_lng_max      NUMBER;
+    l_ajax_items   VARCHAR2(1000);
 
     -- Component attributes
     l_map_height    plugin_attr := p_region.attribute_01;
@@ -182,6 +183,16 @@ BEGIN
       l_lng_min := -180;
       l_lng_max := 180;
 
+    END IF;
+    
+    IF l_sync_item IS NOT NULL THEN
+      l_ajax_items := '#' || l_sync_item;
+    END IF;
+    IF l_dist_item IS NOT NULL THEN
+      IF l_ajax_items IS NOT NULL THEN
+        l_ajax_items := l_ajax_items || ',';
+      END IF;
+      l_ajax_items := l_ajax_items || '#' || l_dist_item;
     END IF;
     
     l_html := q'[
@@ -344,8 +355,8 @@ function initMap_#REGION#() {
     var lat = event.latLng.lat()
        ,lng = event.latLng.lng();
     console.log("#REGION# map clicked "+lat+","+lng);
-    userPin_#REGION#(lat,lng);
     if ("#SYNCITEM#" !== "") {
+      userPin_#REGION#(lat,lng);
       $s("#SYNCITEM#",lat+","+lng);
       refreshMap_#REGION#();
     }
@@ -358,7 +369,7 @@ function refreshMap_#REGION#() {
   apex.jQuery("##REGION#").trigger("apexbeforerefresh");
   apex.server.plugin
     ("#AJAX_IDENTIFIER#"
-    ,{ pageItems: "##SYNCITEM#,##DISTITEM#" }
+    ,{ pageItems: "#AJAX_ITEMS#" }
     ,{ dataType: "json"
       ,success: function( pData ) {
           console.log("#REGION# success pData="+pData.southwest.lat+","+pData.southwest.lng+" "+pData.northeast.lat+","+pData.northeast.lng);
@@ -401,7 +412,7 @@ r_#REGION#(function(){
 
     l_html := REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
               REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
-              REPLACE(REPLACE(
+              REPLACE(REPLACE(REPLACE(
       l_html
       ,'#SOUTHWEST#', latlng2ch(l_lat_min,l_lng_min))
       ,'#NORTHEAST#', latlng2ch(l_lat_max,l_lng_max))
@@ -418,7 +429,8 @@ r_#REGION#(function(){
       ,'#SYNCITEM#',  l_sync_item)
       ,'#ICON#',      l_markericon)
       ,'#DISTITEM#',  l_dist_item)
-      ,'#AJAX_IDENTIFIER#', APEX_PLUGIN.get_ajax_identifier);
+      ,'#AJAX_IDENTIFIER#', APEX_PLUGIN.get_ajax_identifier)
+      ,'#AJAX_ITEMS#', l_ajax_items);
       
     SYS.HTP.p(l_html);
   
