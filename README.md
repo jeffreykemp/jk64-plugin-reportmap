@@ -2,7 +2,7 @@
 
 This allows you to add a Google Map region to any page, showing a number of markers (pins) based on a query you specify.
 
-PLEASE send me your feedback! [jeffrey.kemp@jk64.com](mailto:jeffrey.kemp@jk64.com)
+**PLEASE send me your feedback!** [jeffrey.kemp@jk64.com](mailto:jeffrey.kemp@jk64.com)
 
 ![plugin-reportmap-preview.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/plugin-reportmap-preview.png)
 
@@ -26,6 +26,8 @@ The user can click any marker to see a popup info window for it. You can have th
 SELECT lat, lng, name, id, info FROM mydata
 ```
 
-v0.3 14 Mar 2016 Ajax refresh; allow multiple instances per page; delay rendering until page is loaded; allow page to programmatically "click" on a pin; center+distance map filter; accept Google API key
-v0.2 18 Feb 2016 Minor bug fixes; custom marker icons (never released)
-v0.1 17 Feb 2016 Initial Release
+* v0.3 14 Mar 2016 Ajax refresh; allow multiple instances per page; delay rendering until page is loaded; allow page to programmatically "click" on a pin; center+distance map filter; accept Google API key
+
+* v0.2 18 Feb 2016 Minor bug fixes; custom marker icons (never released)
+
+* v0.1 17 Feb 2016 Initial Release
