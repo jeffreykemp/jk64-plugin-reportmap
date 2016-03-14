@@ -26,7 +26,7 @@ The user can click any marker to see a popup info window for it. You can have th
 SELECT lat, lng, name, id, info FROM mydata
 ```
 
-* v0.3 14 Mar 2016 Ajax refresh; allow multiple instances per page; delay rendering until page is loaded; allow page to programmatically "click" on a pin; center+distance map filter; accept Google API key
+* v0.3 14 Mar 2016 Ajax refresh; allow multiple instances per page; delay rendering until page is loaded; allow page to programmatically "click" on a pin; center+distance map filter; accept Google API key. **Thanks to [Tobias Arnhold](https://twitter.com/tobias_arnhold) for his help with this release.**
 
 * v0.2 18 Feb 2016 Minor bug fixes; custom marker icons (never released)
 
