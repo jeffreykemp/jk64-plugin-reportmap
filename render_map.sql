@@ -221,7 +221,7 @@ function geocode_#REGION#(geocoder,map) {
   , function(results, status) {
     if (status === google.maps.GeocoderStatus.OK) {
       var pos = results[0].geometry.location;
-      console.log("#REGION# geocode ok");
+      apex.debug("#REGION# geocode ok");
       map.setCenter(pos);
       map.panTo(pos);
       if ("#CLICKZOOM#" != "") {
@@ -229,7 +229,7 @@ function geocode_#REGION#(geocoder,map) {
       }
       userPin_#REGION#(pos.lat(), pos.lng())
     } else {
-      console.log("#REGION# geocode was unsuccessful for the following reason: "+status);
+      apex.debug("#REGION# geocode was unsuccessful for the following reason: "+status);
     }
   });
 }
@@ -241,7 +241,7 @@ function repPin_#REGION#(pData) {
                  icon: pData.icon
                });
   google.maps.event.addListener(reppin, "click", function () {
-    console.log("#REGION# repPin clicked "+pData.id);
+    apex.debug("#REGION# repPin clicked "+pData.id);
     if (iw_#REGION#) {
       iw_#REGION#.close();
     } else {
@@ -278,18 +278,18 @@ function click_#REGION#(id) {
     }
   }
   if (!found) {
-    console.log("#REGION# id not found:"+id);
+    apex.debug("#REGION# id not found:"+id);
   }
 }
 function setCircle_#REGION#(pos) {
   if ("#DISTITEM#" !== "") {
     if (distcircle_#REGION#) {
-      console.log("#REGION# move circle");
+      apex.debug("#REGION# move circle");
       distcircle_#REGION#.setCenter(pos);
       distcircle_#REGION#.setMap(map_#REGION#);
     } else {
       var radius_km = parseFloat($v("#DISTITEM#"));
-      console.log("#REGION# create circle radius="+radius_km);
+      apex.debug("#REGION# create circle radius="+radius_km);
       distcircle_#REGION# = new google.maps.Circle({
           strokeColor: "#5050FF",
           strokeOpacity: 0.5,
@@ -304,13 +304,13 @@ function setCircle_#REGION#(pos) {
         });
       google.maps.event.addListener(distcircle_#REGION#, "radius_changed", function (event) {
         var radius_km = distcircle_#REGION#.getRadius()/1000;
-        console.log("#REGION# circle radius changed "+radius_km);
+        apex.debug("#REGION# circle radius changed "+radius_km);
         $s("#DISTITEM#", radius_km);
         refreshMap_#REGION#();
       });
       google.maps.event.addListener(distcircle_#REGION#, "center_changed", function (event) {
         var latlng = distcircle_#REGION#.getCenter().lat()+","+distcircle_#REGION#.getCenter().lng();
-        console.log("#REGION# circle center changed "+latlng);
+        apex.debug("#REGION# circle center changed "+latlng);
         if ("#SYNCITEM#" !== "") {
           $s("#SYNCITEM#",latlng);
           refreshMap_#REGION#();
@@ -323,31 +323,31 @@ function userPin_#REGION#(lat,lng) {
   if (lat !== null && lng !== null) {
     var oldpos = userpin_#REGION#?userpin_#REGION#.getPosition():new google.maps.LatLng(0,0);
     if (lat == oldpos.lat() && lng == oldpos.lng()) {
-      console.log("#REGION# userpin not changed");
+      apex.debug("#REGION# userpin not changed");
     } else {
       var pos = new google.maps.LatLng(lat,lng);
       if (userpin_#REGION#) {
-        console.log("#REGION# move existing pin to new position on map "+lat+","+lng);
+        apex.debug("#REGION# move existing pin to new position on map "+lat+","+lng);
         userpin_#REGION#.setMap(map_#REGION#);
         userpin_#REGION#.setPosition(pos);
         setCircle_#REGION#(pos);
       } else {
-        console.log("#REGION# create userpin "+lat+","+lng);
+        apex.debug("#REGION# create userpin "+lat+","+lng);
         userpin_#REGION# = new google.maps.Marker({map: map_#REGION#, position: pos, icon: "#ICON#"});
         setCircle_#REGION#(pos);
       }
     }
   } else if (userpin_#REGION#) {
-    console.log("#REGION# move existing pin off the map");
+    apex.debug("#REGION# move existing pin off the map");
     userpin_#REGION#.setMap(null);
     if (distcircle_#REGION#) {
-      console.log("#REGION# move distcircle off the map");
+      apex.debug("#REGION# move distcircle off the map");
       distcircle_#REGION#.setMap(null);
     }
   }
 }
 function initMap_#REGION#() {
-  console.log("#REGION# initMap");
+  apex.debug("#REGION# initMap");
   var myOptions = {
     zoom: 1,
     center: new google.maps.LatLng(#LATLNG#),
@@ -359,7 +359,7 @@ function initMap_#REGION#() {
     var val = $v("#SYNCITEM#");
     if (val !== null && val.indexOf(",") > -1) {
       var arr = val.split(",");
-      console.log("#REGION# init from item "+val);
+      apex.debug("#REGION# init from item "+val);
       var pos = new google.maps.LatLng(arr[0],arr[1]);
       userpin_#REGION# = new google.maps.Marker({map: map_#REGION#, position: pos, icon: "#ICON#"});
       setCircle_#REGION#(pos);
@@ -368,7 +368,7 @@ function initMap_#REGION#() {
     $("##SYNCITEM#").change(function(){ 
       var latlng = this.value;
       if (latlng !== null && latlng !== undefined && latlng.indexOf(",") > -1) {
-        console.log("#REGION# item changed "+latlng);
+        apex.debug("#REGION# item changed "+latlng);
         var arr = latlng.split(",");
         userPin_#REGION#(arr[0],arr[1]);
       }
@@ -380,12 +380,12 @@ function initMap_#REGION#() {
       if (this.value) {
         var radius_metres = parseFloat(this.value)*1000;
         if (distcircle_#REGION#.getRadius() !== radius_metres) {
-          console.log("#REGION# distitem changed "+this.value);
+          apex.debug("#REGION# distitem changed "+this.value);
           distcircle_#REGION#.setRadius(radius_metres);
         }
       } else {
         if (distcircle_#REGION#) {
-          console.log("#REGION# distitem cleared");
+          apex.debug("#REGION# distitem cleared");
           distcircle_#REGION#.setMap(null);
         }
       }
@@ -395,7 +395,7 @@ function initMap_#REGION#() {
   google.maps.event.addListener(map_#REGION#, "click", function (event) {
     var lat = event.latLng.lat()
        ,lng = event.latLng.lng();
-    console.log("#REGION# map clicked "+lat+","+lng);
+    apex.debug("#REGION# map clicked "+lat+","+lng);
     if ("#SYNCITEM#" !== "") {
       userPin_#REGION#(lat,lng);
       $s("#SYNCITEM#",lat+","+lng);
@@ -409,18 +409,18 @@ function initMap_#REGION#() {
       geocode_#REGION#(geocoder, map_#REGION#);
     });
   }
-  console.log("#REGION# initMap finished");
+  apex.debug("#REGION# initMap finished");
   apex.jQuery("##REGION#").trigger("maploaded", {map:map_#REGION#});
 }
 function refreshMap_#REGION#() {
-  console.log("#REGION# refreshMap");
+  apex.debug("#REGION# refreshMap");
   apex.jQuery("##REGION#").trigger("apexbeforerefresh");
   apex.server.plugin
     ("#AJAX_IDENTIFIER#"
     ,{ pageItems: "#AJAX_ITEMS#" }
     ,{ dataType: "json"
       ,success: function( pData ) {
-          console.log("#REGION# success pData="+pData.southwest.lat+","+pData.southwest.lng+" "+pData.northeast.lat+","+pData.northeast.lng);
+          apex.debug("#REGION# success pData="+pData.southwest.lat+","+pData.southwest.lng+" "+pData.northeast.lat+","+pData.northeast.lng);
           map_#REGION#.fitBounds(
             {south:pData.southwest.lat
             ,west:pData.southwest.lng
@@ -429,26 +429,26 @@ function refreshMap_#REGION#() {
           if (iw_#REGION#) {
             iw_#REGION#.close();
           }
-          console.log("#REGION# remove all report pins");
+          apex.debug("#REGION# remove all report pins");
           for (var i = 0; i < reppin_#REGION#.length; i++) {
             var marker = reppin_#REGION#[i].marker; 
             marker.setMap(null);
           }
-          console.log("pData.mapdata.length="+pData.mapdata.length);
+          apex.debug("pData.mapdata.length="+pData.mapdata.length);
           mapdata_#REGION# = pData.mapdata;
           repPins_#REGION#();
           if ("#SYNCITEM#" !== "") {
             var val = $v("#SYNCITEM#");
             if (val !== null && val.indexOf(",") > -1) {
               var arr = val.split(",");
-              console.log("#REGION# init from item "+val);
+              apex.debug("#REGION# init from item "+val);
               userPin_#REGION#(arr[0],arr[1]);
             }
           }
           apex.jQuery("##REGION#").trigger("apexafterrefresh");
        }
      } );
-  console.log("#REGION# refreshMap finished");
+  apex.debug("#REGION# refreshMap finished");
 }
 r_#REGION#(function(){
   mapdata_#REGION# = [#MAPDATA#];
