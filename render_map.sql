@@ -115,6 +115,10 @@ FUNCTION render_map
     l_lng_min      NUMBER;
     l_lng_max      NUMBER;
     l_ajax_items   VARCHAR2(1000);
+    l_js_params    VARCHAR2(1000);
+
+    -- Plugin attributes (application level)
+    l_api_key       plugin_attr := p_plugin.attribute_01;
 
     -- Component attributes
     l_map_height    plugin_attr := p_region.attribute_01;
@@ -124,7 +128,9 @@ FUNCTION render_map
     l_markericon    plugin_attr := p_region.attribute_05;
     l_latlong       plugin_attr := p_region.attribute_06;
     l_dist_item     plugin_attr := p_region.attribute_07;
-    l_api_key       plugin_attr := p_region.attribute_08;
+    l_sign_in       plugin_attr := p_region.attribute_08;
+    l_geocode_item  plugin_attr := p_region.attribute_09;
+    l_country       plugin_attr := p_region.attribute_10;
     
 BEGIN
     -- debug information will be included
@@ -135,12 +141,22 @@ BEGIN
           ,p_is_printer_friendly => p_is_printer_friendly);
     END IF;
 
+    IF l_api_key IS NULL THEN
+        l_sign_in      := 'N';
+        l_geocode_item := NULL;
+    ELSE
+        l_js_params := '?key=' || l_api_key;
+        IF l_sign_in = 'Y' THEN
+            l_js_params := l_js_params || '&'||'signed_in=true';
+        END IF;
+    END IF;
+
     APEX_JAVASCRIPT.add_library
-      (p_name           => 'js' || CASE WHEN l_api_key IS NOT NULL THEN '?key=' || l_api_key END
+      (p_name           => 'js' || l_js_params
       ,p_directory      => 'https://maps.googleapis.com/maps/api/'
       ,p_version        => null
       ,p_skip_extension => true);
-
+    
     IF p_region.source IS NOT NULL THEN
 
       l_markers_data := get_markers
@@ -199,6 +215,24 @@ BEGIN
 <script>
 var map_#REGION#, iw_#REGION#, reppin_#REGION#, userpin_#REGION#, distcircle_#REGION#, mapdata_#REGION#;
 function r_#REGION#(f){/in/.test(document.readyState)?setTimeout("r_#REGION#("+f+")",9):f()}
+function geocode_#REGION#(geocoder,map) {
+  var address = $v("#GEOCODEITEM#");
+  geocoder.geocode({"address": address#COUNTRY_RESTRICT#}
+  , function(results, status) {
+    if (status === google.maps.GeocoderStatus.OK) {
+      var pos = results[0].geometry.location;
+      console.log("#REGION# geocode ok");
+      map.setCenter(pos);
+      map.panTo(pos);
+      if ("#CLICKZOOM#" != "") {
+        map.setZoom(#CLICKZOOM#);
+      }
+      userPin_#REGION#(pos.lat(), pos.lng())
+    } else {
+      console.log("#REGION# geocode was unsuccessful for the following reason: "+status);
+    }
+  });
+}
 function repPin_#REGION#(pData) {
   var reppin = new google.maps.Marker({
                  map: map_#REGION#,
@@ -224,7 +258,7 @@ function repPin_#REGION#(pData) {
     if ("#IDITEM#" !== "") {
       $s("#IDITEM#",pData.id);
     }
-    apex.jQuery("##REGION#").trigger("markerclick", {id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng});
+    apex.jQuery("##REGION#").trigger("markerclick", {map:map_#REGION#, id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng});
   });
   if (!reppin_#REGION#) { reppin_#REGION# = []; }
   reppin_#REGION#.push({"id":pData.id,"marker":reppin});
@@ -343,10 +377,17 @@ function initMap_#REGION#() {
   if ("#DISTITEM#" != "") {
     //if the distance item is changed, redraw the circle
     $("##DISTITEM#").change(function(){
-      var radius_metres = parseFloat(this.value)*1000;
-      if (distcircle_#REGION#.getRadius() !== radius_metres) {
-        console.log("#REGION# distitem changed "+this.value);
-        distcircle_#REGION#.setRadius(radius_metres);
+      if (this.value) {
+        var radius_metres = parseFloat(this.value)*1000;
+        if (distcircle_#REGION#.getRadius() !== radius_metres) {
+          console.log("#REGION# distitem changed "+this.value);
+          distcircle_#REGION#.setRadius(radius_metres);
+        }
+      } else {
+        if (distcircle_#REGION#) {
+          console.log("#REGION# distitem cleared");
+          distcircle_#REGION#.setMap(null);
+        }
       }
     });
   }
@@ -360,9 +401,16 @@ function initMap_#REGION#() {
       $s("#SYNCITEM#",lat+","+lng);
       refreshMap_#REGION#();
     }
-    apex.jQuery("##REGION#").trigger("mapclick", {lat:lat, lng:lng});
+    apex.jQuery("##REGION#").trigger("mapclick", {map:map_#REGION#, lat:lat, lng:lng});
   });
+  if ("#GEOCODEITEM#" != "") {
+    var geocoder = new google.maps.Geocoder();
+    $("##GEOCODEITEM#").change(function(){
+      geocode_#REGION#(geocoder, map_#REGION#);
+    });
+  }
   console.log("#REGION# initMap finished");
+  apex.jQuery("##REGION#").trigger("maploaded", {map:map_#REGION#});
 }
 function refreshMap_#REGION#() {
   console.log("#REGION# refreshMap");
@@ -412,25 +460,29 @@ r_#REGION#(function(){
 
     l_html := REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
               REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
-              REPLACE(REPLACE(REPLACE(
+              REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
       l_html
-      ,'#SOUTHWEST#', latlng2ch(l_lat_min,l_lng_min))
-      ,'#NORTHEAST#', latlng2ch(l_lat_max,l_lng_max))
-      ,'#MAPDATA#',   l_markers_data)
-      ,'#MAPHEIGHT#', l_map_height)
-      ,'#IDITEM#',    l_id_item)
-      ,'#CLICKZOOM#', l_click_zoom)
-      ,'#REGION#',    CASE
-                      WHEN p_region.static_id IS NOT NULL
-                      THEN p_region.static_id
-                      ELSE 'R'||p_region.id
-                      END)
-      ,'#LATLNG#',    l_latlong)
-      ,'#SYNCITEM#',  l_sync_item)
-      ,'#ICON#',      l_markericon)
-      ,'#DISTITEM#',  l_dist_item)
-      ,'#AJAX_IDENTIFIER#', APEX_PLUGIN.get_ajax_identifier)
-      ,'#AJAX_ITEMS#', l_ajax_items);
+      ,'#SOUTHWEST#',        latlng2ch(l_lat_min,l_lng_min))
+      ,'#NORTHEAST#',        latlng2ch(l_lat_max,l_lng_max))
+      ,'#MAPDATA#',          l_markers_data)
+      ,'#MAPHEIGHT#',        l_map_height)
+      ,'#IDITEM#',           l_id_item)
+      ,'#CLICKZOOM#',        l_click_zoom)
+      ,'#REGION#',           CASE
+                             WHEN p_region.static_id IS NOT NULL
+                             THEN p_region.static_id
+                             ELSE 'R'||p_region.id
+                             END)
+      ,'#LATLNG#',           l_latlong)
+      ,'#SYNCITEM#',         l_sync_item)
+      ,'#ICON#',             l_markericon)
+      ,'#DISTITEM#',         l_dist_item)
+      ,'#AJAX_IDENTIFIER#',  APEX_PLUGIN.get_ajax_identifier)
+      ,'#AJAX_ITEMS#',       l_ajax_items)
+      ,'#GEOCODEITEM#',      l_geocode_item)
+      ,'#COUNTRY_RESTRICT#', CASE WHEN l_country IS NOT NULL
+                             THEN ',componentRestrictions:{country:"'||l_country||'"}'
+                             END);
       
     SYS.HTP.p(l_html);
   
@@ -455,13 +507,8 @@ FUNCTION ajax
     l_lng_max      NUMBER;
 
     -- Component attributes
-    l_map_height    plugin_attr := p_region.attribute_01;
-    l_id_item       plugin_attr := p_region.attribute_02;
-    l_click_zoom    plugin_attr := p_region.attribute_03;    
     l_sync_item     plugin_attr := p_region.attribute_04;
-    l_markericon    plugin_attr := p_region.attribute_05;
     l_latlong       plugin_attr := p_region.attribute_06;
-    l_dist_item     plugin_attr := p_region.attribute_07;
 
 BEGIN
     -- debug information will be included

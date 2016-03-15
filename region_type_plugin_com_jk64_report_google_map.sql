@@ -15,7 +15,7 @@ wwv_flow_api.import_begin (
  p_version_yyyy_mm_dd=>'2013.01.01'
 ,p_release=>'5.0.2.00.07'
 ,p_default_workspace_id=>20749515040658038
-,p_default_application_id=>15181
+,p_default_application_id=>560
 ,p_default_owner=>'SAMPLE'
 );
 end;
@@ -28,7 +28,7 @@ end;
 prompt --application/shared_components/plugins/region_type/com_jk64_report_google_map
 begin
 wwv_flow_api.create_plugin(
- p_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(218512352878463408)
 ,p_plugin_type=>'REGION TYPE'
 ,p_name=>'COM.JK64.REPORT_GOOGLE_MAP'
 ,p_display_name=>'JK64 Report Google Map'
@@ -134,6 +134,10 @@ wwv_flow_api.create_plugin(
 '    l_lng_min      NUMBER;',
 '    l_lng_max      NUMBER;',
 '    l_ajax_items   VARCHAR2(1000);',
+'    l_js_params    VARCHAR2(1000);',
+'',
+'    -- Plugin attributes (application level)',
+'    l_api_key       plugin_attr := p_plugin.attribute_01;',
 '',
 '    -- Component attributes',
 '    l_map_height    plugin_attr := p_region.attribute_01;',
@@ -143,7 +147,9 @@ wwv_flow_api.create_plugin(
 '    l_markericon    plugin_attr := p_region.attribute_05;',
 '    l_latlong       plugin_attr := p_region.attribute_06;',
 '    l_dist_item     plugin_attr := p_region.attribute_07;',
-'    l_api_key       plugin_attr := p_region.attribute_08;',
+'    l_sign_in       plugin_attr := p_region.attribute_08;',
+'    l_geocode_item  plugin_attr := p_region.attribute_09;',
+'    l_country       plugin_attr := p_region.attribute_10;',
 '    ',
 'BEGIN',
 '    -- debug information will be included',
@@ -154,12 +160,22 @@ wwv_flow_api.create_plugin(
 '          ,p_is_printer_friendly => p_is_printer_friendly);',
 '    END IF;',
 '',
+'    IF l_api_key IS NULL THEN',
+'        l_sign_in      := ''N'';',
+'        l_geocode_item := NULL;',
+'    ELSE',
+'        l_js_params := ''?key='' || l_api_key;',
+'        IF l_sign_in = ''Y'' THEN',
+'            l_js_params := l_js_params || ''&''||''signed_in=true'';',
+'        END IF;',
+'    END IF;',
+'',
 '    APEX_JAVASCRIPT.add_library',
-'      (p_name           => ''js'' || CASE WHEN l_api_key IS NOT NULL THEN ''?key='' || l_api_key END',
+'      (p_name           => ''js'' || l_js_params',
 '      ,p_directory      => ''https://maps.googleapis.com/maps/api/''',
 '      ,p_version        => null',
 '      ,p_skip_extension => true);',
-'',
+'    ',
 '    IF p_region.source IS NOT NULL THEN',
 '',
 '      l_markers_data := get_markers',
@@ -218,6 +234,24 @@ wwv_flow_api.create_plugin(
 '<script>',
 'var map_#REGION#, iw_#REGION#, reppin_#REGION#, userpin_#REGION#, distcircle_#REGION#, mapdata_#REGION#;',
 'function r_#REGION#(f){/in/.test(document.readyState)?setTimeout("r_#REGION#("+f+")",9):f()}',
+'function geocode_#REGION#(geocoder,map) {',
+'  var address = $v("#GEOCODEITEM#");',
+'  geocoder.geocode({"address": address#COUNTRY_RESTRICT#}',
+'  , function(results, status) {',
+'    if (status === google.maps.GeocoderStatus.OK) {',
+'      var pos = results[0].geometry.location;',
+'      console.log("#REGION# geocode ok");',
+'      map.setCenter(pos);',
+'      map.panTo(pos);',
+'      if ("#CLICKZOOM#" != "") {',
+'        map.setZoom(#CLICKZOOM#);',
+'      }',
+'      userPin_#REGION#(pos.lat(), pos.lng())',
+'    } else {',
+'      console.log("#REGION# geocode was unsuccessful for the following reason: "+status);',
+'    }',
+'  });',
+'}',
 'function repPin_#REGION#(pData) {',
 '  var reppin = new google.maps.Marker({',
 '                 map: map_#REGION#,',
@@ -243,7 +277,7 @@ wwv_flow_api.create_plugin(
 '    if ("#IDITEM#" !== "") {',
 '      $s("#IDITEM#",pData.id);',
 '    }',
-'    apex.jQuery("##REGION#").trigger("markerclick", {id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng});',
+'    apex.jQuery("##REGION#").trigger("markerclick", {map:map_#REGION#, id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng});',
 '  });',
 '  if (!reppin_#REGION#) { reppin_#REGION# = []; }',
 '  reppin_#REGION#.push({"id":pData.id,"marker":reppin});',
@@ -362,10 +396,17 @@ wwv_flow_api.create_plugin(
 '  if ("#DISTITEM#" != "") {',
 '    //if the distance item is changed, redraw the circle',
 '    $("##DISTITEM#").change(function(){',
-'      var radius_metres = parseFloat(this.value)*1000;',
-'      if (distcircle_#REGION#.getRadius() !== radius_metres) {',
-'        console.log("#REGION# distitem changed "+this.value);',
-'        distcircle_#REGION#.setRadius(radius_metres);',
+'      if (this.value) {',
+'        var radius_metres = parseFloat(this.value)*1000;',
+'        if (distcircle_#REGION#.getRadius() !== radius_metres) {',
+'          console.log("#REGION# distitem changed "+this.value);',
+'          distcircle_#REGION#.setRadius(radius_metres);',
+'        }',
+'      } else {',
+'        if (distcircle_#REGION#) {',
+'          console.log("#REGION# distitem cleared");',
+'          distcircle_#REGION#.setMap(null);',
+'        }',
 '      }',
 '    });',
 '  }',
@@ -379,9 +420,16 @@ wwv_flow_api.create_plugin(
 '      $s("#SYNCITEM#",lat+","+lng);',
 '      refreshMap_#REGION#();',
 '    }',
-'    apex.jQuery("##REGION#").trigger("mapclick", {lat:lat, lng:lng});',
+'    apex.jQuery("##REGION#").trigger("mapclick", {map:map_#REGION#, lat:lat, lng:lng});',
 '  });',
+'  if ("#GEOCODEITEM#" != "") {',
+'    var geocoder = new google.maps.Geocoder();',
+'    $("##GEOCODEITEM#").change(function(){',
+'      geocode_#REGION#(geocoder, map_#REGION#);',
+'    });',
+'  }',
 '  console.log("#REGION# initMap finished");',
+'  apex.jQuery("##REGION#").trigger("maploaded", {map:map_#REGION#});',
 '}',
 'function refreshMap_#REGION#() {',
 '  console.log("#REGION# refreshMap");',
@@ -431,25 +479,29 @@ wwv_flow_api.create_plugin(
 '',
 '    l_html := REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(',
 '              REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(',
-'              REPLACE(REPLACE(REPLACE(',
+'              REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(',
 '      l_html',
-'      ,''#SOUTHWEST#'', latlng2ch(l_lat_min,l_lng_min))',
-'      ,''#NORTHEAST#'', latlng2ch(l_lat_max,l_lng_max))',
-'      ,''#MAPDATA#'',   l_markers_data)',
-'      ,''#MAPHEIGHT#'', l_map_height)',
-'      ,''#IDITEM#'',    l_id_item)',
-'      ,''#CLICKZOOM#'', l_click_zoom)',
-'      ,''#REGION#'',    CASE',
-'                      WHEN p_region.static_id IS NOT NULL',
-'                      THEN p_region.static_id',
-'                      ELSE ''R''||p_region.id',
-'                      END)',
-'      ,''#LATLNG#'',    l_latlong)',
-'      ,''#SYNCITEM#'',  l_sync_item)',
-'      ,''#ICON#'',      l_markericon)',
-'      ,''#DISTITEM#'',  l_dist_item)',
-'      ,''#AJAX_IDENTIFIER#'', APEX_PLUGIN.get_ajax_identifier)',
-'      ,''#AJAX_ITEMS#'', l_ajax_items);',
+'      ,''#SOUTHWEST#'',        latlng2ch(l_lat_min,l_lng_min))',
+'      ,''#NORTHEAST#'',        latlng2ch(l_lat_max,l_lng_max))',
+'      ,''#MAPDATA#'',          l_markers_data)',
+'      ,''#MAPHEIGHT#'',        l_map_height)',
+'      ,''#IDITEM#'',           l_id_item)',
+'      ,''#CLICKZOOM#'',        l_click_zoom)',
+'      ,''#REGION#'',           CASE',
+'                             WHEN p_region.static_id IS NOT NULL',
+'                             THEN p_region.static_id',
+'                             ELSE ''R''||p_region.id',
+'                             END)',
+'      ,''#LATLNG#'',           l_latlong)',
+'      ,''#SYNCITEM#'',         l_sync_item)',
+'      ,''#ICON#'',             l_markericon)',
+'      ,''#DISTITEM#'',         l_dist_item)',
+'      ,''#AJAX_IDENTIFIER#'',  APEX_PLUGIN.get_ajax_identifier)',
+'      ,''#AJAX_ITEMS#'',       l_ajax_items)',
+'      ,''#GEOCODEITEM#'',      l_geocode_item)',
+'      ,''#COUNTRY_RESTRICT#'', CASE WHEN l_country IS NOT NULL',
+'                             THEN '',componentRestrictions:{country:"''||l_country||''"}''',
+'                             END);',
 '      ',
 '    SYS.HTP.p(l_html);',
 '  ',
@@ -474,13 +526,8 @@ wwv_flow_api.create_plugin(
 '    l_lng_max      NUMBER;',
 '',
 '    -- Component attributes',
-'    l_map_height    plugin_attr := p_region.attribute_01;',
-'    l_id_item       plugin_attr := p_region.attribute_02;',
-'    l_click_zoom    plugin_attr := p_region.attribute_03;    ',
 '    l_sync_item     plugin_attr := p_region.attribute_04;',
-'    l_markericon    plugin_attr := p_region.attribute_05;',
 '    l_latlong       plugin_attr := p_region.attribute_06;',
-'    l_dist_item     plugin_attr := p_region.attribute_07;',
 '',
 'BEGIN',
 '    -- debug information will be included',
@@ -621,12 +668,25 @@ wwv_flow_api.create_plugin(
 'http://maps.google.com/mapfiles/ms/icons/pink-pushpin.png',
 'http://maps.google.com/mapfiles/ms/icons/purple-pushpin.png',
 'http://maps.google.com/mapfiles/ms/icons/red-pushpin.png'))
-,p_version_identifier=>'0.3'
+,p_version_identifier=>'0.4'
 ,p_about_url=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(143390814002168025)
-,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(75127295279118430)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
+,p_attribute_scope=>'APPLICATION'
+,p_attribute_sequence=>1
+,p_display_sequence=>10
+,p_prompt=>'Google API Key'
+,p_attribute_type=>'TEXT'
+,p_is_required=>false
+,p_display_length=>60
+,p_is_translatable=>false
+,p_help_text=>'Optional. If you don''t set this, you may get a "Google Maps API warning: NoApiKeys" warning in the console log. You can add this later if required. Refer: https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(218513145091470932)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>1
 ,p_display_sequence=>10
@@ -639,8 +699,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Desired height (in pixels) of the map region. Note: the width will adjust according to the available area of the containing window.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(143391158873171586)
-,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(218513489962474493)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>2
 ,p_display_sequence=>20
@@ -651,8 +711,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'When the user clicks on a map marker, the corresponding ID from your data will be copied to this page item.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(143391496046176771)
-,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(218513827135479678)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>3
 ,p_display_sequence=>30
@@ -665,8 +725,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'When the user clicks on a map marker, or adds a new marker, zoom the map to this level. Set to blank to not zoom on click.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(148475921495578205)
-,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(223598252584881112)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>4
 ,p_display_sequence=>40
@@ -677,8 +737,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Position of the marker will be retrieved from and stored in this item as a Lat,Long value.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(148479233507624660)
-,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(223601564596927567)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>5
 ,p_display_sequence=>50
@@ -702,8 +762,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'URL to the icon to show for the marker. Leave blank for the default red Google pin.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(148485854897413717)
-,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(223608185986716624)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>6
 ,p_display_sequence=>60
@@ -715,8 +775,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Set the latitude and longitude as a pair of numbers to be used to position the map on page load, if no pin coordinates have been provided by the page item.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(148488218208114011)
-,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(223610549297416918)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>7
 ,p_display_sequence=>70
@@ -724,32 +784,70 @@ wwv_flow_api.create_plugin_attribute(
 ,p_attribute_type=>'PAGE ITEM'
 ,p_is_required=>false
 ,p_is_translatable=>false
-,p_depending_on_attribute_id=>wwv_flow_api.id(148475921495578205)
+,p_depending_on_attribute_id=>wwv_flow_api.id(223598252584881112)
 ,p_depending_on_condition_type=>'NOT_NULL'
 ,p_help_text=>'Set to an item which contains the distance (in Kilometres) to draw a circle around the click point. Leave blank to not draw a circle. If the item is changed, the circle will be updated. If you set this attribute, you must also set Synchronize with It'
 ||'em.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(150090701435391463)
-,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(75129056673204272)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>8
 ,p_display_sequence=>80
-,p_prompt=>'Google API Key'
-,p_attribute_type=>'TEXT'
+,p_prompt=>'Enable Google Sign-In'
+,p_attribute_type=>'CHECKBOX'
+,p_is_required=>false
+,p_default_value=>'N'
+,p_is_translatable=>false
+,p_help_text=>'Set to Yes to enable Google sign-in on the map. Only works if you set the Google API Key.'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(75137999717846446)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>9
+,p_display_sequence=>90
+,p_prompt=>'Geocode Item'
+,p_attribute_type=>'PAGE ITEM'
 ,p_is_required=>false
 ,p_is_translatable=>false
-,p_help_text=>'Optional. If you don''t set this, you may get a "Google Maps API warning: NoApiKeys" warning in the console log. Refer: https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key'
+,p_help_text=>'Set to a text item on the page. If the text item contains the name of a location or an address, a Google Maps Geocode search will be done and, if found, the map will be moved to that location and a pin shown. NOTE: requires a Google API key to be set'
+||' at the application level.'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(75139231492017016)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>10
+,p_display_sequence=>100
+,p_prompt=>'Restrict to Country code'
+,p_attribute_type=>'TEXT'
+,p_is_required=>false
+,p_display_length=>10
+,p_max_length=>2
+,p_is_translatable=>false
+,p_depending_on_attribute_id=>wwv_flow_api.id(75137999717846446)
+,p_depending_on_condition_type=>'NOT_NULL'
+,p_text_case=>'UPPER'
+,p_examples=>'AU'
+,p_help_text=>'Leave blank to allow geocoding to find any place on earth. Set to country code (see https://developers.google.com/public-data/docs/canonical/countries_csv for valid values) to restrict geocoder to that country.'
 );
 wwv_flow_api.create_plugin_event(
- p_id=>wwv_flow_api.id(143390338361163784)
-,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(218512669450466691)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_name=>'mapclick'
 ,p_display_name=>'mapClick'
 );
 wwv_flow_api.create_plugin_event(
- p_id=>wwv_flow_api.id(150106917639179900)
-,p_plugin_id=>wwv_flow_api.id(143390021789160501)
+ p_id=>wwv_flow_api.id(75131912087488337)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
+,p_name=>'maploaded'
+,p_display_name=>'mapLoaded'
+);
+wwv_flow_api.create_plugin_event(
+ p_id=>wwv_flow_api.id(225229248728482807)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_name=>'markerclick'
 ,p_display_name=>'markerClick'
 );
