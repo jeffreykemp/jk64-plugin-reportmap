@@ -125,16 +125,17 @@ wwv_flow_api.create_plugin(
 '    ',
 '    l_result       APEX_PLUGIN.t_region_render_result;',
 '',
-'    l_lat          NUMBER;',
-'    l_lng          NUMBER;',
-'    l_html         VARCHAR2(32767);',
-'    l_markers_data VARCHAR2(32767);',
-'    l_lat_min      NUMBER;',
-'    l_lat_max      NUMBER;',
-'    l_lng_min      NUMBER;',
-'    l_lng_max      NUMBER;',
-'    l_ajax_items   VARCHAR2(1000);',
-'    l_js_params    VARCHAR2(1000);',
+'    l_lat          number;',
+'    l_lng          number;',
+'    l_region       varchar2(100);',
+'    l_script       varchar2(32767);',
+'    l_markers_data varchar2(32767);',
+'    l_lat_min      number;',
+'    l_lat_max      number;',
+'    l_lng_min      number;',
+'    l_lng_max      number;',
+'    l_ajax_items   varchar2(1000);',
+'    l_js_params    varchar2(1000);',
 '',
 '    -- Plugin attributes (application level)',
 '    l_api_key       plugin_attr := p_plugin.attribute_01;',
@@ -173,8 +174,17 @@ wwv_flow_api.create_plugin(
 '    APEX_JAVASCRIPT.add_library',
 '      (p_name           => ''js'' || l_js_params',
 '      ,p_directory      => ''https://maps.googleapis.com/maps/api/''',
-'      ,p_version        => null',
 '      ,p_skip_extension => true);',
+'',
+'    APEX_JAVASCRIPT.add_library',
+'      (p_name           => ''jk64plugin.min''',
+'      ,p_directory      => p_plugin.file_prefix);',
+'',
+'    l_region := CASE',
+'                WHEN p_region.static_id IS NOT NULL',
+'                THEN p_region.static_id',
+'                ELSE ''R''||p_region.id',
+'                END;',
 '    ',
 '    IF p_region.source IS NOT NULL THEN',
 '',
@@ -230,280 +240,37 @@ wwv_flow_api.create_plugin(
 '      l_ajax_items := l_ajax_items || ''#'' || l_dist_item;',
 '    END IF;',
 '    ',
-'    l_html := q''[',
-'<script>',
-'var map_#REGION#, iw_#REGION#, reppin_#REGION#, userpin_#REGION#, distcircle_#REGION#, mapdata_#REGION#;',
-'function r_#REGION#(f){/in/.test(document.readyState)?setTimeout("r_#REGION#("+f+")",9):f()}',
-'function geocode_#REGION#(geocoder,map) {',
-'  var address = $v("#GEOCODEITEM#");',
-'  geocoder.geocode({"address": address#COUNTRY_RESTRICT#}',
-'  , function(results, status) {',
-'    if (status === google.maps.GeocoderStatus.OK) {',
-'      var pos = results[0].geometry.location;',
-'      apex.debug("#REGION# geocode ok");',
-'      map.setCenter(pos);',
-'      map.panTo(pos);',
-'      if ("#CLICKZOOM#" != "") {',
-'        map.setZoom(#CLICKZOOM#);',
-'      }',
-'      userPin_#REGION#(pos.lat(), pos.lng())',
-'    } else {',
-'      apex.debug("#REGION# geocode was unsuccessful for the following reason: "+status);',
-'    }',
-'  });',
-'}',
-'function repPin_#REGION#(pData) {',
-'  var reppin = new google.maps.Marker({',
-'                 map: map_#REGION#,',
-'                 position: new google.maps.LatLng(pData.lat, pData.lng),',
-'                 title: pData.name,',
-'                 icon: pData.icon',
-'               });',
-'  google.maps.event.addListener(reppin, "click", function () {',
-'    apex.debug("#REGION# repPin clicked "+pData.id);',
-'    if (iw_#REGION#) {',
-'      iw_#REGION#.close();',
-'    } else {',
-'      iw_#REGION# = new google.maps.InfoWindow();',
-'    }',
-'    iw_#REGION#.setOptions({',
-'       content: pData.info',
-'      });',
-'    iw_#REGION#.open(map_#REGION#, this);',
-'    map_#REGION#.panTo(this.getPosition());',
-'    if ("#CLICKZOOM#" != "") {',
-'      map_#REGION#.setZoom(#CLICKZOOM#);',
-'    }',
-'    if ("#IDITEM#" !== "") {',
-'      $s("#IDITEM#",pData.id);',
-'    }',
-'    apex.jQuery("##REGION#").trigger("markerclick", {map:map_#REGION#, id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng});',
-'  });',
-'  if (!reppin_#REGION#) { reppin_#REGION# = []; }',
-'  reppin_#REGION#.push({"id":pData.id,"marker":reppin});',
-'}',
-'function repPins_#REGION#() {',
-'  for (var i = 0; i < mapdata_#REGION#.length; i++) {',
-'    repPin_#REGION#(mapdata_#REGION#[i]);',
-'  }',
-'}',
+'    l_script := ''',
+'var opt_#REGION# = {',
+'   container:      "map_#REGION#_container"',
+'  ,regionId:       "#REGION#"',
+'  ,ajaxIdentifier: "''||APEX_PLUGIN.get_ajax_identifier||''"',
+'  ,ajaxItems:      "''||l_ajax_items||''"',
+'  ,latlng:         "''||l_latlong||''"',
+'  ,markerZoom:     ''||l_click_zoom||''',
+'  ,icon:           "''||l_markericon||''"',
+'  ,idItem:         "''||l_id_item||''"',
+'  ,syncItem:       "''||l_sync_item||''"',
+'  ,distItem:       "''||l_dist_item||''"',
+'  ,geocodeItem:    "''||l_geocode_item||''"',
+'  ,country:        "''||l_country||''"',
+'  ,southwest:      {''||latlng2ch(l_lat_min,l_lng_min)||''}',
+'  ,northeast:      {''||latlng2ch(l_lat_max,l_lng_max)||''}',
+'};',
 'function click_#REGION#(id) {',
-'  var found = false;',
-'  for (var i = 0; i < reppin_#REGION#.length; i++) {',
-'    if (reppin_#REGION#[i].id == id) {',
-'      new google.maps.event.trigger(reppin_#REGION#[i].marker,"click");',
-'      found = true;',
-'      break;',
-'    }',
-'  }',
-'  if (!found) {',
-'    apex.debug("#REGION# id not found:"+id);',
-'  }',
+'  jk64plugin_click(opt_#REGION#,id);',
 '}',
-'function setCircle_#REGION#(pos) {',
-'  if ("#DISTITEM#" !== "") {',
-'    if (distcircle_#REGION#) {',
-'      apex.debug("#REGION# move circle");',
-'      distcircle_#REGION#.setCenter(pos);',
-'      distcircle_#REGION#.setMap(map_#REGION#);',
-'    } else {',
-'      var radius_km = parseFloat($v("#DISTITEM#"));',
-'      apex.debug("#REGION# create circle radius="+radius_km);',
-'      distcircle_#REGION# = new google.maps.Circle({',
-'          strokeColor: "#5050FF",',
-'          strokeOpacity: 0.5,',
-'          strokeWeight: 2,',
-'          fillColor: "#0000FF",',
-'          fillOpacity: 0.05,',
-'          clickable: false,',
-'          editable: true,',
-'          map: map_#REGION#,',
-'          center: pos,',
-'          radius: radius_km*1000',
-'        });',
-'      google.maps.event.addListener(distcircle_#REGION#, "radius_changed", function (event) {',
-'        var radius_km = distcircle_#REGION#.getRadius()/1000;',
-'        apex.debug("#REGION# circle radius changed "+radius_km);',
-'        $s("#DISTITEM#", radius_km);',
-'        refreshMap_#REGION#();',
-'      });',
-'      google.maps.event.addListener(distcircle_#REGION#, "center_changed", function (event) {',
-'        var latlng = distcircle_#REGION#.getCenter().lat()+","+distcircle_#REGION#.getCenter().lng();',
-'        apex.debug("#REGION# circle center changed "+latlng);',
-'        if ("#SYNCITEM#" !== "") {',
-'          $s("#SYNCITEM#",latlng);',
-'          refreshMap_#REGION#();',
-'        }',
-'      });',
-'    }',
-'  }',
-'}',
-'function userPin_#REGION#(lat,lng) {',
-'  if (lat !== null && lng !== null) {',
-'    var oldpos = userpin_#REGION#?userpin_#REGION#.getPosition():new google.maps.LatLng(0,0);',
-'    if (lat == oldpos.lat() && lng == oldpos.lng()) {',
-'      apex.debug("#REGION# userpin not changed");',
-'    } else {',
-'      var pos = new google.maps.LatLng(lat,lng);',
-'      if (userpin_#REGION#) {',
-'        apex.debug("#REGION# move existing pin to new position on map "+lat+","+lng);',
-'        userpin_#REGION#.setMap(map_#REGION#);',
-'        userpin_#REGION#.setPosition(pos);',
-'        setCircle_#REGION#(pos);',
-'      } else {',
-'        apex.debug("#REGION# create userpin "+lat+","+lng);',
-'        userpin_#REGION# = new google.maps.Marker({map: map_#REGION#, position: pos, icon: "#ICON#"});',
-'        setCircle_#REGION#(pos);',
-'      }',
-'    }',
-'  } else if (userpin_#REGION#) {',
-'    apex.debug("#REGION# move existing pin off the map");',
-'    userpin_#REGION#.setMap(null);',
-'    if (distcircle_#REGION#) {',
-'      apex.debug("#REGION# move distcircle off the map");',
-'      distcircle_#REGION#.setMap(null);',
-'    }',
-'  }',
-'}',
-'function initMap_#REGION#() {',
-'  apex.debug("#REGION# initMap");',
-'  var myOptions = {',
-'    zoom: 1,',
-'    center: new google.maps.LatLng(#LATLNG#),',
-'    mapTypeId: google.maps.MapTypeId.ROADMAP',
-'  };',
-'  map_#REGION# = new google.maps.Map(document.getElementById("map_#REGION#_container"),myOptions);',
-'  map_#REGION#.fitBounds(new google.maps.LatLngBounds({#SOUTHWEST#},{#NORTHEAST#}));',
-'  if ("#SYNCITEM#" !== "") {',
-'    var val = $v("#SYNCITEM#");',
-'    if (val !== null && val.indexOf(",") > -1) {',
-'      var arr = val.split(",");',
-'      apex.debug("#REGION# init from item "+val);',
-'      var pos = new google.maps.LatLng(arr[0],arr[1]);',
-'      userpin_#REGION# = new google.maps.Marker({map: map_#REGION#, position: pos, icon: "#ICON#"});',
-'      setCircle_#REGION#(pos);',
-'    }',
-'    //if the lat/long item is changed, move the pin',
-'    $("##SYNCITEM#").change(function(){ ',
-'      var latlng = this.value;',
-'      if (latlng !== null && latlng !== undefined && latlng.indexOf(",") > -1) {',
-'        apex.debug("#REGION# item changed "+latlng);',
-'        var arr = latlng.split(",");',
-'        userPin_#REGION#(arr[0],arr[1]);',
-'      }',
-'    });',
-'  }',
-'  if ("#DISTITEM#" != "") {',
-'    //if the distance item is changed, redraw the circle',
-'    $("##DISTITEM#").change(function(){',
-'      if (this.value) {',
-'        var radius_metres = parseFloat(this.value)*1000;',
-'        if (distcircle_#REGION#.getRadius() !== radius_metres) {',
-'          apex.debug("#REGION# distitem changed "+this.value);',
-'          distcircle_#REGION#.setRadius(radius_metres);',
-'        }',
-'      } else {',
-'        if (distcircle_#REGION#) {',
-'          apex.debug("#REGION# distitem cleared");',
-'          distcircle_#REGION#.setMap(null);',
-'        }',
-'      }',
-'    });',
-'  }',
-'  repPins_#REGION#();',
-'  google.maps.event.addListener(map_#REGION#, "click", function (event) {',
-'    var lat = event.latLng.lat()',
-'       ,lng = event.latLng.lng();',
-'    apex.debug("#REGION# map clicked "+lat+","+lng);',
-'    if ("#SYNCITEM#" !== "") {',
-'      userPin_#REGION#(lat,lng);',
-'      $s("#SYNCITEM#",lat+","+lng);',
-'      refreshMap_#REGION#();',
-'    }',
-'    apex.jQuery("##REGION#").trigger("mapclick", {map:map_#REGION#, lat:lat, lng:lng});',
-'  });',
-'  if ("#GEOCODEITEM#" != "") {',
-'    var geocoder = new google.maps.Geocoder();',
-'    $("##GEOCODEITEM#").change(function(){',
-'      geocode_#REGION#(geocoder, map_#REGION#);',
-'    });',
-'  }',
-'  apex.debug("#REGION# initMap finished");',
-'  apex.jQuery("##REGION#").trigger("maploaded", {map:map_#REGION#});',
-'}',
-'function refreshMap_#REGION#() {',
-'  apex.debug("#REGION# refreshMap");',
-'  apex.jQuery("##REGION#").trigger("apexbeforerefresh");',
-'  apex.server.plugin',
-'    ("#AJAX_IDENTIFIER#"',
-'    ,{ pageItems: "#AJAX_ITEMS#" }',
-'    ,{ dataType: "json"',
-'      ,success: function( pData ) {',
-'          apex.debug("#REGION# success pData="+pData.southwest.lat+","+pData.southwest.lng+" "+pData.northeast.lat+","+pData.northeast.lng);',
-'          map_#REGION#.fitBounds(',
-'            {south:pData.southwest.lat',
-'            ,west:pData.southwest.lng',
-'            ,north:pData.northeast.lat',
-'            ,east:pData.northeast.lng});',
-'          if (iw_#REGION#) {',
-'            iw_#REGION#.close();',
-'          }',
-'          apex.debug("#REGION# remove all report pins");',
-'          for (var i = 0; i < reppin_#REGION#.length; i++) {',
-'            var marker = reppin_#REGION#[i].marker; ',
-'            marker.setMap(null);',
-'          }',
-'          apex.debug("pData.mapdata.length="+pData.mapdata.length);',
-'          mapdata_#REGION# = pData.mapdata;',
-'          repPins_#REGION#();',
-'          if ("#SYNCITEM#" !== "") {',
-'            var val = $v("#SYNCITEM#");',
-'            if (val !== null && val.indexOf(",") > -1) {',
-'              var arr = val.split(",");',
-'              apex.debug("#REGION# init from item "+val);',
-'              userPin_#REGION#(arr[0],arr[1]);',
-'            }',
-'          }',
-'          apex.jQuery("##REGION#").trigger("apexafterrefresh");',
-'       }',
-'     } );',
-'  apex.debug("#REGION# refreshMap finished");',
-'}',
+'function r_#REGION#(f){/in/.test(document.readyState)?setTimeout("r_#REGION#("+f+")",9):f()}',
 'r_#REGION#(function(){',
-'  mapdata_#REGION# = [#MAPDATA#];',
-'  initMap_#REGION#();',
-'  apex.jQuery("##REGION#").bind("apexrefresh", function(){refreshMap_#REGION#();});',
-'});',
-'</script>',
-'<div id="map_#REGION#_container" style="min-height:#MAPHEIGHT#px"></div>]'';',
+'  opt_#REGION#.mapdata = [''||l_markers_data||''];',
+'  jk64plugin_initMap(opt_#REGION#);',
+'  apex.jQuery("#"+opt_#REGION#.regionId).bind("apexrefresh", function(){jk64plugin_refreshMap(opt_#REGION#);});',
+'});'';',
 '',
-'    l_html := REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(',
-'              REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(',
-'              REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(',
-'      l_html',
-'      ,''#SOUTHWEST#'',        latlng2ch(l_lat_min,l_lng_min))',
-'      ,''#NORTHEAST#'',        latlng2ch(l_lat_max,l_lng_max))',
-'      ,''#MAPDATA#'',          l_markers_data)',
-'      ,''#MAPHEIGHT#'',        l_map_height)',
-'      ,''#IDITEM#'',           l_id_item)',
-'      ,''#CLICKZOOM#'',        l_click_zoom)',
-'      ,''#REGION#'',           CASE',
-'                             WHEN p_region.static_id IS NOT NULL',
-'                             THEN p_region.static_id',
-'                             ELSE ''R''||p_region.id',
-'                             END)',
-'      ,''#LATLNG#'',           l_latlong)',
-'      ,''#SYNCITEM#'',         l_sync_item)',
-'      ,''#ICON#'',             l_markericon)',
-'      ,''#DISTITEM#'',         l_dist_item)',
-'      ,''#AJAX_IDENTIFIER#'',  APEX_PLUGIN.get_ajax_identifier)',
-'      ,''#AJAX_ITEMS#'',       l_ajax_items)',
-'      ,''#GEOCODEITEM#'',      l_geocode_item)',
-'      ,''#COUNTRY_RESTRICT#'', CASE WHEN l_country IS NOT NULL',
-'                             THEN '',componentRestrictions:{country:"''||l_country||''"}''',
-'                             END);',
+'    l_script := REPLACE(l_script,''#REGION#'',l_region);',
 '      ',
-'    SYS.HTP.p(l_html);',
+'    sys.htp.p(''<script>''||l_script||''</script>'');',
+'    sys.htp.p(''<div id="map_''||l_region||''_container" style="min-height:''||l_map_height||''px"></div>'');',
 '  ',
 '    RETURN l_result;',
 'END render_map;',
@@ -670,6 +437,7 @@ wwv_flow_api.create_plugin(
 'http://maps.google.com/mapfiles/ms/icons/red-pushpin.png'))
 ,p_version_identifier=>'0.4'
 ,p_about_url=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
+,p_files_version=>3
 );
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(75127295279118430)
@@ -850,6 +618,78 @@ wwv_flow_api.create_plugin_event(
 ,p_plugin_id=>wwv_flow_api.id(218512352878463408)
 ,p_name=>'markerclick'
 ,p_display_name=>'markerClick'
+);
+end;
+/
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '66756E6374696F6E206A6B3634706C7567696E5F67656F636F646528652C69297B692E67656F636F6465287B616464726573733A247628652E67656F636F64654974656D292C636F6D706F6E656E745265737472696374696F6E733A2222213D3D652E63';
+wwv_flow_api.g_varchar2_table(2) := '6F756E7472793F7B636F756E7472793A652E636F756E7472797D3A7B7D7D2C66756E6374696F6E28692C6E297B6966286E3D3D3D676F6F676C652E6D6170732E47656F636F6465725374617475732E4F4B297B76617220613D695B305D2E67656F6D6574';
+wwv_flow_api.g_varchar2_table(3) := '72792E6C6F636174696F6E3B617065782E646562756728652E726567696F6E49642B222067656F636F6465206F6B22292C652E6D61702E73657443656E7465722861292C652E6D61702E70616E546F2861292C652E6D61726B65725A6F6F6D2626652E6D';
+wwv_flow_api.g_varchar2_table(4) := '61702E7365745A6F6F6D28652E6D61726B65725A6F6F6D292C6A6B3634706C7567696E5F7573657250696E28652C612E6C617428292C612E6C6E672829297D656C736520617065782E646562756728652E726567696F6E49642B222067656F636F646520';
+wwv_flow_api.g_varchar2_table(5) := '77617320756E7375636365737366756C20666F722074686520666F6C6C6F77696E6720726561736F6E3A20222B6E297D297D66756E6374696F6E206A6B3634706C7567696E5F72657050696E28652C69297B766172206E3D6E657720676F6F676C652E6D';
+wwv_flow_api.g_varchar2_table(6) := '6170732E4D61726B6572287B6D61703A652E6D61702C706F736974696F6E3A6E657720676F6F676C652E6D6170732E4C61744C6E6728692E6C61742C692E6C6E67292C7469746C653A692E6E616D652C69636F6E3A692E69636F6E7D293B676F6F676C65';
+wwv_flow_api.g_varchar2_table(7) := '2E6D6170732E6576656E742E6164644C697374656E6572286E2C22636C69636B222C66756E6374696F6E28297B617065782E646562756728652E726567696F6E49642B222072657050696E20636C69636B656420222B692E6964292C652E69773F652E69';
+wwv_flow_api.g_varchar2_table(8) := '772E636C6F736528293A652E69773D6E657720676F6F676C652E6D6170732E496E666F57696E646F772C652E69772E7365744F7074696F6E73287B636F6E74656E743A692E696E666F7D292C652E69772E6F70656E28652E6D61702C74686973292C652E';
+wwv_flow_api.g_varchar2_table(9) := '6D61702E70616E546F28746869732E676574506F736974696F6E2829292C652E6D61726B65725A6F6F6D2626652E6D61702E7365745A6F6F6D28652E6D61726B65725A6F6F6D292C2222213D3D652E69644974656D2626247328652E69644974656D2C69';
+wwv_flow_api.g_varchar2_table(10) := '2E6964292C617065782E6A5175657279282223222B652E726567696F6E4964292E7472696767657228226D61726B6572636C69636B222C7B6D61703A652E6D61702C69643A692E69642C6E616D653A692E6E616D652C6C61743A692E6C61742C6C6E673A';
+wwv_flow_api.g_varchar2_table(11) := '692E6C6E677D297D292C652E72657070696E7C7C28652E72657070696E3D5B5D292C652E72657070696E2E70757368287B69643A692E69642C6D61726B65723A6E7D297D66756E6374696F6E206A6B3634706C7567696E5F72657050696E732865297B66';
+wwv_flow_api.g_varchar2_table(12) := '6F722876617220693D303B693C652E6D6170646174612E6C656E6774683B692B2B296A6B3634706C7567696E5F72657050696E28652C652E6D6170646174615B695D297D66756E6374696F6E206A6B3634706C7567696E5F636C69636B28652C69297B66';
+wwv_flow_api.g_varchar2_table(13) := '6F7228766172206E3D21312C613D303B613C652E72657070696E2E6C656E6774683B612B2B29696628652E72657070696E5B615D2E69643D3D69297B6E657720676F6F676C652E6D6170732E6576656E742E7472696767657228652E72657070696E5B61';
+wwv_flow_api.g_varchar2_table(14) := '5D2E6D61726B65722C22636C69636B22292C6E3D21303B627265616B7D6E7C7C617065782E646562756728652E726567696F6E49642B22206964206E6F7420666F756E643A222B69297D66756E6374696F6E206A6B3634706C7567696E5F736574436972';
+wwv_flow_api.g_varchar2_table(15) := '636C6528652C69297B6966282222213D3D652E646973744974656D29696628652E64697374636972636C6529617065782E646562756728652E726567696F6E49642B22206D6F766520636972636C6522292C652E64697374636972636C652E7365744365';
+wwv_flow_api.g_varchar2_table(16) := '6E7465722869292C652E64697374636972636C652E7365744D617028652E6D6170293B656C73657B766172206E3D7061727365466C6F617428247628652E646973744974656D29293B617065782E646562756728652E726567696F6E49642B2220637265';
+wwv_flow_api.g_varchar2_table(17) := '61746520636972636C65207261646975733D222B6E292C652E64697374636972636C653D6E657720676F6F676C652E6D6170732E436972636C65287B7374726F6B65436F6C6F723A2223353035304646222C7374726F6B654F7061636974793A2E352C73';
+wwv_flow_api.g_varchar2_table(18) := '74726F6B655765696768743A322C66696C6C436F6C6F723A2223303030304646222C66696C6C4F7061636974793A2E30352C636C69636B61626C653A21312C6564697461626C653A21302C6D61703A652E6D61702C63656E7465723A692C726164697573';
+wwv_flow_api.g_varchar2_table(19) := '3A3165332A6E7D292C676F6F676C652E6D6170732E6576656E742E6164644C697374656E657228652E64697374636972636C652C227261646975735F6368616E676564222C66756E6374696F6E2869297B766172206E3D652E64697374636972636C652E';
+wwv_flow_api.g_varchar2_table(20) := '67657452616469757328292F3165333B617065782E646562756728652E726567696F6E49642B2220636972636C6520726164697573206368616E67656420222B6E292C247328652E646973744974656D2C6E292C6A6B3634706C7567696E5F7265667265';
+wwv_flow_api.g_varchar2_table(21) := '73684D61702865297D292C676F6F676C652E6D6170732E6576656E742E6164644C697374656E657228652E64697374636972636C652C2263656E7465725F6368616E676564222C66756E6374696F6E2869297B766172206E3D652E64697374636972636C';
+wwv_flow_api.g_varchar2_table(22) := '652E67657443656E74657228292C613D6E2E6C617428292B222C222B6E2E6C6E6728293B617065782E646562756728652E726567696F6E49642B2220636972636C652063656E746572206368616E67656420222B61292C2222213D3D652E73796E634974';
+wwv_flow_api.g_varchar2_table(23) := '656D262628247328652E73796E634974656D2C61292C6A6B3634706C7567696E5F726566726573684D6170286529297D297D7D66756E6374696F6E206A6B3634706C7567696E5F7573657250696E28652C692C6E297B6966286E756C6C213D3D6926266E';
+wwv_flow_api.g_varchar2_table(24) := '756C6C213D3D6E297B76617220613D652E7573657270696E3F652E7573657270696E2E676574506F736974696F6E28293A6E657720676F6F676C652E6D6170732E4C61744C6E6728302C30293B696628693D3D612E6C6174282926266E3D3D612E6C6E67';
+wwv_flow_api.g_varchar2_table(25) := '282929617065782E646562756728652E726567696F6E49642B22207573657270696E206E6F74206368616E67656422293B656C73657B76617220743D6E657720676F6F676C652E6D6170732E4C61744C6E6728692C6E293B652E7573657270696E3F2861';
+wwv_flow_api.g_varchar2_table(26) := '7065782E646562756728652E726567696F6E49642B22206D6F7665206578697374696E672070696E20746F206E657720706F736974696F6E206F6E206D617020222B692B222C222B6E292C652E7573657270696E2E7365744D617028652E6D6170292C65';
+wwv_flow_api.g_varchar2_table(27) := '2E7573657270696E2E736574506F736974696F6E2874292C6A6B3634706C7567696E5F736574436972636C6528652C7429293A28617065782E646562756728652E726567696F6E49642B2220637265617465207573657270696E20222B692B222C222B6E';
+wwv_flow_api.g_varchar2_table(28) := '292C652E7573657270696E3D6E657720676F6F676C652E6D6170732E4D61726B6572287B6D61703A652E6D61702C706F736974696F6E3A742C69636F6E3A652E69636F6E7D292C6A6B3634706C7567696E5F736574436972636C6528652C7429297D7D65';
+wwv_flow_api.g_varchar2_table(29) := '6C736520652E7573657270696E262628617065782E646562756728652E726567696F6E49642B22206D6F7665206578697374696E672070696E206F666620746865206D617022292C652E7573657270696E2E7365744D6170286E756C6C292C652E646973';
+wwv_flow_api.g_varchar2_table(30) := '74636972636C65262628617065782E646562756728652E726567696F6E49642B22206D6F76652064697374636972636C65206F666620746865206D617022292C652E64697374636972636C652E7365744D6170286E756C6C2929297D66756E6374696F6E';
+wwv_flow_api.g_varchar2_table(31) := '206A6B3634706C7567696E5F696E69744D61702865297B617065782E646562756728652E726567696F6E49642B2220696E69744D617022293B76617220693D7B7A6F6F6D3A312C63656E7465723A6E657720676F6F676C652E6D6170732E4C61744C6E67';
+wwv_flow_api.g_varchar2_table(32) := '28652E6C61746C6E67292C6D61705479706549643A676F6F676C652E6D6170732E4D61705479706549642E524F41444D41507D3B696628652E6D61703D6E657720676F6F676C652E6D6170732E4D617028646F63756D656E742E676574456C656D656E74';
+wwv_flow_api.g_varchar2_table(33) := '4279496428652E636F6E7461696E6572292C69292C652E6D61702E666974426F756E6473286E657720676F6F676C652E6D6170732E4C61744C6E67426F756E647328652E736F757468776573742C652E6E6F7274686561737429292C2222213D3D652E73';
+wwv_flow_api.g_varchar2_table(34) := '796E634974656D297B766172206E3D247628652E73796E634974656D293B6966286E756C6C213D3D6E26266E2E696E6465784F6628222C22293E2D31297B76617220613D6E2E73706C697428222C22293B617065782E646562756728652E726567696F6E';
+wwv_flow_api.g_varchar2_table(35) := '49642B2220696E69742066726F6D206974656D20222B6E293B76617220743D6E657720676F6F676C652E6D6170732E4C61744C6E6728615B305D2C615B315D293B652E7573657270696E3D6E657720676F6F676C652E6D6170732E4D61726B6572287B6D';
+wwv_flow_api.g_varchar2_table(36) := '61703A652E6D61702C706F736974696F6E3A742C69636F6E3A652E69636F6E7D292C6A6B3634706C7567696E5F736574436972636C6528652C74297D24282223222B652E73796E634974656D292E6368616E67652866756E6374696F6E28297B76617220';
+wwv_flow_api.g_varchar2_table(37) := '693D746869732E76616C75653B6966286E756C6C213D3D692626766F69642030213D3D692626692E696E6465784F6628222C22293E2D31297B617065782E646562756728652E726567696F6E49642B22206974656D206368616E67656420222B69293B76';
+wwv_flow_api.g_varchar2_table(38) := '6172206E3D692E73706C697428222C22293B6A6B3634706C7567696E5F7573657250696E28652C6E5B305D2C6E5B315D297D7D297D6966282222213D652E646973744974656D262624282223222B652E646973744974656D292E6368616E67652866756E';
+wwv_flow_api.g_varchar2_table(39) := '6374696F6E28297B696628746869732E76616C7565297B76617220693D3165332A7061727365466C6F617428746869732E76616C7565293B652E64697374636972636C652E6765745261646975732829213D3D69262628617065782E646562756728652E';
+wwv_flow_api.g_varchar2_table(40) := '726567696F6E49642B2220646973746974656D206368616E67656420222B746869732E76616C7565292C652E64697374636972636C652E736574526164697573286929297D656C736520652E64697374636972636C65262628617065782E646562756728';
+wwv_flow_api.g_varchar2_table(41) := '652E726567696F6E49642B2220646973746974656D20636C656172656422292C652E64697374636972636C652E7365744D6170286E756C6C29297D292C6A6B3634706C7567696E5F72657050696E732865292C676F6F676C652E6D6170732E6576656E74';
+wwv_flow_api.g_varchar2_table(42) := '2E6164644C697374656E657228652E6D61702C22636C69636B222C66756E6374696F6E2869297B766172206E3D692E6C61744C6E672E6C617428292C613D692E6C61744C6E672E6C6E6728293B617065782E646562756728652E726567696F6E49642B22';
+wwv_flow_api.g_varchar2_table(43) := '206D617020636C69636B656420222B6E2B222C222B61292C2222213D3D652E73796E634974656D2626286A6B3634706C7567696E5F7573657250696E28652C6E2C61292C247328652E73796E634974656D2C6E2B222C222B61292C6A6B3634706C756769';
+wwv_flow_api.g_varchar2_table(44) := '6E5F726566726573684D6170286529292C617065782E6A5175657279282223222B652E726567696F6E4964292E7472696767657228226D6170636C69636B222C7B6D61703A652E6D61702C6C61743A6E2C6C6E673A617D297D292C2222213D652E67656F';
+wwv_flow_api.g_varchar2_table(45) := '636F64654974656D297B76617220723D6E657720676F6F676C652E6D6170732E47656F636F6465723B24282223222B652E67656F636F64654974656D292E6368616E67652866756E6374696F6E28297B6A6B3634706C7567696E5F67656F636F64652865';
+wwv_flow_api.g_varchar2_table(46) := '2C72297D297D617065782E646562756728652E726567696F6E49642B2220696E69744D61702066696E697368656422292C617065782E6A5175657279282223222B652E726567696F6E4964292E7472696767657228226D61706C6F61646564222C7B6D61';
+wwv_flow_api.g_varchar2_table(47) := '703A652E6D61707D297D66756E6374696F6E206A6B3634706C7567696E5F726566726573684D61702865297B617065782E646562756728652E726567696F6E49642B2220726566726573684D617022292C617065782E6A5175657279282223222B652E72';
+wwv_flow_api.g_varchar2_table(48) := '6567696F6E4964292E747269676765722822617065786265666F72657265667265736822292C617065782E7365727665722E706C7567696E28652E616A61784964656E7469666965722C7B706167654974656D733A652E616A61784974656D737D2C7B64';
+wwv_flow_api.g_varchar2_table(49) := '617461547970653A226A736F6E222C737563636573733A66756E6374696F6E2869297B617065782E646562756728652E726567696F6E49642B2220737563636573732070446174613D222B692E736F757468776573742E6C61742B222C222B692E736F75';
+wwv_flow_api.g_varchar2_table(50) := '7468776573742E6C6E672B2220222B692E6E6F727468656173742E6C61742B222C222B692E6E6F727468656173742E6C6E67292C652E6D61702E666974426F756E6473287B736F7574683A692E736F757468776573742E6C61742C776573743A692E736F';
+wwv_flow_api.g_varchar2_table(51) := '757468776573742E6C6E672C6E6F7274683A692E6E6F727468656173742E6C61742C656173743A692E6E6F727468656173742E6C6E677D292C652E69772626652E69772E636C6F736528292C617065782E646562756728652E726567696F6E49642B2220';
+wwv_flow_api.g_varchar2_table(52) := '72656D6F766520616C6C207265706F72742070696E7322293B666F7228766172206E3D303B6E3C652E72657070696E2E6C656E6774683B6E2B2B29652E72657070696E5B6E5D2E6D61726B65722E7365744D6170286E756C6C293B696628617065782E64';
+wwv_flow_api.g_varchar2_table(53) := '6562756728652E726567696F6E49642B222070446174612E6D6170646174612E6C656E6774683D222B692E6D6170646174612E6C656E677468292C652E6D6170646174613D692E6D6170646174612C6A6B3634706C7567696E5F72657050696E73286529';
+wwv_flow_api.g_varchar2_table(54) := '2C2222213D3D652E73796E634974656D297B76617220613D247628652E73796E634974656D293B6966286E756C6C213D3D612626612E696E6465784F6628222C22293E2D31297B76617220743D612E73706C697428222C22293B617065782E6465627567';
+wwv_flow_api.g_varchar2_table(55) := '28652E726567696F6E49642B2220696E69742066726F6D206974656D20222B61292C6A6B3634706C7567696E5F7573657250696E28652C745B305D2C745B315D297D7D617065782E6A5175657279282223222B652E726567696F6E4964292E7472696767';
+wwv_flow_api.g_varchar2_table(56) := '657228226170657861667465727265667265736822297D7D292C617065782E646562756728652E726567696F6E49642B2220726566726573684D61702066696E697368656422297D';
+null;
+end;
+/
+begin
+wwv_flow_api.create_plugin_file(
+ p_id=>wwv_flow_api.id(75193041480888703)
+,p_plugin_id=>wwv_flow_api.id(218512352878463408)
+,p_file_name=>'jk64plugin.min.js'
+,p_mime_type=>'application/javascript'
+,p_file_charset=>'utf-8'
+,p_file_content=>wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
 );
 end;
 /
