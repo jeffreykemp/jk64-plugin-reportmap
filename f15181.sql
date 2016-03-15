@@ -13,10 +13,10 @@ whenever sqlerror exit sql.sqlcode rollback
 begin
 wwv_flow_api.import_begin (
  p_version_yyyy_mm_dd=>'2013.01.01'
-,p_release=>'5.0.2.00.07'
-,p_default_workspace_id=>20749515040658038
+,p_release=>'5.0.3.00.03'
+,p_default_workspace_id=>69160808430820669492
 ,p_default_application_id=>15181
-,p_default_owner=>'SAMPLE'
+,p_default_owner=>'JK64'
 );
 end;
 /
@@ -27,12 +27,12 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   21:23 Monday March 14, 2016
---   Exported By:     JEFF
+--   Date and Time:   00:32 Tuesday March 15, 2016
+--   Exported By:     JEFFREY.KEMP@JK64.COM
 --   Flashback:       0
 --   Export Type:     Application Export
---   Version:         5.0.2.00.07
---   Instance ID:     61916131238277
+--   Version:         5.0.3.00.03
+--   Instance ID:     63113759365424
 --
 
 -- Application Statistics:
@@ -83,7 +83,7 @@ begin
 wwv_flow_api.create_flow(
  p_id=>wwv_flow.g_flow_id
 ,p_display_id=>nvl(wwv_flow_application_install.get_application_id,15181)
-,p_owner=>nvl(wwv_flow_application_install.get_schema,'JK64')
+,p_owner=>nvl(wwv_flow_application_install.get_schema,'SAMPLE')
 ,p_name=>nvl(wwv_flow_application_install.get_application_name,'Demo Report Map Plugin')
 ,p_alias=>nvl(wwv_flow_application_install.get_application_alias,'JK64_REPORT_MAP')
 ,p_page_view_logging=>'YES'
@@ -107,8 +107,10 @@ wwv_flow_api.create_flow(
 ,p_browser_frame=>'D'
 ,p_rejoin_existing_sessions=>'N'
 ,p_csv_encoding=>'Y'
-,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160314212042'
+,p_substitution_string_01=>'REPOSITORY'
+,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
+,p_last_updated_by=>'JEFFREY.KEMP@JK64.COM'
+,p_last_upd_yyyymmddhh24miss=>'20160315002209'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_ui_type_name => null
 );
@@ -8357,12 +8359,13 @@ wwv_flow_api.create_page(
 ,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
 ,p_first_item=>'NO_FIRST_ITEM'
 ,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
 ,p_overwrite_navigation_list=>'N'
 ,p_page_is_public_y_n=>'N'
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
-,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160314205955'
+,p_last_updated_by=>'JEFFREY.KEMP@JK64.COM'
+,p_last_upd_yyyymmddhh24miss=>'20160315002141'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(73507635119238450)
@@ -8375,7 +8378,7 @@ wwv_flow_api.create_page_plug(
 ,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
 '<strong>Click a pin to get data about it.</strong>',
 '<p>',
-'Source: <a href="https://bitbucket.org/jk64/jk64-plugin-reportmap">https://bitbucket.org/jk64/jk64-plugin-reportmap</a>',
+'Source: <a href="&REPOSITORY.">&REPOSITORY.</a>',
 '<p>',
 'The map region has static id "mymap".',
 '<p>',
@@ -8390,6 +8393,7 @@ wwv_flow_api.create_page_plug(
 '<li>Plugin attribute <strong>Set Item Name to ID on Click</strong> is set to P1_ID.</li>',
 '<li>Dynamic action on plugin event <strong>markerClick</strong> sets P1_CLICKED.</li>',
 '</ul>'))
+,p_plug_query_row_template=>1
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 ,p_attribute_01=>'N'
 ,p_attribute_02=>'HTML'
@@ -8524,6 +8528,7 @@ wwv_flow_api.create_page_button(
 ,p_button_alignment=>'LEFT'
 ,p_button_execute_validations=>'N'
 ,p_icon_css_classes=>'fa-refresh'
+,p_grid_new_grid=>false
 );
 wwv_flow_api.create_page_item(
  p_id=>wwv_flow_api.id(3214474776663807637)
@@ -8568,6 +8573,7 @@ wwv_flow_api.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>'$s("P1_CLICKED", "this.data.id="+this.data.id+" this.data.name="+this.data.name+" this.data.lat="+this.data.lat+" this.data.lng="+this.data.lng);'
+,p_stop_execution_on_error=>'Y'
 );
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(75060745431626102)
@@ -8587,6 +8593,7 @@ wwv_flow_api.create_page_da_action(
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_api.id(3214474250168807632)
+,p_stop_execution_on_error=>'Y'
 );
 wwv_flow_api.create_page_da_action(
  p_id=>wwv_flow_api.id(75060894112626103)
@@ -8597,6 +8604,7 @@ wwv_flow_api.create_page_da_action(
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_api.id(3214474053693807630)
+,p_stop_execution_on_error=>'Y'
 );
 end;
 /
@@ -8617,8 +8625,8 @@ wwv_flow_api.create_page(
 ,p_page_is_public_y_n=>'N'
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
-,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160314210002'
+,p_last_updated_by=>'JEFFREY.KEMP@JK64.COM'
+,p_last_upd_yyyymmddhh24miss=>'20160315002156'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(75077584221945158)
@@ -8776,14 +8784,14 @@ wwv_flow_api.create_page_plug(
 '<strong>Click the map to set the center, then drag from that point to set a radius (distance).</strong> Then, click Refresh to see the results of your filter. You can also manually change the lat,lng and distance using the text items, the map will au'
 ||'tomatically pick up changes.',
 '<p>',
-'Source: <a href="https://bitbucket.org/jk64/jk64-plugin-reportmap">https://bitbucket.org/jk64/jk64-plugin-reportmap</a>',
+'Source: <a href="&REPOSITORY.">&REPOSITORY.</a>',
 '<p>',
 'Query for map plugin:',
 '<code>',
 'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
 'from apex_collections',
 'where collection_name = ''MAP''',
-'and (:P2_LATLNG IS NULL',
+'and (:P2_CENTER IS NULL',
 '     OR :P2_DISTANCE IS NULL',
 '     OR SDO_GEOM.sdo_distance',
 '          (geom1 => SDO_GEOMETRY',
@@ -8796,8 +8804,8 @@ wwv_flow_api.create_page_plug(
 '            (sdo_gtype     => 2001 /* 2-dimensional point */',
 '            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
 '            ,sdo_point     => SDO_POINT_TYPE',
-'               (TO_NUMBER(SUBSTR(:P2_LATLNG,INSTR(:P2_LATLNG,'','')+1))',
-'               ,TO_NUMBER(SUBSTR(:P2_LATLNG,1,INSTR(:P2_LATLNG,'','')-1)), NULL)',
+'               (TO_NUMBER(SUBSTR(:P2_CENTER,INSTR(:P2_CENTER,'','')+1))',
+'               ,TO_NUMBER(SUBSTR(:P2_CENTER,1,INSTR(:P2_CENTER,'','')-1)), NULL)',
 '            ,sdo_elem_info => NULL',
 '            ,sdo_ordinates => NULL)',
 '          ,tol   => 0.0001 /*metres*/',
@@ -8823,6 +8831,7 @@ wwv_flow_api.create_page_button(
 ,p_button_alignment=>'LEFT'
 ,p_button_execute_validations=>'N'
 ,p_icon_css_classes=>'fa-refresh'
+,p_grid_new_grid=>false
 );
 wwv_flow_api.create_page_item(
  p_id=>wwv_flow_api.id(75081539480945169)
@@ -8905,8 +8914,8 @@ wwv_flow_api.create_page(
 ,p_page_is_public_y_n=>'N'
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
-,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160314210009'
+,p_last_updated_by=>'JEFFREY.KEMP@JK64.COM'
+,p_last_upd_yyyymmddhh24miss=>'20160315002209'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(75088889966959565)
@@ -9023,7 +9032,7 @@ wwv_flow_api.create_page_plug(
 '<strong>Click on location name in the report (on the right)</strong> executes this:',
 '<code>javascript:click_mymap("#ID#")</code>',
 '<p>',
-'Source: <a href="https://bitbucket.org/jk64/jk64-plugin-reportmap">https://bitbucket.org/jk64/jk64-plugin-reportmap</a>',
+'Source: <a href="&REPOSITORY.">&REPOSITORY.</a>',
 '<p>',
 'Query for map plugin:',
 '<code>',
@@ -9049,6 +9058,7 @@ wwv_flow_api.create_page_button(
 ,p_button_alignment=>'LEFT'
 ,p_button_execute_validations=>'N'
 ,p_icon_css_classes=>'fa-refresh'
+,p_grid_new_grid=>false
 );
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(75094415453959572)
