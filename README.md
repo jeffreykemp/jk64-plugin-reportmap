@@ -12,10 +12,11 @@ The user can click any marker to see a popup info window for it. You can have th
 
 ## INSTALLATION INSTRUCTIONS ##
 
-1. Upload the plugin to your application
-2. Add a region to the page, select type `JK64 Report Google Map [plugin]`
-3. For SQL Source, enter a query with exactly 5 columns (see example below)
-3. (optional) Synchronize the map with an item on your page.
+1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
+2. Install the plugin to your application - **region_type_plugin_com_jk64_report_google_map.sql**
+3. *(optional)* Supply your **Google API Key** (NOTE: the plugin is usable without one)
+4. Add a region to the page, select type **JK64 Report Google Map [Plug-In]**
+5. For **SQL Source**, enter a query with at least 5 columns (see example below)
 
 **Sample query**
 
