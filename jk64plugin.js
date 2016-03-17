@@ -18,34 +18,67 @@ function jk64plugin_geocode(opt,geocoder) {
   });
 }
 function jk64plugin_repPin(opt,pData) {
-  var reppin = new google.maps.Marker({
-                 map: opt.map,
-                 position: new google.maps.LatLng(pData.lat, pData.lng),
-                 title: pData.name,
-                 icon: pData.icon
-               });
-  google.maps.event.addListener(reppin, "click", function () {
-    apex.debug(opt.regionId+" repPin clicked "+pData.id);
-    if (opt.iw) {
-      opt.iw.close();
-    } else {
-      opt.iw = new google.maps.InfoWindow();
-    }
-    opt.iw.setOptions({
-       content: pData.info
-      });
-    opt.iw.open(opt.map, this);
-    opt.map.panTo(this.getPosition());
-    if (opt.markerZoom) {
-      opt.map.setZoom(opt.markerZoom);
-    }
-    if (opt.idItem!=="") {
-      $s(opt.idItem,pData.id);
-    }
-    apex.jQuery("#"+opt.regionId).trigger("markerclick", {map:opt.map, id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng});
-  });
-  if (!opt.reppin) { opt.reppin=[]; }
-  opt.reppin.push({"id":pData.id,"marker":reppin});
+	var pos = new google.maps.LatLng(pData.lat, pData.lng);
+	if (pData.rad) {
+		var circ = new google.maps.Circle({
+          strokeColor: pData.col,
+          strokeOpacity: 1.0,
+          strokeWeight: 1,
+          fillColor: pData.col,
+          fillOpacity: pData.trns,
+          clickable: true,
+          map: opt.map,
+          center: pos,
+          radius: pData.rad*1000
+		});
+		google.maps.event.addListener(circ, "click", function () {
+			apex.debug(opt.regionId+" circle clicked "+pData.id);
+			if (opt.iw) {
+				opt.iw.close();
+			} else {
+				opt.iw = new google.maps.InfoWindow();
+			}
+			opt.iw.setOptions({
+			   content: pData.info
+			  });
+			opt.iw.open(opt.map, this);
+			if (opt.idItem!=="") {
+				$s(opt.idItem,pData.id);
+			}
+			apex.jQuery("#"+opt.regionId).trigger("markerclick", {map:opt.map, id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng, rad:pData.rad});
+		});
+		if (!opt.circles) { opt.circles=[]; }
+		opt.circles.push({"id":pData.id,"circ":circ});
+	} else {
+		var reppin = new google.maps.Marker({
+					 map: opt.map,
+					 position: pos,
+					 title: pData.name,
+					 icon: pData.icon
+				   });
+		google.maps.event.addListener(reppin, "click", function () {
+			apex.debug(opt.regionId+" repPin clicked "+pData.id);
+			if (opt.iw) {
+				opt.iw.close();
+			} else {
+				opt.iw = new google.maps.InfoWindow();
+			}
+			opt.iw.setOptions({
+			   content: pData.info
+			  });
+			opt.iw.open(opt.map, this);
+			opt.map.panTo(this.getPosition());
+			if (opt.markerZoom) {
+				opt.map.setZoom(opt.markerZoom);
+			}
+			if (opt.idItem!=="") {
+				$s(opt.idItem,pData.id);
+			}
+			apex.jQuery("#"+opt.regionId).trigger("markerclick", {map:opt.map, id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng, rad:pData.rad});
+		});
+		if (!opt.reppin) { opt.reppin=[]; }
+		opt.reppin.push({"id":pData.id,"marker":reppin});
+	}
 }
 function jk64plugin_repPins(opt) {
   for (var i = 0; i < opt.mapdata.length; i++) {
