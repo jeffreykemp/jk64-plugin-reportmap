@@ -27,9 +27,9 @@ FUNCTION get_markers
     ,p_lat_max IN OUT NUMBER
     ,p_lng_min IN OUT NUMBER
     ,p_lng_max IN OUT NUMBER
-    ) RETURN VARCHAR2 IS
+    ) RETURN APEX_APPLICATION_GLOBAL.VC_ARR2 IS
 
-    l_markers_data   VARCHAR2(32767);
+    l_data           APEX_APPLICATION_GLOBAL.VC_ARR2;
     l_lat            NUMBER;
     l_lng            NUMBER;
     l_info           VARCHAR2(4000);
@@ -47,14 +47,10 @@ BEGIN
         ,p_min_columns    => 4
         ,p_max_columns    => 9
         ,p_component_name => p_region.name
-        ,p_max_rows       => 1000);
+        ,p_max_rows       => p_region.fetched_rows);
   
     FOR i IN 1..l_column_value_list(1).count LOOP
   
-        IF l_markers_data IS NOT NULL THEN
-            l_markers_data := l_markers_data || ',';
-        END IF;
-        
         l_lat  := TO_NUMBER(l_column_value_list(1)(i));
         l_lng  := TO_NUMBER(l_column_value_list(2)(i));
         l_info := l_column_value_list(5)(i);
@@ -75,8 +71,8 @@ BEGIN
           l_circle_transp := TO_NUMBER(l_column_value_list(9)(i));
         END IF; END IF; END IF; END IF;
        
-        l_markers_data := l_markers_data
-          || '{"id":'  || APEX_ESCAPE.js_literal(l_column_value_list(4)(i),'"')
+        l_data(NVL(l_data.LAST,0)+1) :=
+             '{"id":'  || APEX_ESCAPE.js_literal(l_column_value_list(4)(i),'"')
           || ',"name":'|| APEX_ESCAPE.js_literal(l_column_value_list(3)(i),'"')
           || ','       || latlng2ch(l_lat,l_lng)
           || CASE WHEN l_info IS NOT NULL THEN
@@ -103,8 +99,16 @@ BEGIN
       
     END LOOP;
 
-    RETURN l_markers_data;
+    RETURN l_data;
 END get_markers;
+
+PROCEDURE htp_arr (arr IN APEX_APPLICATION_GLOBAL.VC_ARR2) IS
+BEGIN
+    FOR i IN 1..arr.COUNT LOOP
+        -- use prn to avoid loading a whole lot of unnecessary \n characters
+        sys.htp.prn(CASE WHEN i > 1 THEN ',' END || arr(i));
+    END LOOP;
+END htp_arr;
 
 FUNCTION render_map
     (p_region IN APEX_PLUGIN.t_region
@@ -120,7 +124,7 @@ FUNCTION render_map
     l_lng          number;
     l_region       varchar2(100);
     l_script       varchar2(32767);
-    l_markers_data varchar2(32767);
+    l_data         APEX_APPLICATION_GLOBAL.VC_ARR2;
     l_lat_min      number;
     l_lat_max      number;
     l_lng_min      number;
@@ -142,6 +146,7 @@ FUNCTION render_map
     l_sign_in       plugin_attr := p_region.attribute_08;
     l_geocode_item  plugin_attr := p_region.attribute_09;
     l_country       plugin_attr := p_region.attribute_10;
+    l_mapstyle      plugin_attr := p_region.attribute_11;
     
 BEGIN
     -- debug information will be included
@@ -179,7 +184,7 @@ BEGIN
     
     IF p_region.source IS NOT NULL THEN
 
-      l_markers_data := get_markers
+      l_data := get_markers
         (p_region  => p_region
         ,p_lat_min => l_lat_min
         ,p_lat_max => l_lat_max
@@ -210,7 +215,7 @@ BEGIN
         );
 
     -- show entire map if no points to show
-    ELSIF l_markers_data IS NULL THEN
+    ELSIF l_data.COUNT = 0 THEN
       l_lat := 0;
       l_lng := 0;
       l_latlong := '0,0';
@@ -231,7 +236,7 @@ BEGIN
       l_ajax_items := l_ajax_items || '#' || l_dist_item;
     END IF;
     
-    l_script := '
+    l_script := '<script>
 var opt_#REGION# = {
    container:      "map_#REGION#_container"
   ,regionId:       "#REGION#"
@@ -246,21 +251,23 @@ var opt_#REGION# = {
   ,geocodeItem:    "'||l_geocode_item||'"
   ,country:        "'||l_country||'"
   ,southwest:      {'||latlng2ch(l_lat_min,l_lng_min)||'}
-  ,northeast:      {'||latlng2ch(l_lat_max,l_lng_max)||'}
+  ,northeast:      {'||latlng2ch(l_lat_max,l_lng_max)||'}'||
+  CASE WHEN l_mapstyle IS NOT NULL THEN '
+  ,mapstyle:       '||l_mapstyle END || '
 };
 function click_#REGION#(id) {
   jk64plugin_click(opt_#REGION#,id);
 }
 function r_#REGION#(f){/in/.test(document.readyState)?setTimeout("r_#REGION#("+f+")",9):f()}
 r_#REGION#(function(){
-  opt_#REGION#.mapdata = ['||l_markers_data||'];
+  opt_#REGION#.mapdata = [';
+    sys.htp.p(REPLACE(l_script,'#REGION#',l_region));
+    htp_arr(l_data);
+    l_script := '];
   jk64plugin_initMap(opt_#REGION#);
-  apex.jQuery("#"+opt_#REGION#.regionId).bind("apexrefresh", function(){jk64plugin_refreshMap(opt_#REGION#);});
-});';
-
-    l_script := REPLACE(l_script,'#REGION#',l_region);
-      
-    sys.htp.p('<script>'||l_script||'</script>');
+  apex.jQuery("##REGION#").bind("apexrefresh", function(){jk64plugin_refreshMap(opt_#REGION#);});
+});</script>';
+    sys.htp.p(REPLACE(l_script,'#REGION#',l_region));
     sys.htp.p('<div id="map_'||l_region||'_container" style="min-height:'||l_map_height||'px"></div>');
   
     RETURN l_result;
@@ -277,7 +284,7 @@ FUNCTION ajax
 
     l_lat          NUMBER;
     l_lng          NUMBER;
-    l_markers_data VARCHAR2(32767);
+    l_data         APEX_APPLICATION_GLOBAL.VC_ARR2;
     l_lat_min      NUMBER;
     l_lat_max      NUMBER;
     l_lng_min      NUMBER;
@@ -294,10 +301,11 @@ BEGIN
           (p_plugin => p_plugin
           ,p_region => p_region);
     END IF;
+    APEX_DEBUG.message('ajax');
 
     IF p_region.source IS NOT NULL THEN
 
-      l_markers_data := get_markers
+      l_data := get_markers
         (p_region  => p_region
         ,p_lat_min => l_lat_min
         ,p_lat_max => l_lat_max
@@ -328,7 +336,7 @@ BEGIN
         );
 
     -- show entire map if no points to show
-    ELSIF l_markers_data IS NULL THEN
+    ELSIF l_data.COUNT = 0 THEN
       l_lat := 0;
       l_lng := 0;
       l_latlong := '0,0';
@@ -339,18 +347,25 @@ BEGIN
 
     END IF;
 
-    SYS.OWA_UTIL.mime_header('text/plain', false);
-    SYS.HTP.p('Cache-Control: no-cache');
-    SYS.HTP.p('Pragma: no-cache');
-    SYS.OWA_UTIL.http_header_close;
+    sys.owa_util.mime_header('text/plain', false);
+    sys.htp.p('Cache-Control: no-cache');
+    sys.htp.p('Pragma: no-cache');
+    sys.owa_util.http_header_close;
+
+    APEX_DEBUG.message('l_lat_min='||l_lat_min||' data='||l_data.COUNT);
     
-    SYS.HTP.p('{"southwest":{'
+    sys.htp.p('{"southwest":{'
       || latlng2ch(l_lat_min,l_lng_min)
       || '},"northeast":{'
       || latlng2ch(l_lat_max,l_lng_max)
-      || '},"mapdata":['
-      || l_markers_data
-      || ']}');
+      || '},"mapdata":[');
+    htp_arr(l_data);
+    sys.htp.p(']}');
 
+    APEX_DEBUG.message('ajax finished');
     RETURN l_result;
+EXCEPTION
+    WHEN OTHERS THEN
+        APEX_DEBUG.error(SQLERRM);
+        sys.htp.p('{"error":"'||sqlerrm||'"}');
 END ajax;
