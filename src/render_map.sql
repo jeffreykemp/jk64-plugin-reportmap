@@ -110,6 +110,18 @@ BEGIN
     END LOOP;
 END htp_arr;
 
+PROCEDURE fix_latlng
+  (lat_min IN OUT NUMBER
+  ,lat_max IN OUT NUMBER
+  ,lng_min IN OUT NUMBER
+  ,lng_max IN OUT NUMBER) IS
+BEGIN
+  lat_min := GREATEST(lat_min, -80);
+  lat_max := LEAST(lat_max, 80);
+  lng_min := MOD(lng_min + 360,180);
+  lng_max := MOD(lng_max + 360,180);
+END fix_latlng;
+
 FUNCTION render_map
     (p_region IN APEX_PLUGIN.t_region
     ,p_plugin IN APEX_PLUGIN.t_plugin
@@ -147,6 +159,7 @@ FUNCTION render_map
     l_geocode_item  plugin_attr := p_region.attribute_09;
     l_country       plugin_attr := p_region.attribute_10;
     l_mapstyle      plugin_attr := p_region.attribute_11;
+    l_address_item  plugin_attr := p_region.attribute_12;
     
 BEGIN
     -- debug information will be included
@@ -158,8 +171,11 @@ BEGIN
     END IF;
 
     IF l_api_key IS NULL THEN
+        -- these features require a Google API Key to work
         l_sign_in      := 'N';
         l_geocode_item := NULL;
+        l_country      := NULL;
+        l_address_item := NULL;
     ELSE
         l_js_params := '?key=' || l_api_key;
         IF l_sign_in = 'Y' THEN
@@ -204,7 +220,7 @@ BEGIN
       l_lng := TO_NUMBER(SUBSTR(l_latlong,INSTR(l_latlong,',')+1));
     END IF;
     
-    IF l_lat IS NOT NULL THEN
+    IF l_lat IS NOT NULL AND l_data.COUNT > 0 THEN
       set_map_extents
         (p_lat     => l_lat
         ,p_lng     => l_lng
@@ -213,6 +229,12 @@ BEGIN
         ,p_lng_min => l_lng_min
         ,p_lng_max => l_lng_max
         );
+
+    ELSIF l_data.COUNT = 0 AND l_lat IS NOT NULL THEN
+      l_lat_min := l_lat - 10;
+      l_lat_max := l_lat + 10;
+      l_lng_min := l_lng - 10;
+      l_lng_max := l_lng + 10;
 
     -- show entire map if no points to show
     ELSIF l_data.COUNT = 0 THEN
@@ -225,6 +247,8 @@ BEGIN
       l_lng_max := 180;
 
     END IF;
+    
+    fix_latlng(l_lat_min, l_lat_max, l_lng_min, l_lng_max);
     
     IF l_sync_item IS NOT NULL THEN
       l_ajax_items := '#' || l_sync_item;
@@ -254,6 +278,7 @@ var opt_#REGION# = {
   ,northeast:      {'||latlng2ch(l_lat_max,l_lng_max)||'}'||
   CASE WHEN l_mapstyle IS NOT NULL THEN '
   ,mapstyle:       '||l_mapstyle END || '
+  ,addressItem:    "'||l_address_item||'"
 };
 function click_#REGION#(id) {
   jk64plugin_click(opt_#REGION#,id);
@@ -325,7 +350,7 @@ BEGIN
       l_lng := TO_NUMBER(SUBSTR(l_latlong,INSTR(l_latlong,',')+1));
     END IF;
     
-    IF l_lat IS NOT NULL THEN
+    IF l_lat IS NOT NULL AND l_data.COUNT > 0 THEN
       set_map_extents
         (p_lat     => l_lat
         ,p_lng     => l_lng
@@ -334,6 +359,12 @@ BEGIN
         ,p_lng_min => l_lng_min
         ,p_lng_max => l_lng_max
         );
+
+    ELSIF l_data.COUNT = 0 AND l_lat IS NOT NULL THEN
+      l_lat_min := l_lat - 10;
+      l_lat_max := l_lat + 10;
+      l_lng_min := l_lng - 10;
+      l_lng_max := l_lng + 10;
 
     -- show entire map if no points to show
     ELSIF l_data.COUNT = 0 THEN
@@ -346,6 +377,8 @@ BEGIN
       l_lng_max := 180;
 
     END IF;
+
+    fix_latlng(l_lat_min, l_lat_max, l_lng_min, l_lng_max);
 
     sys.owa_util.mime_header('text/plain', false);
     sys.htp.p('Cache-Control: no-cache');

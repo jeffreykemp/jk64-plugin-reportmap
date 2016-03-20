@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   20:08 Saturday March 19, 2016
+--   Date and Time:   22:41 Sunday March 20, 2016
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -36,10 +36,11 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 --
 
 -- Application Statistics:
---   Pages:                      5
---     Items:                    6
+--   Pages:                      6
+--     Items:                   10
+--     Computations:             1
 --     Processes:                4
---     Regions:                 14
+--     Regions:                 16
 --     Buttons:                  5
 --     Dynamic Actions:          6
 --   Shared Components:
@@ -110,7 +111,7 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160319200709'
+,p_last_upd_yyyymmddhh24miss=>'20160320224047'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_ui_type_name => null
 );
@@ -128,6 +129,7 @@ wwv_flow_api.create_list_item(
 ,p_list_item_display_sequence=>10
 ,p_list_item_link_text=>'Report Map'
 ,p_list_item_link_target=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-map-marker'
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'1'
 );
@@ -135,7 +137,8 @@ wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(75077164709945156)
 ,p_list_item_display_sequence=>20
 ,p_list_item_link_text=>'Circle Filter'
-,p_list_item_link_target=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.'
+,p_list_item_link_target=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-map-marker'
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'2'
 );
@@ -143,7 +146,8 @@ wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(75088489437959564)
 ,p_list_item_display_sequence=>30
 ,p_list_item_link_text=>'Sync with Report'
-,p_list_item_link_target=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.'
+,p_list_item_link_target=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-map-marker'
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'3'
 );
@@ -151,9 +155,19 @@ wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(75344300410985638)
 ,p_list_item_display_sequence=>40
 ,p_list_item_link_text=>'Population Map'
-,p_list_item_link_target=>'f?p=&APP_ID.:4:&SESSION.::&DEBUG.'
+,p_list_item_link_target=>'f?p=&APP_ID.:4:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-map-marker'
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'4'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(75545709693123640)
+,p_list_item_display_sequence=>50
+,p_list_item_link_text=>'Search Map'
+,p_list_item_link_target=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-map-marker'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'5'
 );
 wwv_flow_api.create_list(
  p_id=>wwv_flow_api.id(25186303809636505463)
@@ -7723,6 +7737,18 @@ wwv_flow_api.create_plugin(
 '    END LOOP;',
 'END htp_arr;',
 '',
+'PROCEDURE fix_latlng',
+'  (lat_min IN OUT NUMBER',
+'  ,lat_max IN OUT NUMBER',
+'  ,lng_min IN OUT NUMBER',
+'  ,lng_max IN OUT NUMBER) IS',
+'BEGIN',
+'  lat_min := GREATEST(lat_min, -80);',
+'  lat_max := LEAST(lat_max, 80);',
+'  lng_min := MOD(lng_min + 360,180);',
+'  lng_max := MOD(lng_max + 360,180);',
+'END fix_latlng;',
+'',
 'FUNCTION render_map',
 '    (p_region IN APEX_PLUGIN.t_region',
 '    ,p_plugin IN APEX_PLUGIN.t_plugin',
@@ -7760,6 +7786,7 @@ wwv_flow_api.create_plugin(
 '    l_geocode_item  plugin_attr := p_region.attribute_09;',
 '    l_country       plugin_attr := p_region.attribute_10;',
 '    l_mapstyle      plugin_attr := p_region.attribute_11;',
+'    l_address_item  plugin_attr := p_region.attribute_12;',
 '    ',
 'BEGIN',
 '    -- debug information will be included',
@@ -7771,8 +7798,11 @@ wwv_flow_api.create_plugin(
 '    END IF;',
 '',
 '    IF l_api_key IS NULL THEN',
+'        -- these features require a Google API Key to work',
 '        l_sign_in      := ''N'';',
 '        l_geocode_item := NULL;',
+'        l_country      := NULL;',
+'        l_address_item := NULL;',
 '    ELSE',
 '        l_js_params := ''?key='' || l_api_key;',
 '        IF l_sign_in = ''Y'' THEN',
@@ -7817,7 +7847,7 @@ wwv_flow_api.create_plugin(
 '      l_lng := TO_NUMBER(SUBSTR(l_latlong,INSTR(l_latlong,'','')+1));',
 '    END IF;',
 '    ',
-'    IF l_lat IS NOT NULL THEN',
+'    IF l_lat IS NOT NULL AND l_data.COUNT > 0 THEN',
 '      set_map_extents',
 '        (p_lat     => l_lat',
 '        ,p_lng     => l_lng',
@@ -7826,6 +7856,12 @@ wwv_flow_api.create_plugin(
 '        ,p_lng_min => l_lng_min',
 '        ,p_lng_max => l_lng_max',
 '        );',
+'',
+'    ELSIF l_data.COUNT = 0 AND l_lat IS NOT NULL THEN',
+'      l_lat_min := l_lat - 10;',
+'      l_lat_max := l_lat + 10;',
+'      l_lng_min := l_lng - 10;',
+'      l_lng_max := l_lng + 10;',
 '',
 '    -- show entire map if no points to show',
 '    ELSIF l_data.COUNT = 0 THEN',
@@ -7838,6 +7874,8 @@ wwv_flow_api.create_plugin(
 '      l_lng_max := 180;',
 '',
 '    END IF;',
+'    ',
+'    fix_latlng(l_lat_min, l_lat_max, l_lng_min, l_lng_max);',
 '    ',
 '    IF l_sync_item IS NOT NULL THEN',
 '      l_ajax_items := ''#'' || l_sync_item;',
@@ -7867,6 +7905,7 @@ wwv_flow_api.create_plugin(
 '  ,northeast:      {''||latlng2ch(l_lat_max,l_lng_max)||''}''||',
 '  CASE WHEN l_mapstyle IS NOT NULL THEN ''',
 '  ,mapstyle:       ''||l_mapstyle END || ''',
+'  ,addressItem:    "''||l_address_item||''"',
 '};',
 'function click_#REGION#(id) {',
 '  jk64plugin_click(opt_#REGION#,id);',
@@ -7938,7 +7977,7 @@ wwv_flow_api.create_plugin(
 '      l_lng := TO_NUMBER(SUBSTR(l_latlong,INSTR(l_latlong,'','')+1));',
 '    END IF;',
 '    ',
-'    IF l_lat IS NOT NULL THEN',
+'    IF l_lat IS NOT NULL AND l_data.COUNT > 0 THEN',
 '      set_map_extents',
 '        (p_lat     => l_lat',
 '        ,p_lng     => l_lng',
@@ -7947,6 +7986,12 @@ wwv_flow_api.create_plugin(
 '        ,p_lng_min => l_lng_min',
 '        ,p_lng_max => l_lng_max',
 '        );',
+'',
+'    ELSIF l_data.COUNT = 0 AND l_lat IS NOT NULL THEN',
+'      l_lat_min := l_lat - 10;',
+'      l_lat_max := l_lat + 10;',
+'      l_lng_min := l_lng - 10;',
+'      l_lng_max := l_lng + 10;',
 '',
 '    -- show entire map if no points to show',
 '    ELSIF l_data.COUNT = 0 THEN',
@@ -7959,6 +8004,8 @@ wwv_flow_api.create_plugin(
 '      l_lng_max := 180;',
 '',
 '    END IF;',
+'',
+'    fix_latlng(l_lat_min, l_lat_max, l_lng_min, l_lng_max);',
 '',
 '    sys.owa_util.mime_header(''text/plain'', false);',
 '    sys.htp.p(''Cache-Control: no-cache'');',
@@ -8072,7 +8119,7 @@ wwv_flow_api.create_plugin(
 'To create a Population Map (i.e. draw circles of varying radii instead of pins), supply additional columns in the query to indicate radius (in km), and optionally circle colour and transparency.'))
 ,p_version_identifier=>'0.4'
 ,p_about_url=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
-,p_files_version=>9
+,p_files_version=>14
 );
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(225976866040439608)
@@ -8228,13 +8275,14 @@ wwv_flow_api.create_plugin_attribute(
 ,p_attribute_type=>'TEXT'
 ,p_is_required=>false
 ,p_display_length=>10
-,p_max_length=>2
+,p_max_length=>40
 ,p_is_translatable=>false
 ,p_depending_on_attribute_id=>wwv_flow_api.id(225987570479167624)
 ,p_depending_on_condition_type=>'NOT_NULL'
 ,p_text_case=>'UPPER'
 ,p_examples=>'AU'
-,p_help_text=>'Leave blank to allow geocoding to find any place on earth. Set to country code (see https://developers.google.com/public-data/docs/canonical/countries_csv for valid values) to restrict geocoder to that country.'
+,p_help_text=>'Leave blank to allow geocoding to find any place on earth. Set to 2-character country code (see https://developers.google.com/public-data/docs/canonical/countries_csv for valid values) to restrict geocoder to that country. You can set this to a subst'
+||'ition variable (e.g. &P1_COUNTRY.) but note that this will only apply if the page is refreshed.'
 );
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(75480681859350761)
@@ -8257,6 +8305,18 @@ wwv_flow_api.create_plugin_attribute(
 ||'ementType":"geometry.fill","stylers":[{"color":"#fefefe"},{"lightness":20}]},{"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#fefefe"},{"lightness":17},{"weight":1.2}]}]',
 '</pre>'))
 ,p_help_text=>'Easiest way is to copy one from a site like https://snazzymaps.com/'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(75543093056053301)
+,p_plugin_id=>wwv_flow_api.id(369361923639784586)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>12
+,p_display_sequence=>120
+,p_prompt=>'Address Item'
+,p_attribute_type=>'PAGE ITEM'
+,p_is_required=>false
+,p_is_translatable=>false
+,p_help_text=>'Google API Key required. When the user clicks a point on the map, a Google Maps reverse geocode will be executed and the first result (usually the address) will be copied to the item you specify here.'
 );
 wwv_flow_api.create_plugin_event(
  p_id=>wwv_flow_api.id(369362240211787869)
@@ -8315,41 +8375,46 @@ wwv_flow_api.g_varchar2_table(32) := '65744D617028652E6D6170292C652E757365727069
 wwv_flow_api.g_varchar2_table(33) := '7270696E20222B692B222C222B6E292C652E7573657270696E3D6E657720676F6F676C652E6D6170732E4D61726B6572287B6D61703A652E6D61702C706F736974696F6E3A722C69636F6E3A652E69636F6E7D292C6A6B3634706C7567696E5F73657443';
 wwv_flow_api.g_varchar2_table(34) := '6972636C6528652C7229297D7D656C736520652E7573657270696E262628617065782E646562756728652E726567696F6E49642B22206D6F7665206578697374696E672070696E206F666620746865206D617022292C652E7573657270696E2E7365744D';
 wwv_flow_api.g_varchar2_table(35) := '6170286E756C6C292C652E64697374636972636C65262628617065782E646562756728652E726567696F6E49642B22206D6F76652064697374636972636C65206F666620746865206D617022292C652E64697374636972636C652E7365744D6170286E75';
-wwv_flow_api.g_varchar2_table(36) := '6C6C2929297D66756E6374696F6E206A6B3634706C7567696E5F696E69744D61702865297B617065782E646562756728652E726567696F6E49642B2220696E69744D617022293B76617220693D7B7A6F6F6D3A312C63656E7465723A6E657720676F6F67';
-wwv_flow_api.g_varchar2_table(37) := '6C652E6D6170732E4C61744C6E6728652E6C61746C6E67292C6D61705479706549643A676F6F676C652E6D6170732E4D61705479706549642E524F41444D41507D3B696628652E6D61703D6E657720676F6F676C652E6D6170732E4D617028646F63756D';
-wwv_flow_api.g_varchar2_table(38) := '656E742E676574456C656D656E744279496428652E636F6E7461696E6572292C69292C652E6D61707374796C652626652E6D61702E7365744F7074696F6E73287B7374796C65733A652E6D61707374796C657D292C652E6D61702E666974426F756E6473';
-wwv_flow_api.g_varchar2_table(39) := '286E657720676F6F676C652E6D6170732E4C61744C6E67426F756E647328652E736F757468776573742C652E6E6F7274686561737429292C2222213D3D652E73796E634974656D297B766172206E3D247628652E73796E634974656D293B6966286E756C';
-wwv_flow_api.g_varchar2_table(40) := '6C213D3D6E26266E2E696E6465784F6628222C22293E2D31297B76617220613D6E2E73706C697428222C22293B617065782E646562756728652E726567696F6E49642B2220696E69742066726F6D206974656D20222B6E293B76617220723D6E65772067';
-wwv_flow_api.g_varchar2_table(41) := '6F6F676C652E6D6170732E4C61744C6E6728615B305D2C615B315D293B652E7573657270696E3D6E657720676F6F676C652E6D6170732E4D61726B6572287B6D61703A652E6D61702C706F736974696F6E3A722C69636F6E3A652E69636F6E7D292C6A6B';
-wwv_flow_api.g_varchar2_table(42) := '3634706C7567696E5F736574436972636C6528652C72297D24282223222B652E73796E634974656D292E6368616E67652866756E6374696F6E28297B76617220693D746869732E76616C75653B6966286E756C6C213D3D692626766F69642030213D3D69';
-wwv_flow_api.g_varchar2_table(43) := '2626692E696E6465784F6628222C22293E2D31297B617065782E646562756728652E726567696F6E49642B22206974656D206368616E67656420222B69293B766172206E3D692E73706C697428222C22293B6A6B3634706C7567696E5F7573657250696E';
-wwv_flow_api.g_varchar2_table(44) := '28652C6E5B305D2C6E5B315D297D7D297D6966282222213D652E646973744974656D262624282223222B652E646973744974656D292E6368616E67652866756E6374696F6E28297B696628746869732E76616C7565297B76617220693D3165332A706172';
-wwv_flow_api.g_varchar2_table(45) := '7365466C6F617428746869732E76616C7565293B652E64697374636972636C652E6765745261646975732829213D3D69262628617065782E646562756728652E726567696F6E49642B2220646973746974656D206368616E67656420222B746869732E76';
-wwv_flow_api.g_varchar2_table(46) := '616C7565292C652E64697374636972636C652E736574526164697573286929297D656C736520652E64697374636972636C65262628617065782E646562756728652E726567696F6E49642B2220646973746974656D20636C656172656422292C652E6469';
-wwv_flow_api.g_varchar2_table(47) := '7374636972636C652E7365744D6170286E756C6C29297D292C6A6B3634706C7567696E5F72657050696E732865292C676F6F676C652E6D6170732E6576656E742E6164644C697374656E657228652E6D61702C22636C69636B222C66756E6374696F6E28';
-wwv_flow_api.g_varchar2_table(48) := '69297B766172206E3D692E6C61744C6E672E6C617428292C613D692E6C61744C6E672E6C6E6728293B617065782E646562756728652E726567696F6E49642B22206D617020636C69636B656420222B6E2B222C222B61292C2222213D3D652E73796E6349';
-wwv_flow_api.g_varchar2_table(49) := '74656D2626286A6B3634706C7567696E5F7573657250696E28652C6E2C61292C247328652E73796E634974656D2C6E2B222C222B61292C6A6B3634706C7567696E5F726566726573684D6170286529292C617065782E6A5175657279282223222B652E72';
-wwv_flow_api.g_varchar2_table(50) := '6567696F6E4964292E7472696767657228226D6170636C69636B222C7B6D61703A652E6D61702C6C61743A6E2C6C6E673A617D297D292C2222213D652E67656F636F64654974656D297B76617220743D6E657720676F6F676C652E6D6170732E47656F63';
-wwv_flow_api.g_varchar2_table(51) := '6F6465723B24282223222B652E67656F636F64654974656D292E6368616E67652866756E6374696F6E28297B6A6B3634706C7567696E5F67656F636F646528652C74297D297D617065782E646562756728652E726567696F6E49642B2220696E69744D61';
-wwv_flow_api.g_varchar2_table(52) := '702066696E697368656422292C617065782E6A5175657279282223222B652E726567696F6E4964292E7472696767657228226D61706C6F61646564222C7B6D61703A652E6D61707D297D66756E6374696F6E206A6B3634706C7567696E5F726566726573';
-wwv_flow_api.g_varchar2_table(53) := '684D61702865297B617065782E646562756728652E726567696F6E49642B2220726566726573684D617022292C617065782E6A5175657279282223222B652E726567696F6E4964292E747269676765722822617065786265666F72657265667265736822';
-wwv_flow_api.g_varchar2_table(54) := '292C617065782E7365727665722E706C7567696E28652E616A61784964656E7469666965722C7B706167654974656D733A652E616A61784974656D737D2C7B64617461547970653A226A736F6E222C737563636573733A66756E6374696F6E2869297B69';
-wwv_flow_api.g_varchar2_table(55) := '6628617065782E646562756728652E726567696F6E49642B2220737563636573732070446174613D222B692E736F757468776573742E6C61742B222C222B692E736F757468776573742E6C6E672B2220222B692E6E6F727468656173742E6C61742B222C';
-wwv_flow_api.g_varchar2_table(56) := '222B692E6E6F727468656173742E6C6E67292C652E6D61702E666974426F756E6473287B736F7574683A692E736F757468776573742E6C61742C776573743A692E736F757468776573742E6C6E672C6E6F7274683A692E6E6F727468656173742E6C6174';
-wwv_flow_api.g_varchar2_table(57) := '2C656173743A692E6E6F727468656173742E6C6E677D292C652E69772626652E69772E636C6F736528292C652E72657070696E297B617065782E646562756728652E726567696F6E49642B222072656D6F766520616C6C207265706F72742070696E7322';
-wwv_flow_api.g_varchar2_table(58) := '293B666F7228766172206E3D303B6E3C652E72657070696E2E6C656E6774683B6E2B2B29652E72657070696E5B6E5D2E6D61726B65722E7365744D6170286E756C6C293B652E72657070696E5B2264656C657465225D7D696628652E636972636C657329';
-wwv_flow_api.g_varchar2_table(59) := '7B617065782E646562756728652E726567696F6E49642B222072656D6F766520616C6C20636972636C657322293B666F7228766172206E3D303B6E3C652E636972636C65732E6C656E6774683B6E2B2B29652E636972636C65735B6E5D2E636972632E73';
-wwv_flow_api.g_varchar2_table(60) := '65744D6170286E756C6C293B652E636972636C65735B2264656C657465225D7D696628617065782E646562756728652E726567696F6E49642B222070446174612E6D6170646174612E6C656E6774683D222B692E6D6170646174612E6C656E677468292C';
-wwv_flow_api.g_varchar2_table(61) := '652E6D6170646174613D692E6D6170646174612C6A6B3634706C7567696E5F72657050696E732865292C2222213D3D652E73796E634974656D297B76617220613D247628652E73796E634974656D293B6966286E756C6C213D3D612626612E696E646578';
-wwv_flow_api.g_varchar2_table(62) := '4F6628222C22293E2D31297B76617220723D612E73706C697428222C22293B617065782E646562756728652E726567696F6E49642B2220696E69742066726F6D206974656D20222B61292C6A6B3634706C7567696E5F7573657250696E28652C725B305D';
-wwv_flow_api.g_varchar2_table(63) := '2C725B315D297D7D617065782E6A5175657279282223222B652E726567696F6E4964292E7472696767657228226170657861667465727265667265736822297D7D292C617065782E646562756728652E726567696F6E49642B2220726566726573684D61';
-wwv_flow_api.g_varchar2_table(64) := '702066696E697368656422297D';
+wwv_flow_api.g_varchar2_table(36) := '6C6C2929297D66756E6374696F6E206A6B3634706C7567696E5F6765744164647265737328652C692C6E297B76617220613D7B6C61743A692C6C6E673A6E7D3B652E67656F636F6465722E67656F636F6465287B6C6F636174696F6E3A617D2C66756E63';
+wwv_flow_api.g_varchar2_table(37) := '74696F6E28692C6E297B6E3D3D3D676F6F676C652E6D6170732E47656F636F6465725374617475732E4F4B3F695B315D3F247328652E616464726573734974656D2C695B305D2E666F726D61747465645F61646472657373293A77696E646F772E616C65';
+wwv_flow_api.g_varchar2_table(38) := '727428224E6F20726573756C747320666F756E6422293A77696E646F772E616C657274282247656F636F646572206661696C65642064756520746F3A20222B6E297D297D66756E6374696F6E206A6B3634706C7567696E5F696E69744D61702865297B61';
+wwv_flow_api.g_varchar2_table(39) := '7065782E646562756728652E726567696F6E49642B2220696E69744D617022293B76617220693D7B7A6F6F6D3A312C63656E7465723A6E657720676F6F676C652E6D6170732E4C61744C6E6728652E6C61746C6E67292C6D61705479706549643A676F6F';
+wwv_flow_api.g_varchar2_table(40) := '676C652E6D6170732E4D61705479706549642E524F41444D41507D3B696628652E6D61703D6E657720676F6F676C652E6D6170732E4D617028646F63756D656E742E676574456C656D656E744279496428652E636F6E7461696E6572292C69292C652E6D';
+wwv_flow_api.g_varchar2_table(41) := '61707374796C652626652E6D61702E7365744F7074696F6E73287B7374796C65733A652E6D61707374796C657D292C652E6D61702E666974426F756E6473286E657720676F6F676C652E6D6170732E4C61744C6E67426F756E647328652E736F75746877';
+wwv_flow_api.g_varchar2_table(42) := '6573742C652E6E6F7274686561737429292C2222213D3D652E73796E634974656D297B766172206E3D247628652E73796E634974656D293B6966286E756C6C213D3D6E26266E2E696E6465784F6628222C22293E2D31297B76617220613D6E2E73706C69';
+wwv_flow_api.g_varchar2_table(43) := '7428222C22293B617065782E646562756728652E726567696F6E49642B2220696E69742066726F6D206974656D20222B6E293B76617220723D6E657720676F6F676C652E6D6170732E4C61744C6E6728615B305D2C615B315D293B652E7573657270696E';
+wwv_flow_api.g_varchar2_table(44) := '3D6E657720676F6F676C652E6D6170732E4D61726B6572287B6D61703A652E6D61702C706F736974696F6E3A722C69636F6E3A652E69636F6E7D292C6A6B3634706C7567696E5F736574436972636C6528652C72297D24282223222B652E73796E634974';
+wwv_flow_api.g_varchar2_table(45) := '656D292E6368616E67652866756E6374696F6E28297B76617220693D746869732E76616C75653B6966286E756C6C213D3D692626766F69642030213D3D692626692E696E6465784F6628222C22293E2D31297B617065782E646562756728652E72656769';
+wwv_flow_api.g_varchar2_table(46) := '6F6E49642B22206974656D206368616E67656420222B69293B766172206E3D692E73706C697428222C22293B6A6B3634706C7567696E5F7573657250696E28652C6E5B305D2C6E5B315D297D7D297D6966282222213D652E646973744974656D26262428';
+wwv_flow_api.g_varchar2_table(47) := '2223222B652E646973744974656D292E6368616E67652866756E6374696F6E28297B696628746869732E76616C7565297B76617220693D3165332A7061727365466C6F617428746869732E76616C7565293B652E64697374636972636C652E6765745261';
+wwv_flow_api.g_varchar2_table(48) := '646975732829213D3D69262628617065782E646562756728652E726567696F6E49642B2220646973746974656D206368616E67656420222B746869732E76616C7565292C652E64697374636972636C652E736574526164697573286929297D656C736520';
+wwv_flow_api.g_varchar2_table(49) := '652E64697374636972636C65262628617065782E646562756728652E726567696F6E49642B2220646973746974656D20636C656172656422292C652E64697374636972636C652E7365744D6170286E756C6C29297D292C6A6B3634706C7567696E5F7265';
+wwv_flow_api.g_varchar2_table(50) := '7050696E732865292C2222213D3D652E616464726573734974656D262628652E67656F636F6465723D6E657720676F6F676C652E6D6170732E47656F636F646572292C676F6F676C652E6D6170732E6576656E742E6164644C697374656E657228652E6D';
+wwv_flow_api.g_varchar2_table(51) := '61702C22636C69636B222C66756E6374696F6E2869297B766172206E3D692E6C61744C6E672E6C617428292C613D692E6C61744C6E672E6C6E6728293B617065782E646562756728652E726567696F6E49642B22206D617020636C69636B656420222B6E';
+wwv_flow_api.g_varchar2_table(52) := '2B222C222B61292C282222213D3D652E73796E634974656D7C7C2222213D3D652E616464726573734974656D2926266A6B3634706C7567696E5F7573657250696E28652C6E2C61292C2222213D3D652E73796E634974656D3F28247328652E73796E6349';
+wwv_flow_api.g_varchar2_table(53) := '74656D2C6E2B222C222B61292C6A6B3634706C7567696E5F726566726573684D6170286529293A652E6D61726B65725A6F6F6D262628617065782E646562756728652E726567696F6E49642B222070616E2B7A6F6F6D22292C652E6D61702E70616E546F';
+wwv_flow_api.g_varchar2_table(54) := '28692E6C61744C6E67292C652E6D61702E7365745A6F6F6D28652E6D61726B65725A6F6F6D29292C2222213D3D652E616464726573734974656D26266A6B3634706C7567696E5F6765744164647265737328652C6E2C61292C617065782E6A5175657279';
+wwv_flow_api.g_varchar2_table(55) := '282223222B652E726567696F6E4964292E7472696767657228226D6170636C69636B222C7B6D61703A652E6D61702C6C61743A6E2C6C6E673A617D297D292C2222213D652E67656F636F64654974656D297B76617220743D6E657720676F6F676C652E6D';
+wwv_flow_api.g_varchar2_table(56) := '6170732E47656F636F6465723B24282223222B652E67656F636F64654974656D292E6368616E67652866756E6374696F6E28297B6A6B3634706C7567696E5F67656F636F646528652C74297D297D617065782E646562756728652E726567696F6E49642B';
+wwv_flow_api.g_varchar2_table(57) := '2220696E69744D61702066696E697368656422292C617065782E6A5175657279282223222B652E726567696F6E4964292E7472696767657228226D61706C6F61646564222C7B6D61703A652E6D61707D297D66756E6374696F6E206A6B3634706C756769';
+wwv_flow_api.g_varchar2_table(58) := '6E5F726566726573684D61702865297B617065782E646562756728652E726567696F6E49642B2220726566726573684D617022292C617065782E6A5175657279282223222B652E726567696F6E4964292E747269676765722822617065786265666F7265';
+wwv_flow_api.g_varchar2_table(59) := '7265667265736822292C617065782E7365727665722E706C7567696E28652E616A61784964656E7469666965722C7B706167654974656D733A652E616A61784974656D737D2C7B64617461547970653A226A736F6E222C737563636573733A66756E6374';
+wwv_flow_api.g_varchar2_table(60) := '696F6E2869297B696628617065782E646562756728652E726567696F6E49642B2220737563636573732070446174613D222B692E736F757468776573742E6C61742B222C222B692E736F757468776573742E6C6E672B2220222B692E6E6F727468656173';
+wwv_flow_api.g_varchar2_table(61) := '742E6C61742B222C222B692E6E6F727468656173742E6C6E67292C652E6D61702E666974426F756E6473287B736F7574683A692E736F757468776573742E6C61742C776573743A692E736F757468776573742E6C6E672C6E6F7274683A692E6E6F727468';
+wwv_flow_api.g_varchar2_table(62) := '656173742E6C61742C656173743A692E6E6F727468656173742E6C6E677D292C652E69772626652E69772E636C6F736528292C652E72657070696E297B617065782E646562756728652E726567696F6E49642B222072656D6F766520616C6C207265706F';
+wwv_flow_api.g_varchar2_table(63) := '72742070696E7322293B666F7228766172206E3D303B6E3C652E72657070696E2E6C656E6774683B6E2B2B29652E72657070696E5B6E5D2E6D61726B65722E7365744D6170286E756C6C293B652E72657070696E5B2264656C657465225D7D696628652E';
+wwv_flow_api.g_varchar2_table(64) := '636972636C6573297B617065782E646562756728652E726567696F6E49642B222072656D6F766520616C6C20636972636C657322293B666F7228766172206E3D303B6E3C652E636972636C65732E6C656E6774683B6E2B2B29652E636972636C65735B6E';
+wwv_flow_api.g_varchar2_table(65) := '5D2E636972632E7365744D6170286E756C6C293B652E636972636C65735B2264656C657465225D7D696628617065782E646562756728652E726567696F6E49642B222070446174612E6D6170646174612E6C656E6774683D222B692E6D6170646174612E';
+wwv_flow_api.g_varchar2_table(66) := '6C656E677468292C652E6D6170646174613D692E6D6170646174612C6A6B3634706C7567696E5F72657050696E732865292C2222213D3D652E73796E634974656D297B76617220613D247628652E73796E634974656D293B6966286E756C6C213D3D6126';
+wwv_flow_api.g_varchar2_table(67) := '26612E696E6465784F6628222C22293E2D31297B76617220723D612E73706C697428222C22293B617065782E646562756728652E726567696F6E49642B2220696E69742066726F6D206974656D20222B61292C6A6B3634706C7567696E5F757365725069';
+wwv_flow_api.g_varchar2_table(68) := '6E28652C725B305D2C725B315D297D7D617065782E6A5175657279282223222B652E726567696F6E4964292E7472696767657228226170657861667465727265667265736822297D7D292C617065782E646562756728652E726567696F6E49642B222072';
+wwv_flow_api.g_varchar2_table(69) := '6566726573684D61702066696E697368656422297D';
 null;
 end;
 /
 begin
 wwv_flow_api.create_plugin_file(
- p_id=>wwv_flow_api.id(75500178978037063)
+ p_id=>wwv_flow_api.id(75557900067578625)
 ,p_plugin_id=>wwv_flow_api.id(369361923639784586)
 ,p_file_name=>'jk64plugin.min.js'
 ,p_mime_type=>'application/javascript'
@@ -8403,7 +8468,7 @@ wwv_flow_api.create_page(
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160319181921'
+,p_last_upd_yyyymmddhh24miss=>'20160320215320'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(73507635119238450)
@@ -8661,7 +8726,7 @@ wwv_flow_api.create_page(
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160319195952'
+,p_last_upd_yyyymmddhh24miss=>'20160320215320'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(75077584221945158)
@@ -8980,7 +9045,7 @@ wwv_flow_api.create_page(
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160319190344'
+,p_last_upd_yyyymmddhh24miss=>'20160320215320'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(75088889966959565)
@@ -9188,7 +9253,7 @@ wwv_flow_api.create_page(
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160319191048'
+,p_last_upd_yyyymmddhh24miss=>'20160320215320'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(75348069727304055)
@@ -9350,6 +9415,145 @@ wwv_flow_api.create_page_da_action(
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_api.id(75348069727304055)
+);
+end;
+/
+prompt --application/pages/page_00005
+begin
+wwv_flow_api.create_page(
+ p_id=>5
+,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
+,p_name=>'Search Map'
+,p_page_mode=>'NORMAL'
+,p_step_title=>'Search Map'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_first_item=>'NO_FIRST_ITEM'
+,p_page_template_options=>'#DEFAULT#'
+,p_overwrite_navigation_list=>'N'
+,p_page_is_public_y_n=>'N'
+,p_cache_mode=>'NOCACHE'
+,p_last_updated_by=>'JEFF'
+,p_last_upd_yyyymmddhh24miss=>'20160320224047'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(70256954141092638)
+,p_plug_name=>'No Google API Key'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>20
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'Since this app does not have the Google API Key attribute set, this demo page will not work. If you installed this demo yourself, and want to use your own key, you need to:',
+'<ol>',
+'<li>Set the Component Attribute for the ReportMap plugin to your Google API Key; and</li>',
+'<li>Run the <a href="https://github.com/jeffreykemp/jk64-plugin-reportmap">countries_data.sql</a> script to create and populate the countries table (this is just used by the "Country" select list item).',
+'</ol>',
+'',
+'Then you will be able to do geocode searches and reverse searches.'))
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_plug_display_condition_type=>'NOT_EXISTS'
+,p_plug_display_when_condition=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'select 1 from APEX_APPL_PLUGIN_SETTINGS',
+'where application_id = 15181',
+'and plugin_code = ''PLUGIN_COM.JK64.REPORT_GOOGLE_MAP''',
+'and attribute_01 /*Google API Key*/ is not null'))
+,p_attribute_01=>'N'
+,p_attribute_02=>'HTML'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(75546157565123643)
+,p_plug_name=>'Search Map'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>10
+,p_include_in_reg_disp_sel_yn=>'N'
+,p_plug_display_point=>'BODY'
+,p_plug_item_display_point=>'BELOW'
+,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP'
+,p_plug_query_row_template=>1
+,p_plug_query_num_rows=>15
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_plug_display_condition_type=>'EXISTS'
+,p_plug_display_when_condition=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'select 1 from APEX_APPL_PLUGIN_SETTINGS',
+'where application_id = 15181',
+'and plugin_code = ''PLUGIN_COM.JK64.REPORT_GOOGLE_MAP''',
+'and attribute_01 /*Google API Key*/ is not null'))
+,p_attribute_01=>'400'
+,p_attribute_03=>'18'
+,p_attribute_06=>'&P5_LATLNG.'
+,p_attribute_08=>'Y'
+,p_attribute_09=>'P5_SEARCH'
+,p_attribute_10=>'&P5_COUNTRY.'
+,p_attribute_12=>'P5_ADDRESS'
+);
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(70256251299092631)
+,p_name=>'P5_SEARCH'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_api.id(75546157565123643)
+,p_prompt=>'Search'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>80
+,p_field_template=>wwv_flow_api.id(25186298275602505444)
+,p_item_template_options=>'#DEFAULT#'
+,p_attribute_01=>'N'
+,p_attribute_02=>'N'
+,p_attribute_04=>'TEXT'
+,p_attribute_05=>'BOTH'
+);
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(70256306778092632)
+,p_name=>'P5_ADDRESS'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_api.id(75546157565123643)
+,p_prompt=>'Address'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>80
+,p_field_template=>wwv_flow_api.id(25186298275602505444)
+,p_item_template_options=>'#DEFAULT#'
+,p_attribute_01=>'N'
+,p_attribute_02=>'N'
+,p_attribute_04=>'TEXT'
+,p_attribute_05=>'BOTH'
+);
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(70256464164092633)
+,p_name=>'P5_COUNTRY'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_api.id(75546157565123643)
+,p_prompt=>'Country'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'select country, code from countries order by 1'
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'(all countries)'
+,p_cHeight=>1
+,p_field_template=>wwv_flow_api.id(25186298275602505444)
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'YES'
+,p_attribute_01=>'REDIRECT_SET_VALUE'
+);
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(70256530354092634)
+,p_name=>'P5_LATLNG'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_api.id(75546157565123643)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attribute_01=>'Y'
+);
+wwv_flow_api.create_page_computation(
+ p_id=>wwv_flow_api.id(70256859857092637)
+,p_computation_sequence=>10
+,p_computation_item=>'P5_LATLNG'
+,p_computation_point=>'AFTER_HEADER'
+,p_computation_type=>'QUERY'
+,p_computation=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'SELECT latitude||'',''||longitude',
+'FROM countries',
+'WHERE code = :P5_COUNTRY'))
+,p_compute_when=>'P5_COUNTRY'
+,p_compute_when_type=>'ITEM_IS_NOT_NULL'
 );
 end;
 /

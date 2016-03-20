@@ -157,6 +157,20 @@ function jk64plugin_userPin(opt,lat,lng) {
     }
   }
 }
+function jk64plugin_getAddress(opt,lat,lng) {
+	var latlng = {lat: lat, lng: lng};
+	opt.geocoder.geocode({'location': latlng}, function(results, status) {
+		if (status === google.maps.GeocoderStatus.OK) {
+			if (results[1]) {
+				$s(opt.addressItem,results[0].formatted_address);
+			} else {
+				window.alert('No results found');
+			}
+		} else {
+			window.alert('Geocoder failed due to: ' + status);
+		}
+	});
+}
 function jk64plugin_initMap(opt) {
 	apex.debug(opt.regionId+" initMap");
 	var myOptions = {
@@ -206,14 +220,26 @@ function jk64plugin_initMap(opt) {
 		});
 	}
 	jk64plugin_repPins(opt);
+	if (opt.addressItem!=="") {
+		opt.geocoder = new google.maps.Geocoder;
+	}
 	google.maps.event.addListener(opt.map, "click", function (event) {
 		var lat = event.latLng.lat()
 		   ,lng = event.latLng.lng();
 		apex.debug(opt.regionId+" map clicked "+lat+","+lng);
-		if (opt.syncItem !== "") {
+		if ((opt.syncItem!=="") || (opt.addressItem!=="")) {
 			jk64plugin_userPin(opt,lat,lng);
+		}
+		if (opt.syncItem!=="") {
 			$s(opt.syncItem,lat+","+lng);
 			jk64plugin_refreshMap(opt);
+		} else if (opt.markerZoom) {
+			apex.debug(opt.regionId+" pan+zoom");
+			opt.map.panTo(event.latLng);
+			opt.map.setZoom(opt.markerZoom);
+		}
+		if (opt.addressItem!=="") {
+			jk64plugin_getAddress(opt,lat,lng);
 		}
 		apex.jQuery("#"+opt.regionId).trigger("mapclick", {map:opt.map, lat:lat, lng:lng});
 	});
