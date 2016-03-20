@@ -8,7 +8,7 @@ The user can click any marker to see a popup info window for it. You can have th
 
 ## DEMO ##
 
-[https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP](https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP)
+[https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64](https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64)
 
 ## INSTALLATION INSTRUCTIONS ##
 
