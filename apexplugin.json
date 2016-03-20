@@ -25,7 +25,7 @@
       "plugin" : {
         "internalName" : "COM.JK64.REPORT_GOOGLE_MAP",
         "type" : "region",
-        "demo" : "https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP",
+        "demo" : "https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64",
         "previewImage" : "https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/plugin-reportmap-preview.png"
       }
     }
