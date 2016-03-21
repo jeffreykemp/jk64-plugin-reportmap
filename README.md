@@ -17,6 +17,7 @@ The user can click any marker to see a popup info window for it. You can have th
 3. *(optional)* Supply your **Google API Key** (NOTE: the plugin is usable without one)
 4. Add a region to the page, select type **JK64 Report Google Map [Plug-In]**
 5. For **SQL Source**, enter a query with at least 4 columns (see example below)
+6. Update the **Number of Rows** to a reasonable upper limit (default is 15, you probably want a higher limit)
 
 **Sample query**
 
