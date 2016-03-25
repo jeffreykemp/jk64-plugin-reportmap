@@ -2,7 +2,7 @@
 
 This allows you to add a Google Map region to any page, showing a number of markers (pins) based on a query you specify. 
 
-![plugin-reportmap-preview.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/plugin-reportmap-preview.png)
+![plugin-reportmap-preview.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/src/plugin-reportmap-preview.png)
 
 The user can click any marker to see a popup info window for it. You can have the region synchronize the map with an item you nominate - if so, the corresponding ID for the marker they click will be copied to the item.
 
