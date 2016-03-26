@@ -231,6 +231,11 @@ wwv_flow_api.create_plugin(
 '        l_geocode_item := NULL;',
 '        l_country      := NULL;',
 '        l_address_item := NULL;',
+'        l_directions   := NULL;',
+'        l_origin_item  := NULL;',
+'        l_dest_item    := NULL;',
+'        l_dirdist_item := NULL;',
+'        l_dirdur_item  := NULL;',
 '    ELSE',
 '        l_js_params := ''?key='' || l_api_key;',
 '        IF l_sign_in = ''Y'' THEN',
@@ -813,8 +818,11 @@ wwv_flow_api.create_plugin_attribute(
 ,p_is_translatable=>false
 ,p_lov_type=>'STATIC'
 ,p_null_text=>'(none)'
-,p_help_text=>'Show travel directions between two locations.'
+,p_help_text=>'Show travel directions between two locations. Google API Key required.'
 );
+end;
+/
+begin
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(82087189457298338)
 ,p_plugin_attribute_id=>wwv_flow_api.id(82084840160296989)
@@ -823,9 +831,6 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_return_value=>'DRIVING'
 ,p_is_quick_pick=>true
 );
-end;
-/
-begin
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(82087582068299112)
 ,p_plugin_attribute_id=>wwv_flow_api.id(82084840160296989)

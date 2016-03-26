@@ -195,6 +195,11 @@ BEGIN
         l_geocode_item := NULL;
         l_country      := NULL;
         l_address_item := NULL;
+        l_directions   := NULL;
+        l_origin_item  := NULL;
+        l_dest_item    := NULL;
+        l_dirdist_item := NULL;
+        l_dirdur_item  := NULL;
     ELSE
         l_js_params := '?key=' || l_api_key;
         IF l_sign_in = 'Y' THEN

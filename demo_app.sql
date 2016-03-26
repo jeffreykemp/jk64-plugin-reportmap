@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   23:47 Saturday March 26, 2016
+--   Date and Time:   23:57 Saturday March 26, 2016
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -40,12 +40,14 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 --     Items:                   20
 --     Computations:             1
 --     Processes:                4
---     Regions:                 21
+--     Regions:                 22
 --     Buttons:                  6
 --     Dynamic Actions:         11
 --   Shared Components:
 --     Logic:
+--       Items:                  1
 --       Processes:              1
+--       Computations:           1
 --     Navigation:
 --       Lists:                  2
 --       Breadcrumbs:            1
@@ -111,7 +113,7 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160326234733'
+,p_last_upd_yyyymmddhh24miss=>'20160326235602'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_ui_type_name => null
 );
@@ -283,12 +285,30 @@ end;
 /
 prompt --application/shared_components/logic/application_items
 begin
-null;
+wwv_flow_api.create_flow_item(
+ p_id=>wwv_flow_api.id(82125689185874736)
+,p_name=>'GOOGLE_API_KEY_PROVIDED'
+,p_protection_level=>'I'
+);
 end;
 /
 prompt --application/shared_components/logic/application_computations
 begin
-null;
+wwv_flow_api.create_flow_computation(
+ p_id=>wwv_flow_api.id(82126083715881322)
+,p_computation_sequence=>10
+,p_computation_item=>'GOOGLE_API_KEY_PROVIDED'
+,p_computation_point=>'ON_NEW_INSTANCE'
+,p_computation_type=>'STATIC_ASSIGNMENT'
+,p_computation_processed=>'REPLACE_EXISTING'
+,p_computation=>'Y'
+,p_compute_when=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'select 1 from APEX_APPL_PLUGIN_SETTINGS',
+'where application_id = 15181',
+'and plugin_code = ''PLUGIN_COM.JK64.REPORT_GOOGLE_MAP''',
+'and attribute_01 /*Google API Key*/ is not null'))
+,p_compute_when_type=>'EXISTS'
+);
 end;
 /
 prompt --application/shared_components/navigation/tabs/standard
@@ -7840,6 +7860,11 @@ wwv_flow_api.create_plugin(
 '        l_geocode_item := NULL;',
 '        l_country      := NULL;',
 '        l_address_item := NULL;',
+'        l_directions   := NULL;',
+'        l_origin_item  := NULL;',
+'        l_dest_item    := NULL;',
+'        l_dirdist_item := NULL;',
+'        l_dirdur_item  := NULL;',
 '    ELSE',
 '        l_js_params := ''?key='' || l_api_key;',
 '        IF l_sign_in = ''Y'' THEN',
@@ -8422,7 +8447,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_is_translatable=>false
 ,p_lov_type=>'STATIC'
 ,p_null_text=>'(none)'
-,p_help_text=>'Show travel directions between two locations.'
+,p_help_text=>'Show travel directions between two locations. Google API Key required.'
 );
 end;
 /
@@ -8843,7 +8868,7 @@ wwv_flow_api.create_page(
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160326232234'
+,p_last_upd_yyyymmddhh24miss=>'20160326235129'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(73507635119238450)
@@ -9104,7 +9129,7 @@ wwv_flow_api.create_page(
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160326232234'
+,p_last_upd_yyyymmddhh24miss=>'20160326235129'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(75077584221945158)
@@ -9425,7 +9450,7 @@ wwv_flow_api.create_page(
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160326232234'
+,p_last_upd_yyyymmddhh24miss=>'20160326235129'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(75088889966959565)
@@ -9635,7 +9660,7 @@ wwv_flow_api.create_page(
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160326232234'
+,p_last_upd_yyyymmddhh24miss=>'20160326235129'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(75348069727304055)
@@ -9841,7 +9866,7 @@ wwv_flow_api.create_page(
 ,p_page_is_public_y_n=>'N'
 ,p_cache_mode=>'NOCACHE'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160326232234'
+,p_last_upd_yyyymmddhh24miss=>'20160326235419'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(70256954141092638)
@@ -9860,12 +9885,8 @@ wwv_flow_api.create_page_plug(
 '',
 'Then you will be able to do geocode searches and reverse searches.'))
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
-,p_plug_display_condition_type=>'NOT_EXISTS'
-,p_plug_display_when_condition=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
-'select 1 from APEX_APPL_PLUGIN_SETTINGS',
-'where application_id = 15181',
-'and plugin_code = ''PLUGIN_COM.JK64.REPORT_GOOGLE_MAP''',
-'and attribute_01 /*Google API Key*/ is not null'))
+,p_plug_display_condition_type=>'ITEM_IS_NULL'
+,p_plug_display_when_condition=>'GOOGLE_API_KEY_PROVIDED'
 ,p_attribute_01=>'N'
 ,p_attribute_02=>'HTML'
 );
@@ -9882,12 +9903,8 @@ wwv_flow_api.create_page_plug(
 ,p_plug_query_row_template=>1
 ,p_plug_query_num_rows=>15
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
-,p_plug_display_condition_type=>'EXISTS'
-,p_plug_display_when_condition=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
-'select 1 from APEX_APPL_PLUGIN_SETTINGS',
-'where application_id = 15181',
-'and plugin_code = ''PLUGIN_COM.JK64.REPORT_GOOGLE_MAP''',
-'and attribute_01 /*Google API Key*/ is not null'))
+,p_plug_display_condition_type=>'ITEM_IS_NOT_NULL'
+,p_plug_display_when_condition=>'GOOGLE_API_KEY_PROVIDED'
 ,p_attribute_01=>'400'
 ,p_attribute_03=>'18'
 ,p_attribute_06=>'&P5_LATLNG.'
@@ -9984,7 +10001,7 @@ wwv_flow_api.create_page(
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160326232234'
+,p_last_upd_yyyymmddhh24miss=>'20160326235129'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(82071398709855156)
@@ -10339,7 +10356,7 @@ wwv_flow_api.create_page(
 '<p>',
 'Here, I''ve then added dynamic actions to convert these results to kilometres and minutes.'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160326234414'
+,p_last_upd_yyyymmddhh24miss=>'20160326235602'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(75663994968050645)
@@ -10353,6 +10370,8 @@ wwv_flow_api.create_page_plug(
 ,p_plug_display_point=>'BODY'
 ,p_plug_source_type=>'NATIVE_HELP_TEXT'
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_plug_display_condition_type=>'ITEM_IS_NOT_NULL'
+,p_plug_display_when_condition=>'GOOGLE_API_KEY_PROVIDED'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(82101593343548360)
@@ -10367,22 +10386,38 @@ wwv_flow_api.create_page_plug(
 ,p_plug_query_row_template=>1
 ,p_plug_query_num_rows=>15
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
-,p_plug_display_condition_type=>'EXISTS'
-,p_plug_display_when_condition=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
-'select 1 from APEX_APPL_PLUGIN_SETTINGS',
-'where application_id = 15181',
-'and plugin_code = ''PLUGIN_COM.JK64.REPORT_GOOGLE_MAP''',
-'and attribute_01 /*Google API Key*/ is not null'))
+,p_plug_display_condition_type=>'ITEM_IS_NOT_NULL'
+,p_plug_display_when_condition=>'GOOGLE_API_KEY_PROVIDED'
 ,p_attribute_01=>'400'
 ,p_attribute_03=>'18'
 ,p_attribute_06=>'&P7_LATLNG.'
 ,p_attribute_08=>'Y'
 ,p_attribute_13=>'N'
+,p_attribute_14=>'12'
 ,p_attribute_15=>'DRIVING'
 ,p_attribute_16=>'P7_ORIGIN'
 ,p_attribute_17=>'P7_DEST'
 ,p_attribute_18=>'P7_DISTANCE'
 ,p_attribute_19=>'P7_DURATION'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(82125116148870783)
+,p_plug_name=>'No Google API Key'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>30
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'Since this app does not have the Google API Key attribute set, this demo page will not work. If you installed this demo yourself, and want to use your own key, you need to set the Component Attribute for the ReportMap plugin to your Google API Key',
+'<p>',
+'Then you will be able to get directions between two locations.'))
+,p_plug_query_row_template=>1
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_plug_display_condition_type=>'ITEM_IS_NULL'
+,p_plug_display_when_condition=>'GOOGLE_API_KEY_PROVIDED'
+,p_attribute_01=>'N'
+,p_attribute_02=>'HTML'
 );
 wwv_flow_api.create_page_item(
  p_id=>wwv_flow_api.id(75662991037050635)
