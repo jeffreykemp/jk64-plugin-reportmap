@@ -235,6 +235,52 @@ function jk64plugin_geolocate(opt) {
 	}
 }
 
+function jk64plugin_convertLatLng(str) {
+	// see if the string can be interpreted as a lat,lng pair; otherwise,
+	// we will assume it's an address or location name
+	var arr = str.split(",");
+	if ((arr.length!=2) || isNaN(arr[0]) || isNaN(arr[1])) {
+		return str;
+	} else {
+		return {lat: parseFloat(arr[0]), lng: parseFloat(arr[1])};
+	}
+}
+
+function jk64plugin_directions(opt) {
+	apex.debug(opt.regionId+" directions");
+	var origin = jk64plugin_convertLatLng($v(opt.originItem))
+	   ,dest   = jk64plugin_convertLatLng($v(opt.destItem));
+	if (origin !== "" && dest !== "") {
+		opt.directionsService.route({
+			origin: origin,
+			destination: dest,
+			travelMode: google.maps.TravelMode[opt.directions]
+		}, function(response, status) {
+			if (status == google.maps.DirectionsStatus.OK) {
+				opt.directionsDisplay.setDirections(response);
+				if ((opt.dirdistItem !== "") || (opt.dirdurItem !== "")) {
+					var totalDistance = 0, totalDuration = 0;
+					for (var i=0; i < response.routes.length; i++) {
+						for (var j=0; j < response.routes[i].legs.length; j++) {
+							var leg = response.routes[i].legs[j];
+							totalDistance = totalDistance + leg.distance.value;
+							totalDuration = totalDuration + leg.duration.value;
+						}
+					}
+					if (opt.dirdistItem !== "") {
+						$s(opt.dirdistItem, totalDistance);
+					}
+					if (opt.dirdurItem !== "") {
+						$s(opt.dirdurItem, totalDuration);
+					}
+				}
+			} else {
+				window.alert('Directions request failed due to ' + status);
+			}
+		});
+	}
+}
+
 function jk64plugin_initMap(opt) {
 	apex.debug(opt.regionId+" initMap");
 	var myOptions = {
@@ -288,6 +334,19 @@ function jk64plugin_initMap(opt) {
 	}
 	if (opt.addressItem!=="") {
 		opt.geocoder = new google.maps.Geocoder;
+	}
+	if (opt.directions) {
+		opt.directionsDisplay = new google.maps.DirectionsRenderer;
+        opt.directionsService = new google.maps.DirectionsService;
+		opt.directionsDisplay.setMap(opt.map);
+		jk64plugin_directions(opt);
+		//if the origin or dest item is changed, recalc the directions
+		$("#"+opt.originItem).change(function(){
+			jk64plugin_directions(opt);
+		});
+		$("#"+opt.destItem).change(function(){
+			jk64plugin_directions(opt);
+		});
 	}
 	google.maps.event.addListener(opt.map, "click", function (event) {
 		var lat = event.latLng.lat()

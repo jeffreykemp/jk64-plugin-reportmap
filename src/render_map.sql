@@ -174,6 +174,11 @@ FUNCTION render_map
     l_address_item  plugin_attr := p_region.attribute_12;
     l_geolocate     plugin_attr := p_region.attribute_13;
     l_geoloc_zoom   plugin_attr := p_region.attribute_14;
+    l_directions    plugin_attr := p_region.attribute_15;
+    l_origin_item   plugin_attr := p_region.attribute_16;
+    l_dest_item     plugin_attr := p_region.attribute_17;
+    l_dirdist_item  plugin_attr := p_region.attribute_18;
+    l_dirdur_item   plugin_attr := p_region.attribute_19;
     
 BEGIN
     -- debug information will be included
@@ -267,23 +272,23 @@ BEGIN
     
     l_script := '<script>
 var opt_#REGION# = {
-   container:      "map_#REGION#_container"
-  ,regionId:       "#REGION#"
+   container: "map_#REGION#_container"
+  ,regionId: "#REGION#"
   ,ajaxIdentifier: "'||APEX_PLUGIN.get_ajax_identifier||'"
-  ,ajaxItems:      "'||APEX_PLUGIN_UTIL.page_item_names_to_jquery(p_region.ajax_items_to_submit)||'"
-  ,latlng:         "'||l_latlong||'"
-  ,markerZoom:     '||l_click_zoom||'
-  ,icon:           "'||l_markericon||'"
-  ,idItem:         "'||l_id_item||'"
-  ,syncItem:       "'||l_sync_item||'"
-  ,distItem:       "'||l_dist_item||'"
-  ,geocodeItem:    "'||l_geocode_item||'"
-  ,country:        "'||l_country||'"
-  ,southwest:      {'||latlng2ch(l_lat_min,l_lng_min)||'}
-  ,northeast:      {'||latlng2ch(l_lat_max,l_lng_max)||'}'||
+  ,ajaxItems: "'||APEX_PLUGIN_UTIL.page_item_names_to_jquery(p_region.ajax_items_to_submit)||'"
+  ,latlng: "'||l_latlong||'"
+  ,markerZoom: '||l_click_zoom||'
+  ,icon: "'||l_markericon||'"
+  ,idItem: "'||l_id_item||'"
+  ,syncItem: "'||l_sync_item||'"
+  ,distItem: "'||l_dist_item||'"
+  ,geocodeItem: "'||l_geocode_item||'"
+  ,country: "'||l_country||'"
+  ,southwest: {'||latlng2ch(l_lat_min,l_lng_min)||'}
+  ,northeast: {'||latlng2ch(l_lat_max,l_lng_max)||'}'||
   CASE WHEN l_mapstyle IS NOT NULL THEN '
-  ,mapstyle:       '||l_mapstyle END || '
-  ,addressItem:    "'||l_address_item||'"'||
+  ,mapstyle: '||l_mapstyle END || '
+  ,addressItem: "'||l_address_item||'"'||
   CASE WHEN l_geolocate = 'Y' THEN '
   ,geolocate: true' ||
     CASE WHEN l_geoloc_zoom IS NOT NULL THEN '
@@ -292,7 +297,20 @@ var opt_#REGION# = {
   END || '
   ,noDataMessage:  "'||p_region.no_data_found_message||'"'||
   CASE WHEN p_region.source IS NOT NULL THEN '
-  ,expectData:     true'
+  ,expectData: true'
+  END ||
+  CASE WHEN l_directions IS NOT NULL
+        AND l_origin_item IS NOT NULL
+        AND l_dest_item IS NOT NULL THEN '
+  ,directions: "' || l_directions || '"
+  ,originItem: "' || l_origin_item || '"
+  ,destItem: "' || l_dest_item || '"' ||
+    CASE WHEN l_dirdist_item IS NOT NULL THEN '
+  ,dirdistItem: "' || l_dirdist_item || '"'
+    END ||
+    CASE WHEN l_dirdur_item IS NOT NULL THEN '
+  ,dirdurItem: "' || l_dirdur_item || '"'
+    END
   END || '
 };
 function click_#REGION#(id) {
