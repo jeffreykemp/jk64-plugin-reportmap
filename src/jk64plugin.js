@@ -17,6 +17,31 @@ function jk64plugin_geocode(opt,geocoder) {
     }
   });
 }
+
+function jk64plugin_markerclick(opt,pData) {
+	if (opt.idItem!=="") {
+		$s(opt.idItem,pData.id);
+	}
+	apex.jQuery("#"+opt.regionId).trigger("markerclick", {
+		map:opt.map,
+		id:pData.id,
+		name:pData.name,
+		lat:pData.lat,
+		lng:pData.lng,
+		rad:pData.rad,
+		attr01:pData.attr01,
+		attr02:pData.attr02,
+		attr03:pData.attr03,
+		attr04:pData.attr04,
+		attr05:pData.attr05,
+		attr06:pData.attr06,
+		attr07:pData.attr07,
+		attr08:pData.attr08,
+		attr09:pData.attr09,
+		attr10:pData.attr10
+	});	
+}
+
 function jk64plugin_repPin(opt,pData) {
 	var pos = new google.maps.LatLng(pData.lat, pData.lng);
 	if (pData.rad) {
@@ -33,10 +58,7 @@ function jk64plugin_repPin(opt,pData) {
 		});
 		google.maps.event.addListener(circ, "click", function () {
 			apex.debug(opt.regionId+" circle clicked "+pData.id);
-			if (opt.idItem!=="") {
-				$s(opt.idItem,pData.id);
-			}
-			apex.jQuery("#"+opt.regionId).trigger("markerclick", {map:opt.map, id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng, rad:pData.rad});
+			jk64plugin_markerclick(opt,pData);
 		});
 		if (!opt.circles) { opt.circles=[]; }
 		opt.circles.push({"id":pData.id,"circ":circ});
@@ -64,15 +86,13 @@ function jk64plugin_repPin(opt,pData) {
 			if (opt.markerZoom) {
 				opt.map.setZoom(opt.markerZoom);
 			}
-			if (opt.idItem!=="") {
-				$s(opt.idItem,pData.id);
-			}
-			apex.jQuery("#"+opt.regionId).trigger("markerclick", {map:opt.map, id:pData.id, name:pData.name, lat:pData.lat, lng:pData.lng, rad:pData.rad});
+			jk64plugin_markerclick(opt,pData);
 		});
 		if (!opt.reppin) { opt.reppin=[]; }
 		opt.reppin.push({"id":pData.id,"marker":reppin});
 	}
 }
+
 function jk64plugin_repPins(opt) {
 	if (opt.mapdata.length>0) {
 		if (opt.infoNoDataFound) {
@@ -98,6 +118,7 @@ function jk64plugin_repPins(opt) {
 		}
 	}
 }
+
 function jk64plugin_click(opt,id) {
   var found = false;
   for (var i = 0; i < opt.reppin.length; i++) {
@@ -111,6 +132,7 @@ function jk64plugin_click(opt,id) {
     apex.debug(opt.regionId+" id not found:"+id);
   }
 }
+
 function jk64plugin_setCircle(opt,pos) {
   if (opt.distItem!=="") {
     if (opt.distcircle) {
@@ -150,6 +172,7 @@ function jk64plugin_setCircle(opt,pos) {
     }
   }
 }
+
 function jk64plugin_userPin(opt,lat,lng) {
   if (lat!==null && lng!==null) {
     var oldpos = opt.userpin?opt.userpin.getPosition():new google.maps.LatLng(0,0);
@@ -177,6 +200,7 @@ function jk64plugin_userPin(opt,lat,lng) {
     }
   }
 }
+
 function jk64plugin_getAddress(opt,lat,lng) {
 	var latlng = {lat: lat, lng: lng};
 	opt.geocoder.geocode({'location': latlng}, function(results, status) {
@@ -191,6 +215,26 @@ function jk64plugin_getAddress(opt,lat,lng) {
 		}
 	});
 }
+
+function jk64plugin_geolocate(opt) {
+	if (navigator.geolocation) {
+		apex.debug(opt.regionId+" geolocate");
+		navigator.geolocation.getCurrentPosition(function(position) {
+			var pos = {
+				lat: position.coords.latitude,
+				lng: position.coords.longitude
+			};
+			opt.map.panTo(pos);
+			if (opt.geolocateZoom) {
+			  opt.map.setZoom(opt.geolocateZoom);
+			}
+			apex.jQuery("#"+opt.regionId).trigger("geolocate", {map:opt.map, lat:pos.lat, lng:pos.lng});
+		});
+	} else {
+		apex.debug(opt.regionId+" browser does not support geolocation");
+	}
+}
+
 function jk64plugin_initMap(opt) {
 	apex.debug(opt.regionId+" initMap");
 	var myOptions = {
@@ -239,7 +283,9 @@ function jk64plugin_initMap(opt) {
 			}
 		});
 	}
-	jk64plugin_repPins(opt);
+	if (opt.expectData) {
+		jk64plugin_repPins(opt);
+	}
 	if (opt.addressItem!=="") {
 		opt.geocoder = new google.maps.Geocoder;
 	}
@@ -270,26 +316,12 @@ function jk64plugin_initMap(opt) {
 		});
 	  }
 	if (opt.geolocate) {
-		if (navigator.geolocation) {
-			apex.debug(opt.regionId+" geolocate");
-			navigator.geolocation.getCurrentPosition(function(position) {
-				var pos = {
-					lat: position.coords.latitude,
-					lng: position.coords.longitude
-				};
-				opt.map.panTo(pos);
-				if (opt.geolocateZoom) {
-				  opt.map.setZoom(opt.geolocateZoom);
-				}
-				apex.jQuery("#"+opt.regionId).trigger("geolocate", {map:opt.map, lat:pos.lat, lng:pos.lng});
-			});
-		} else {
-			apex.debug(opt.regionId+" browser does not support geolocation");
-		}
+		jk64plugin_geolocate(opt);
 	}
 	apex.debug(opt.regionId+" initMap finished");
 	apex.jQuery("#"+opt.regionId).trigger("maploaded", {map:opt.map});
 }
+
 function jk64plugin_refreshMap(opt) {
 	apex.debug(opt.regionId+" refreshMap");
 	apex.jQuery("#"+opt.regionId).trigger("apexbeforerefresh");
@@ -323,7 +355,9 @@ function jk64plugin_refreshMap(opt) {
 				}
 				apex.debug(opt.regionId+" pData.mapdata.length="+pData.mapdata.length);
 				opt.mapdata = pData.mapdata;
-				jk64plugin_repPins(opt);
+				if (opt.expectData) {
+					jk64plugin_repPins(opt);
+				}
 				if (opt.syncItem!=="") {
 					var val = $v(opt.syncItem);
 					if (val!==null && val.indexOf(",") > -1) {

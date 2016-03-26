@@ -37,6 +37,7 @@ FUNCTION get_markers
     l_radius_km      NUMBER;
     l_circle_color   VARCHAR2(100);
     l_circle_transp  NUMBER;
+    l_flex_fields    VARCHAR2(32767);
     
     l_column_value_list  APEX_PLUGIN_UTIL.t_column_value_list;
 
@@ -45,7 +46,7 @@ BEGIN
     l_column_value_list := APEX_PLUGIN_UTIL.get_data
         (p_sql_statement  => p_region.source
         ,p_min_columns    => 4
-        ,p_max_columns    => 9
+        ,p_max_columns    => 19
         ,p_component_name => p_region.name
         ,p_max_rows       => p_region.fetched_rows);
   
@@ -60,6 +61,7 @@ BEGIN
         l_radius_km     := NULL;
         l_circle_color  := '#0000cc';
         l_circle_transp := '0.3';
+        l_flex_fields   := NULL;
         
         IF l_column_value_list.EXISTS(6) THEN
           l_icon := l_column_value_list(6)(i);
@@ -70,6 +72,16 @@ BEGIN
         IF l_column_value_list.EXISTS(9) THEN
           l_circle_transp := TO_NUMBER(l_column_value_list(9)(i));
         END IF; END IF; END IF; END IF;
+        
+        FOR j IN 10..19 LOOP
+          IF l_column_value_list.EXISTS(j) THEN
+            l_flex_fields := l_flex_fields
+              || ',"attr'
+              || TO_CHAR(j-9,'fm00')
+              || '":'
+              || APEX_ESCAPE.js_literal(l_column_value_list(j)(i),'"');
+          END IF;
+        END LOOP;
        
         l_data(NVL(l_data.LAST,0)+1) :=
              '{"id":'  || APEX_ESCAPE.js_literal(l_column_value_list(4)(i),'"')
@@ -86,6 +98,7 @@ BEGIN
              ',"trns":'|| TO_CHAR(l_circle_transp,'fm990.099')
                END
              END
+          || l_flex_fields
           || '}';
     
         set_map_extents
@@ -141,7 +154,6 @@ FUNCTION render_map
     l_lat_max      number;
     l_lng_min      number;
     l_lng_max      number;
-    l_ajax_items   varchar2(1000);
     l_js_params    varchar2(1000);
 
     -- Plugin attributes (application level)
@@ -191,8 +203,9 @@ BEGIN
       ,p_skip_extension => true);
 
     APEX_JAVASCRIPT.add_library
-      (p_name           => 'jk64plugin.min'
-      ,p_directory      => p_plugin.file_prefix);
+      (p_name                  => 'jk64plugin'
+      ,p_directory             => p_plugin.file_prefix
+      ,p_check_to_add_minified => TRUE);
 
     l_region := CASE
                 WHEN p_region.static_id IS NOT NULL
@@ -252,22 +265,12 @@ BEGIN
     
     fix_latlng(l_lat_min, l_lat_max, l_lng_min, l_lng_max);
     
-    IF l_sync_item IS NOT NULL THEN
-      l_ajax_items := '#' || l_sync_item;
-    END IF;
-    IF l_dist_item IS NOT NULL THEN
-      IF l_ajax_items IS NOT NULL THEN
-        l_ajax_items := l_ajax_items || ',';
-      END IF;
-      l_ajax_items := l_ajax_items || '#' || l_dist_item;
-    END IF;
-    
     l_script := '<script>
 var opt_#REGION# = {
    container:      "map_#REGION#_container"
   ,regionId:       "#REGION#"
   ,ajaxIdentifier: "'||APEX_PLUGIN.get_ajax_identifier||'"
-  ,ajaxItems:      "'||l_ajax_items||'"
+  ,ajaxItems:      "'||APEX_PLUGIN_UTIL.page_item_names_to_jquery(p_region.ajax_items_to_submit)||'"
   ,latlng:         "'||l_latlong||'"
   ,markerZoom:     '||l_click_zoom||'
   ,icon:           "'||l_markericon||'"
@@ -287,7 +290,10 @@ var opt_#REGION# = {
   ,geolocateZoom: '||l_geoloc_zoom
     END
   END || '
-  ,noDataMessage:  "'||p_region.no_data_found_message||'"
+  ,noDataMessage:  "'||p_region.no_data_found_message||'"'||
+  CASE WHEN p_region.source IS NOT NULL THEN '
+  ,expectData:     true'
+  END || '
 };
 function click_#REGION#(id) {
   jk64plugin_click(opt_#REGION#,id);
