@@ -287,6 +287,7 @@ var opt_#REGION# = {
   ,geolocateZoom: '||l_geoloc_zoom
     END
   END || '
+  ,noDataMessage:  "'||p_region.no_data_found_message||'"
 };
 function click_#REGION#(id) {
   jk64plugin_click(opt_#REGION#,id);

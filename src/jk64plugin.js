@@ -74,9 +74,29 @@ function jk64plugin_repPin(opt,pData) {
 	}
 }
 function jk64plugin_repPins(opt) {
-  for (var i = 0; i < opt.mapdata.length; i++) {
-    jk64plugin_repPin(opt,opt.mapdata[i]);
-  }
+	if (opt.mapdata.length>0) {
+		if (opt.infoNoDataFound) {
+			apex.debug(opt.regionId+" hide No Data Found infowindow");
+			opt.infoNoDataFound.close();
+		}
+		for (var i = 0; i < opt.mapdata.length; i++) {
+			jk64plugin_repPin(opt,opt.mapdata[i]);
+		}
+	} else {
+		if (opt.noDataMessage !== "") {
+			apex.debug(opt.regionId+" show No Data Found infowindow");
+			if (opt.infoNoDataFound) {
+				opt.infoNoDataFound.close();
+			} else {
+				opt.infoNoDataFound = new google.maps.InfoWindow(
+					{
+						content: opt.noDataMessage,
+						position: {lat:0,lng:0}
+					});
+			}
+			opt.infoNoDataFound.open(opt.map);
+		}
+	}
 }
 function jk64plugin_click(opt,id) {
   var found = false;
