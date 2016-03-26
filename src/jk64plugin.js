@@ -249,6 +249,24 @@ function jk64plugin_initMap(opt) {
 			jk64plugin_geocode(opt,geocoder);
 		});
 	  }
+	if (opt.geolocate) {
+		if (navigator.geolocation) {
+			apex.debug(opt.regionId+" geolocate");
+			navigator.geolocation.getCurrentPosition(function(position) {
+				var pos = {
+					lat: position.coords.latitude,
+					lng: position.coords.longitude
+				};
+				opt.map.panTo(pos);
+				if (opt.geolocateZoom) {
+				  opt.map.setZoom(opt.geolocateZoom);
+				}
+				apex.jQuery("#"+opt.regionId).trigger("geolocate", {map:opt.map, lat:pos.lat, lng:pos.lng});
+			});
+		} else {
+			apex.debug(opt.regionId+" browser does not support geolocation");
+		}
+	}
 	apex.debug(opt.regionId+" initMap finished");
 	apex.jQuery("#"+opt.regionId).trigger("maploaded", {map:opt.map});
 }

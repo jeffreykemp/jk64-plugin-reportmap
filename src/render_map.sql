@@ -160,6 +160,8 @@ FUNCTION render_map
     l_country       plugin_attr := p_region.attribute_10;
     l_mapstyle      plugin_attr := p_region.attribute_11;
     l_address_item  plugin_attr := p_region.attribute_12;
+    l_geolocate     plugin_attr := p_region.attribute_13;
+    l_geoloc_zoom   plugin_attr := p_region.attribute_14;
     
 BEGIN
     -- debug information will be included
@@ -278,7 +280,13 @@ var opt_#REGION# = {
   ,northeast:      {'||latlng2ch(l_lat_max,l_lng_max)||'}'||
   CASE WHEN l_mapstyle IS NOT NULL THEN '
   ,mapstyle:       '||l_mapstyle END || '
-  ,addressItem:    "'||l_address_item||'"
+  ,addressItem:    "'||l_address_item||'"'||
+  CASE WHEN l_geolocate = 'Y' THEN '
+  ,geolocate: true' ||
+    CASE WHEN l_geoloc_zoom IS NOT NULL THEN '
+  ,geolocateZoom: '||l_geoloc_zoom
+    END
+  END || '
 };
 function click_#REGION#(id) {
   jk64plugin_click(opt_#REGION#,id);
