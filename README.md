@@ -15,7 +15,7 @@ The user can click any marker to see a popup info window for it. You can have th
 ## PRE-REQUISITES ##
 
 * [Oracle Application Express 5.0.2](https://apex.oracle.com)
-* 
+
 ## INSTALLATION INSTRUCTIONS ##
 
 1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
