@@ -13,10 +13,10 @@ whenever sqlerror exit sql.sqlcode rollback
 begin
 wwv_flow_api.import_begin (
  p_version_yyyy_mm_dd=>'2013.01.01'
-,p_release=>'5.0.2.00.07'
-,p_default_workspace_id=>20749515040658038
+,p_release=>'5.0.3.00.03'
+,p_default_workspace_id=>69160808430820669492
 ,p_default_application_id=>15181
-,p_default_owner=>'SAMPLE'
+,p_default_owner=>'JK64'
 );
 end;
 /
@@ -159,18 +159,6 @@ wwv_flow_api.create_plugin(
 '    END LOOP;',
 'END htp_arr;',
 '',
-'PROCEDURE fix_latlng',
-'  (lat_min IN OUT NUMBER',
-'  ,lat_max IN OUT NUMBER',
-'  ,lng_min IN OUT NUMBER',
-'  ,lng_max IN OUT NUMBER) IS',
-'BEGIN',
-'  lat_min := GREATEST(lat_min, -80);',
-'  lat_max := LEAST(lat_max, 80);',
-'  lng_min := MOD(lng_min + 360,180);',
-'  lng_max := MOD(lng_max + 360,180);',
-'END fix_latlng;',
-'',
 'FUNCTION render_map',
 '    (p_region IN APEX_PLUGIN.t_region',
 '    ,p_plugin IN APEX_PLUGIN.t_plugin',
@@ -292,10 +280,10 @@ wwv_flow_api.create_plugin(
 '        );',
 '',
 '    ELSIF l_data.COUNT = 0 AND l_lat IS NOT NULL THEN',
-'      l_lat_min := l_lat - 10;',
-'      l_lat_max := l_lat + 10;',
-'      l_lng_min := l_lng - 10;',
-'      l_lng_max := l_lng + 10;',
+'      l_lat_min := GREATEST(l_lat - 10, -80);',
+'      l_lat_max := LEAST(l_lat + 10, 80);',
+'      l_lng_min := GREATEST(l_lng - 10, -180);',
+'      l_lng_max := LEAST(l_lng + 10, 180);',
 '',
 '    -- show entire map if no points to show',
 '    ELSIF l_data.COUNT = 0 THEN',
@@ -308,9 +296,7 @@ wwv_flow_api.create_plugin(
 '      l_lng_max := 180;',
 '',
 '    END IF;',
-'    ',
-'    fix_latlng(l_lat_min, l_lat_max, l_lng_min, l_lng_max);',
-'    ',
+'        ',
 '    l_script := ''<script>',
 'var opt_#REGION# = {',
 '   container: "map_#REGION#_container"',
@@ -318,7 +304,7 @@ wwv_flow_api.create_plugin(
 '  ,ajaxIdentifier: "''||APEX_PLUGIN.get_ajax_identifier||''"',
 '  ,ajaxItems: "''||APEX_PLUGIN_UTIL.page_item_names_to_jquery(p_region.ajax_items_to_submit)||''"',
 '  ,latlng: "''||l_latlong||''"',
-'  ,markerZoom: ''||l_click_zoom||''',
+'  ,markerZoom: ''||NVL(l_click_zoom,''null'')||''',
 '  ,icon: "''||l_markericon||''"',
 '  ,idItem: "''||l_id_item||''"',
 '  ,syncItem: "''||l_sync_item||''"',
@@ -435,10 +421,10 @@ wwv_flow_api.create_plugin(
 '        );',
 '',
 '    ELSIF l_data.COUNT = 0 AND l_lat IS NOT NULL THEN',
-'      l_lat_min := l_lat - 10;',
-'      l_lat_max := l_lat + 10;',
-'      l_lng_min := l_lng - 10;',
-'      l_lng_max := l_lng + 10;',
+'      l_lat_min := GREATEST(l_lat - 10, -180);',
+'      l_lat_max := LEAST(l_lat + 10, 80);',
+'      l_lng_min := GREATEST(l_lng - 10, -180);',
+'      l_lng_max := LEAST(l_lng + 10, 180);',
 '',
 '    -- show entire map if no points to show',
 '    ELSIF l_data.COUNT = 0 THEN',
@@ -451,8 +437,6 @@ wwv_flow_api.create_plugin(
 '      l_lng_max := 180;',
 '',
 '    END IF;',
-'',
-'    fix_latlng(l_lat_min, l_lat_max, l_lng_min, l_lng_max);',
 '',
 '    sys.owa_util.mime_header(''text/plain'', false);',
 '    sys.htp.p(''Cache-Control: no-cache'');',
@@ -573,7 +557,7 @@ wwv_flow_api.create_plugin(
 'http://maps.google.com/mapfiles/ms/icons/red-pushpin.png',
 '<p>',
 'To create a Population Map (i.e. draw circles of varying radii instead of pins), supply additional columns in the query to indicate radius (in km), and optionally circle colour and transparency.'))
-,p_version_identifier=>'0.5'
+,p_version_identifier=>'0.6'
 ,p_about_url=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_files_version=>29
 );
@@ -820,9 +804,6 @@ wwv_flow_api.create_plugin_attribute(
 ,p_null_text=>'(none)'
 ,p_help_text=>'Show travel directions between two locations. Google API Key required.'
 );
-end;
-/
-begin
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(82087189457298338)
 ,p_plugin_attribute_id=>wwv_flow_api.id(82084840160296989)
@@ -831,6 +812,9 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_return_value=>'DRIVING'
 ,p_is_quick_pick=>true
 );
+end;
+/
+begin
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(82087582068299112)
 ,p_plugin_attribute_id=>wwv_flow_api.id(82084840160296989)

@@ -13,10 +13,10 @@ whenever sqlerror exit sql.sqlcode rollback
 begin
 wwv_flow_api.import_begin (
  p_version_yyyy_mm_dd=>'2013.01.01'
-,p_release=>'5.0.2.00.07'
-,p_default_workspace_id=>20749515040658038
+,p_release=>'5.0.3.00.03'
+,p_default_workspace_id=>69160808430820669492
 ,p_default_application_id=>15181
-,p_default_owner=>'SAMPLE'
+,p_default_owner=>'JK64'
 );
 end;
 /
@@ -27,22 +27,22 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   23:57 Saturday March 26, 2016
---   Exported By:     JEFF
+--   Date and Time:   14:13 Friday May 13, 2016
+--   Exported By:     JEFFREY.KEMP@JK64.COM
 --   Flashback:       0
 --   Export Type:     Application Export
---   Version:         5.0.2.00.07
---   Instance ID:     61916131238277
+--   Version:         5.0.3.00.03
+--   Instance ID:     63113759365424
 --
 
 -- Application Statistics:
---   Pages:                      8
---     Items:                   20
+--   Pages:                      9
+--     Items:                   22
 --     Computations:             1
---     Processes:                4
---     Regions:                 22
---     Buttons:                  6
---     Dynamic Actions:         11
+--     Processes:                5
+--     Regions:                 25
+--     Buttons:                  7
+--     Dynamic Actions:         13
 --   Shared Components:
 --     Logic:
 --       Items:                  1
@@ -86,7 +86,7 @@ begin
 wwv_flow_api.create_flow(
  p_id=>wwv_flow.g_flow_id
 ,p_display_id=>nvl(wwv_flow_application_install.get_application_id,15181)
-,p_owner=>nvl(wwv_flow_application_install.get_schema,'JK64')
+,p_owner=>nvl(wwv_flow_application_install.get_schema,'SAMPLE')
 ,p_name=>nvl(wwv_flow_application_install.get_application_name,'Demo Report Map Plugin')
 ,p_alias=>nvl(wwv_flow_application_install.get_application_alias,'JK64_REPORT_MAP')
 ,p_page_view_logging=>'YES'
@@ -102,7 +102,7 @@ wwv_flow_api.create_flow(
 ,p_application_tab_set=>0
 ,p_logo_image=>'TEXT:Report Map Demo'
 ,p_proxy_server=> nvl(wwv_flow_application_install.get_proxy,'')
-,p_flow_version=>'release 0.5'
+,p_flow_version=>'release 0.6'
 ,p_flow_status=>'AVAILABLE_W_EDIT_LINK'
 ,p_flow_unavailable_text=>'This application is currently unavailable at this time.'
 ,p_exact_substitutions_only=>'Y'
@@ -112,8 +112,8 @@ wwv_flow_api.create_flow(
 ,p_csv_encoding=>'Y'
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
-,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20160326235602'
+,p_last_updated_by=>'JEFFREY.KEMP@JK64.COM'
+,p_last_upd_yyyymmddhh24miss=>'20160513141219'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_ui_type_name => null
 );
@@ -188,6 +188,14 @@ wwv_flow_api.create_list_item(
 ,p_list_item_icon=>'fa-map-marker'
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'7'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33333076262073494913)
+,p_list_item_display_sequence=>80
+,p_list_item_link_text=>'Test2'
+,p_list_item_link_target=>'f?p=&APP_ID.:8:&SESSION.::&DEBUG.'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'8'
 );
 wwv_flow_api.create_list(
  p_id=>wwv_flow_api.id(25186303809636505463)
@@ -7788,18 +7796,6 @@ wwv_flow_api.create_plugin(
 '    END LOOP;',
 'END htp_arr;',
 '',
-'PROCEDURE fix_latlng',
-'  (lat_min IN OUT NUMBER',
-'  ,lat_max IN OUT NUMBER',
-'  ,lng_min IN OUT NUMBER',
-'  ,lng_max IN OUT NUMBER) IS',
-'BEGIN',
-'  lat_min := GREATEST(lat_min, -80);',
-'  lat_max := LEAST(lat_max, 80);',
-'  lng_min := MOD(lng_min + 360,180);',
-'  lng_max := MOD(lng_max + 360,180);',
-'END fix_latlng;',
-'',
 'FUNCTION render_map',
 '    (p_region IN APEX_PLUGIN.t_region',
 '    ,p_plugin IN APEX_PLUGIN.t_plugin',
@@ -7921,10 +7917,10 @@ wwv_flow_api.create_plugin(
 '        );',
 '',
 '    ELSIF l_data.COUNT = 0 AND l_lat IS NOT NULL THEN',
-'      l_lat_min := l_lat - 10;',
-'      l_lat_max := l_lat + 10;',
-'      l_lng_min := l_lng - 10;',
-'      l_lng_max := l_lng + 10;',
+'      l_lat_min := GREATEST(l_lat - 10, -80);',
+'      l_lat_max := LEAST(l_lat + 10, 80);',
+'      l_lng_min := GREATEST(l_lng - 10, -180);',
+'      l_lng_max := LEAST(l_lng + 10, 180);',
 '',
 '    -- show entire map if no points to show',
 '    ELSIF l_data.COUNT = 0 THEN',
@@ -7937,9 +7933,7 @@ wwv_flow_api.create_plugin(
 '      l_lng_max := 180;',
 '',
 '    END IF;',
-'    ',
-'    fix_latlng(l_lat_min, l_lat_max, l_lng_min, l_lng_max);',
-'    ',
+'        ',
 '    l_script := ''<script>',
 'var opt_#REGION# = {',
 '   container: "map_#REGION#_container"',
@@ -7947,7 +7941,7 @@ wwv_flow_api.create_plugin(
 '  ,ajaxIdentifier: "''||APEX_PLUGIN.get_ajax_identifier||''"',
 '  ,ajaxItems: "''||APEX_PLUGIN_UTIL.page_item_names_to_jquery(p_region.ajax_items_to_submit)||''"',
 '  ,latlng: "''||l_latlong||''"',
-'  ,markerZoom: ''||l_click_zoom||''',
+'  ,markerZoom: ''||NVL(l_click_zoom,''null'')||''',
 '  ,icon: "''||l_markericon||''"',
 '  ,idItem: "''||l_id_item||''"',
 '  ,syncItem: "''||l_sync_item||''"',
@@ -8064,10 +8058,10 @@ wwv_flow_api.create_plugin(
 '        );',
 '',
 '    ELSIF l_data.COUNT = 0 AND l_lat IS NOT NULL THEN',
-'      l_lat_min := l_lat - 10;',
-'      l_lat_max := l_lat + 10;',
-'      l_lng_min := l_lng - 10;',
-'      l_lng_max := l_lng + 10;',
+'      l_lat_min := GREATEST(l_lat - 10, -180);',
+'      l_lat_max := LEAST(l_lat + 10, 80);',
+'      l_lng_min := GREATEST(l_lng - 10, -180);',
+'      l_lng_max := LEAST(l_lng + 10, 180);',
 '',
 '    -- show entire map if no points to show',
 '    ELSIF l_data.COUNT = 0 THEN',
@@ -8080,8 +8074,6 @@ wwv_flow_api.create_plugin(
 '      l_lng_max := 180;',
 '',
 '    END IF;',
-'',
-'    fix_latlng(l_lat_min, l_lat_max, l_lng_min, l_lng_max);',
 '',
 '    sys.owa_util.mime_header(''text/plain'', false);',
 '    sys.htp.p(''Cache-Control: no-cache'');',
@@ -8202,7 +8194,7 @@ wwv_flow_api.create_plugin(
 'http://maps.google.com/mapfiles/ms/icons/red-pushpin.png',
 '<p>',
 'To create a Population Map (i.e. draw circles of varying radii instead of pins), supply additional columns in the query to indicate radius (in km), and optionally circle colour and transparency.'))
-,p_version_identifier=>'0.5'
+,p_version_identifier=>'0.6'
 ,p_about_url=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_files_version=>29
 );
@@ -8449,9 +8441,6 @@ wwv_flow_api.create_plugin_attribute(
 ,p_null_text=>'(none)'
 ,p_help_text=>'Show travel directions between two locations. Google API Key required.'
 );
-end;
-/
-begin
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(82087189457298338)
 ,p_plugin_attribute_id=>wwv_flow_api.id(82084840160296989)
@@ -8460,6 +8449,9 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_return_value=>'DRIVING'
 ,p_is_quick_pick=>true
 );
+end;
+/
+begin
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(82087582068299112)
 ,p_plugin_attribute_id=>wwv_flow_api.id(82084840160296989)
@@ -8863,6 +8855,7 @@ wwv_flow_api.create_page(
 ,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
 ,p_first_item=>'NO_FIRST_ITEM'
 ,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
 ,p_overwrite_navigation_list=>'N'
 ,p_page_is_public_y_n=>'N'
 ,p_cache_mode=>'NOCACHE'
@@ -8896,6 +8889,7 @@ wwv_flow_api.create_page_plug(
 '<li>Plugin attribute <strong>Set Item Name to ID on Click</strong> is set to P1_ID.</li>',
 '<li>Dynamic action on plugin event <strong>markerClick</strong> sets P1_CLICKED.</li>',
 '</ul>'))
+,p_plug_query_row_template=>1
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 ,p_attribute_01=>'N'
 ,p_attribute_02=>'HTML'
@@ -9035,6 +9029,7 @@ wwv_flow_api.create_page_button(
 ,p_button_alignment=>'LEFT'
 ,p_button_execute_validations=>'N'
 ,p_icon_css_classes=>'fa-refresh'
+,p_grid_new_grid=>false
 );
 wwv_flow_api.create_page_item(
  p_id=>wwv_flow_api.id(3214474776663807637)
@@ -9079,6 +9074,7 @@ wwv_flow_api.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>'$s("P1_CLICKED", "this.data.id="+this.data.id+" this.data.name="+this.data.name+" this.data.lat="+this.data.lat+" this.data.lng="+this.data.lng);'
+,p_stop_execution_on_error=>'Y'
 );
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(75060745431626102)
@@ -9098,6 +9094,7 @@ wwv_flow_api.create_page_da_action(
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_api.id(3214474250168807632)
+,p_stop_execution_on_error=>'Y'
 );
 wwv_flow_api.create_page_da_action(
  p_id=>wwv_flow_api.id(75060894112626103)
@@ -9108,6 +9105,7 @@ wwv_flow_api.create_page_da_action(
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_api.id(3214474053693807630)
+,p_stop_execution_on_error=>'Y'
 );
 end;
 /
@@ -9348,6 +9346,7 @@ wwv_flow_api.create_page_button(
 ,p_button_alignment=>'LEFT'
 ,p_button_execute_validations=>'N'
 ,p_icon_css_classes=>'fa-refresh'
+,p_grid_new_grid=>false
 );
 wwv_flow_api.create_page_item(
  p_id=>wwv_flow_api.id(75081539480945169)
@@ -9429,6 +9428,7 @@ wwv_flow_api.create_page_da_action(
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_api.id(75078349728945164)
+,p_stop_execution_on_error=>'Y'
 );
 end;
 /
@@ -9609,6 +9609,7 @@ wwv_flow_api.create_page_button(
 ,p_button_alignment=>'LEFT'
 ,p_button_execute_validations=>'N'
 ,p_icon_css_classes=>'fa-refresh'
+,p_grid_new_grid=>false
 );
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(75094415453959572)
@@ -9807,6 +9808,7 @@ wwv_flow_api.create_page_button(
 ,p_button_alignment=>'LEFT'
 ,p_button_execute_validations=>'N'
 ,p_icon_css_classes=>'fa-refresh'
+,p_grid_new_grid=>false
 );
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(70145217179519523)
@@ -9826,6 +9828,7 @@ wwv_flow_api.create_page_da_action(
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_api.id(75348069727304055)
+,p_stop_execution_on_error=>'Y'
 );
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(82052670660025001)
@@ -9848,6 +9851,7 @@ wwv_flow_api.create_page_da_action(
 '  map: this.data.map,',
 '  position: {lat:this.data.lat,lng:this.data.lng},',
 '  title: "Your (approximate) Location"});'))
+,p_stop_execution_on_error=>'Y'
 );
 end;
 /
@@ -9862,6 +9866,7 @@ wwv_flow_api.create_page(
 ,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
 ,p_first_item=>'NO_FIRST_ITEM'
 ,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
 ,p_overwrite_navigation_list=>'N'
 ,p_page_is_public_y_n=>'N'
 ,p_cache_mode=>'NOCACHE'
@@ -9884,6 +9889,7 @@ wwv_flow_api.create_page_plug(
 '</ol>',
 '',
 'Then you will be able to do geocode searches and reverse searches.'))
+,p_plug_query_row_template=>1
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 ,p_plug_display_condition_type=>'ITEM_IS_NULL'
 ,p_plug_display_when_condition=>'GOOGLE_API_KEY_PROVIDED'
@@ -9996,6 +10002,7 @@ wwv_flow_api.create_page(
 ,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
 ,p_first_item=>'NO_FIRST_ITEM'
 ,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
 ,p_overwrite_navigation_list=>'N'
 ,p_page_is_public_y_n=>'N'
 ,p_cache_mode=>'NOCACHE'
@@ -10227,6 +10234,7 @@ wwv_flow_api.create_page_button(
 ,p_button_alignment=>'LEFT'
 ,p_button_execute_validations=>'N'
 ,p_icon_css_classes=>'fa-refresh'
+,p_grid_new_grid=>false
 );
 wwv_flow_api.create_page_item(
  p_id=>wwv_flow_api.id(75662633607050632)
@@ -10300,6 +10308,7 @@ wwv_flow_api.create_page_da_action(
 '$s("P6_CLICKED", "this.data.id="+this.data.id+" this.data.name="+this.data.name+" this.data.lat="+this.data.lat+" this.data.lng="+this.data.lng);',
 '$s("P6_ATTR1", this.data.attr01);',
 '$s("P6_ATTR2", this.data.attr02);'))
+,p_stop_execution_on_error=>'Y'
 );
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(82077149653855301)
@@ -10346,6 +10355,7 @@ wwv_flow_api.create_page(
 ,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
 ,p_first_item=>'NO_FIRST_ITEM'
 ,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
 ,p_overwrite_navigation_list=>'N'
 ,p_page_is_public_y_n=>'N'
 ,p_cache_mode=>'NOCACHE'
@@ -10369,6 +10379,7 @@ wwv_flow_api.create_page_plug(
 ,p_plug_new_grid_row=>false
 ,p_plug_display_point=>'BODY'
 ,p_plug_source_type=>'NATIVE_HELP_TEXT'
+,p_plug_query_row_template=>1
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 ,p_plug_display_condition_type=>'ITEM_IS_NOT_NULL'
 ,p_plug_display_when_condition=>'GOOGLE_API_KEY_PROVIDED'
@@ -10522,6 +10533,7 @@ wwv_flow_api.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>'$s("P7_DISTANCE_KM", Math.round(parseFloat($v("P7_DISTANCE"))/1000));'
+,p_stop_execution_on_error=>'Y'
 );
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(75663792845050643)
@@ -10540,6 +10552,281 @@ wwv_flow_api.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>'$s("P7_DURATION_MI", Math.round(parseFloat($v("P7_DURATION"))/60));'
+,p_stop_execution_on_error=>'Y'
+);
+end;
+/
+prompt --application/pages/page_00008
+begin
+wwv_flow_api.create_page(
+ p_id=>8
+,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
+,p_name=>'Report Map 2'
+,p_page_mode=>'NORMAL'
+,p_step_title=>'Report Map 2'
+,p_step_sub_title=>'Report Map 2'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_first_item=>'NO_FIRST_ITEM'
+,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
+,p_overwrite_navigation_list=>'N'
+,p_page_is_public_y_n=>'N'
+,p_cache_mode=>'NOCACHE'
+,p_help_text=>'No help is available for this page.'
+,p_last_updated_by=>'JEFFREY.KEMP@JK64.COM'
+,p_last_upd_yyyymmddhh24miss=>'20160513140455'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(33333076651648494914)
+,p_plug_name=>'Notes'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>30
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'<strong>Click a pin to get data about it.</strong>',
+'<p>',
+'Source: <a href="&REPOSITORY.">&REPOSITORY.</a>',
+'<p>',
+'The map region has static id "mymap".',
+'<p>',
+'Query for map plugin:',
+'<code>',
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'</code>',
+'<p>',
+'<ul>',
+'<li>Plugin attribute <strong>Set Item Name to ID on Click</strong> is set to P8_ID.</li>',
+'<li>Dynamic action on plugin event <strong>markerClick</strong> sets P8_CLICKED.</li>',
+'</ul>'))
+,p_plug_query_row_template=>1
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_attribute_01=>'N'
+,p_attribute_02=>'HTML'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(33333077096468494918)
+,p_plug_name=>'Report Google Map Plugin ("mymap")'
+,p_region_name=>'mymap'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>10
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_item_display_point=>'BELOW'
+,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
+'from apex_collections',
+'where collection_name = ''MAP2'''))
+,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP'
+,p_plug_query_row_template=>1
+,p_plug_query_num_rows=>1000
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_plug_query_no_data_found=>'No map data to show'
+,p_attribute_01=>'400'
+,p_attribute_02=>'P8_ID'
+,p_attribute_08=>'N'
+,p_attribute_13=>'N'
+);
+wwv_flow_api.create_report_region(
+ p_id=>wwv_flow_api.id(33333077877176494920)
+,p_name=>'Source data'
+,p_template=>wwv_flow_api.id(25186277719855505424)
+,p_display_sequence=>20
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
+,p_new_grid_row=>false
+,p_display_point=>'BODY'
+,p_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info ',
+'from apex_collections',
+'where collection_name = ''MAP2'''))
+,p_source_type=>'NATIVE_SQL_REPORT'
+,p_ajax_enabled=>'Y'
+,p_query_row_template=>wwv_flow_api.id(25186286576607505432)
+,p_query_num_rows=>15
+,p_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_query_show_nulls_as=>'-'
+,p_query_num_rows_type=>'ROW_RANGES_IN_SELECT_LIST'
+,p_pagination_display_position=>'BOTTOM_RIGHT'
+,p_csv_output=>'N'
+,p_prn_output=>'N'
+,p_sort_null=>'L'
+,p_plug_query_strip_html=>'N'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33333088229168494922)
+,p_query_column_id=>1
+,p_column_alias=>'LAT'
+,p_column_display_sequence=>1
+,p_column_heading=>'Lat'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33333088659176494922)
+,p_query_column_id=>2
+,p_column_alias=>'LNG'
+,p_column_display_sequence=>2
+,p_column_heading=>'Lng'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33333089025157494923)
+,p_query_column_id=>3
+,p_column_alias=>'NAME'
+,p_column_display_sequence=>3
+,p_column_heading=>'Name'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33333089407801494924)
+,p_query_column_id=>4
+,p_column_alias=>'ID'
+,p_column_display_sequence=>4
+,p_column_heading=>'Id'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33333089857610494924)
+,p_query_column_id=>5
+,p_column_alias=>'INFO'
+,p_column_display_sequence=>5
+,p_column_heading=>'Info'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_page_button(
+ p_id=>wwv_flow_api.id(33333077464092494919)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_api.id(33333077096468494918)
+,p_button_name=>'REFRESH'
+,p_button_action=>'DEFINED_BY_DA'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconRight'
+,p_button_template_id=>wwv_flow_api.id(25186298860096505445)
+,p_button_image_alt=>'Refresh'
+,p_button_position=>'BELOW_BOX'
+,p_button_alignment=>'LEFT'
+,p_button_execute_validations=>'N'
+,p_icon_css_classes=>'fa-refresh'
+,p_grid_new_grid=>false
+);
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(33333090229722494925)
+,p_name=>'P8_ID'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_api.id(33333077877176494920)
+,p_prompt=>'P8_ID'
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
+,p_field_template=>wwv_flow_api.id(25186298275602505444)
+,p_item_template_options=>'#DEFAULT#'
+,p_attribute_01=>'Y'
+,p_attribute_02=>'VALUE'
+,p_attribute_04=>'Y'
+);
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(33333090650889494927)
+,p_name=>'P8_CLICKED'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_api.id(33333077877176494920)
+,p_prompt=>'P8_CLICKED'
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
+,p_field_template=>wwv_flow_api.id(25186298275602505444)
+,p_item_template_options=>'#DEFAULT#'
+,p_attribute_01=>'Y'
+,p_attribute_02=>'VALUE'
+,p_attribute_04=>'Y'
+);
+wwv_flow_api.create_page_da_event(
+ p_id=>wwv_flow_api.id(33333091770313494933)
+,p_name=>'mapClick'
+,p_event_sequence=>10
+,p_triggering_element_type=>'REGION'
+,p_triggering_region_id=>wwv_flow_api.id(33333077096468494918)
+,p_bind_type=>'bind'
+,p_bind_event_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP|REGION TYPE|markerclick'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(33333092221227494935)
+,p_event_id=>wwv_flow_api.id(33333091770313494933)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>'$s("P8_CLICKED", "this.data.id="+this.data.id+" this.data.name="+this.data.name+" this.data.lat="+this.data.lat+" this.data.lng="+this.data.lng);'
+,p_stop_execution_on_error=>'Y'
+);
+wwv_flow_api.create_page_da_event(
+ p_id=>wwv_flow_api.id(33333092684469494936)
+,p_name=>'onclickrefresh'
+,p_event_sequence=>20
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_api.id(33333077464092494919)
+,p_bind_type=>'bind'
+,p_bind_event_type=>'click'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(33333093156007494936)
+,p_event_id=>wwv_flow_api.id(33333092684469494936)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_api.id(33333077877176494920)
+,p_stop_execution_on_error=>'Y'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(33333093642877494937)
+,p_event_id=>wwv_flow_api.id(33333092684469494936)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_api.id(33333077096468494918)
+,p_stop_execution_on_error=>'Y'
+);
+wwv_flow_api.create_page_process(
+ p_id=>wwv_flow_api.id(24993475657114474810)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'init'
+,p_process_sql_clob=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
+'DECLARE',
+'  id NUMBER := 0;',
+'  PROCEDURE m (name IN VARCHAR2, lat IN NUMBER, lng IN NUMBER) IS',
+'  BEGIN',
+'    id := id + 1;',
+'    APEX_COLLECTION.add_member(''MAP2'',TO_CHAR(id),name,TO_CHAR(lat,''fm999.9999999999999999''),TO_CHAR(lng,''fm999.9999999999999999''));',
+'  END m;',
+'BEGIN',
+'APEX_COLLECTION.create_or_truncate_collection(''MAP2'');',
+'m(''House 3 Liverpool'',53.415885,-2.909735);',
+'m(''House 4 Liverpool'',53.552601,-3.058674);',
+'m(''House 5 Liverpool'',53.474211,-2.994677);',
+'m(''House 1 Liverpool'',53.41346,-2.827914);',
+'m(''House 2'',53.427664,-2.88532);',
+'END;'))
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 );
 end;
 /
