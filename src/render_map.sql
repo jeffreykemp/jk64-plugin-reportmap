@@ -51,10 +51,16 @@ BEGIN
         ,p_max_rows       => p_region.fetched_rows);
   
     FOR i IN 1..l_column_value_list(1).count LOOP
+    
+        IF NOT l_column_value_list.EXISTS(1)
+        OR NOT l_column_value_list.EXISTS(2)
+        OR NOT l_column_value_list.EXISTS(3)
+        OR NOT l_column_value_list.EXISTS(4) THEN
+          RAISE_APPLICATION_ERROR(-20000, 'Report Map Query must have at least 4 columns (lat, lng, name, id)');
+        END IF;
   
         l_lat  := TO_NUMBER(l_column_value_list(1)(i));
         l_lng  := TO_NUMBER(l_column_value_list(2)(i));
-        l_info := l_column_value_list(5)(i);
         
         -- default values if not supplied in query
         l_icon          := NULL;
@@ -63,6 +69,8 @@ BEGIN
         l_circle_transp := '0.3';
         l_flex_fields   := NULL;
         
+        IF l_column_value_list.EXISTS(5) THEN
+          l_info := l_column_value_list(5)(i);
         IF l_column_value_list.EXISTS(6) THEN
           l_icon := l_column_value_list(6)(i);
         IF l_column_value_list.EXISTS(7) THEN
@@ -71,7 +79,7 @@ BEGIN
           l_circle_color := l_column_value_list(8)(i);
         IF l_column_value_list.EXISTS(9) THEN
           l_circle_transp := TO_NUMBER(l_column_value_list(9)(i));
-        END IF; END IF; END IF; END IF;
+        END IF; END IF; END IF; END IF; END IF;
         
         FOR j IN 10..19 LOOP
           IF l_column_value_list.EXISTS(j) THEN
