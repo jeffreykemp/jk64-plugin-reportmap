@@ -11,7 +11,17 @@ function jk64plugin_geocode(opt,geocoder) {
       if (opt.markerZoom) {
         opt.map.setZoom(opt.markerZoom);
       }
-      jk64plugin_userPin(opt,pos.lat(), pos.lng())
+      jk64plugin_userPin(opt,pos.lat(), pos.lng());
+      if (opt.addressItem) {
+        $s(opt.addressItem,results[0].formatted_address);
+      }
+      apex.debug(opt.regionId+" addressfound '"+results[0].formatted_address+"'");
+      apex.jQuery("#"+opt.regionId).trigger("addressfound", {
+        map:opt.map,
+        lat:pos.lat(),
+        lng:pos.lng(),
+        formatted_address:results[0].formatted_address
+      });
     } else {
       apex.debug(opt.regionId+" geocode was unsuccessful for the following reason: "+status);
     }
@@ -207,6 +217,13 @@ function jk64plugin_getAddress(opt,lat,lng) {
 		if (status === google.maps.GeocoderStatus.OK) {
 			if (results[1]) {
 				$s(opt.addressItem,results[0].formatted_address);
+        apex.debug(opt.regionId+" addressfound '"+results[0].formatted_address+"'");
+        apex.jQuery("#"+opt.regionId).trigger("addressfound", {
+          map:opt.map,
+          lat:lat,
+          lng:lng,
+          formatted_address:results[0].formatted_address
+        });
 			} else {
 				window.alert('No results found');
 			}
