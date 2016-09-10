@@ -1,3 +1,6 @@
+-- v0.7.1
+g_num_format constant varchar2(100) := '99999999999990.09999999999999999';
+
 PROCEDURE set_map_extents
     (p_lat     IN NUMBER
     ,p_lng     IN NUMBER
@@ -59,14 +62,14 @@ BEGIN
           RAISE_APPLICATION_ERROR(-20000, 'Report Map Query must have at least 4 columns (lat, lng, name, id)');
         END IF;
   
-        l_lat  := TO_NUMBER(l_column_value_list(1)(i));
-        l_lng  := TO_NUMBER(l_column_value_list(2)(i));
+        l_lat  := TO_NUMBER(l_column_value_list(1)(i),g_num_format);
+        l_lng  := TO_NUMBER(l_column_value_list(2)(i),g_num_format);
         
         -- default values if not supplied in query
         l_icon          := NULL;
         l_radius_km     := NULL;
         l_circle_color  := '#0000cc';
-        l_circle_transp := '0.3';
+        l_circle_transp := 0.3;
         l_flex_fields   := NULL;
         
         IF l_column_value_list.EXISTS(5) THEN
@@ -74,11 +77,11 @@ BEGIN
         IF l_column_value_list.EXISTS(6) THEN
           l_icon := l_column_value_list(6)(i);
         IF l_column_value_list.EXISTS(7) THEN
-          l_radius_km := TO_NUMBER(l_column_value_list(7)(i));
+          l_radius_km := TO_NUMBER(l_column_value_list(7)(i),g_num_format);
         IF l_column_value_list.EXISTS(8) THEN
           l_circle_color := l_column_value_list(8)(i);
         IF l_column_value_list.EXISTS(9) THEN
-          l_circle_transp := TO_NUMBER(l_column_value_list(9)(i));
+          l_circle_transp := TO_NUMBER(l_column_value_list(9)(i),g_num_format);
         END IF; END IF; END IF; END IF; END IF;
         
         FOR j IN 10..19 LOOP
@@ -237,8 +240,8 @@ BEGIN
     END IF;
     
     IF l_latlong IS NOT NULL THEN
-      l_lat := TO_NUMBER(SUBSTR(l_latlong,1,INSTR(l_latlong,',')-1));
-      l_lng := TO_NUMBER(SUBSTR(l_latlong,INSTR(l_latlong,',')+1));
+      l_lat := TO_NUMBER(SUBSTR(l_latlong,1,INSTR(l_latlong,',')-1),g_num_format);
+      l_lng := TO_NUMBER(SUBSTR(l_latlong,INSTR(l_latlong,',')+1),g_num_format);
     END IF;
     
     IF l_lat IS NOT NULL AND l_data.COUNT > 0 THEN
@@ -378,8 +381,8 @@ BEGIN
     END IF;
     
     IF l_latlong IS NOT NULL THEN
-      l_lat := TO_NUMBER(SUBSTR(l_latlong,1,INSTR(l_latlong,',')-1));
-      l_lng := TO_NUMBER(SUBSTR(l_latlong,INSTR(l_latlong,',')+1));
+      l_lat := TO_NUMBER(SUBSTR(l_latlong,1,INSTR(l_latlong,',')-1),g_num_format);
+      l_lng := TO_NUMBER(SUBSTR(l_latlong,INSTR(l_latlong,',')+1),g_num_format);
     END IF;
     
     IF l_lat IS NOT NULL AND l_data.COUNT > 0 THEN

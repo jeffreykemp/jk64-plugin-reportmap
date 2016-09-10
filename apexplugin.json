@@ -1,6 +1,6 @@
 {
   "name" : "jk64ReportMap",
-  "version" : "0.7",
+  "version" : "0.7.1",
   "description" : "Google Map Report region plugin",
   "keywords" : ["map"],
   "homepage" : "https://github.com/jeffreykemp/jk64-plugin-reportmap",
