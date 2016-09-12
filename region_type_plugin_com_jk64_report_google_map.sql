@@ -28,14 +28,15 @@ end;
 prompt --application/shared_components/plugins/region_type/com_jk64_report_google_map
 begin
 wwv_flow_api.create_plugin(
- p_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(579378770641410976)
 ,p_plugin_type=>'REGION TYPE'
 ,p_name=>'COM.JK64.REPORT_GOOGLE_MAP'
 ,p_display_name=>'JK64 Report Google Map'
 ,p_supported_ui_types=>'DESKTOP:JQM_SMARTPHONE'
 ,p_plsql_code=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
-'-- v0.7.1',
-'g_num_format constant varchar2(100) := ''99999999999990.09999999999999999'';',
+'-- v0.7.2',
+'g_num_format constant varchar2(100) := ''99999999999990.099999999999999999999999999999'';',
+'g_tochar_format constant varchar2(100) := ''fm990.099999999999999999999999999999'';',
 '',
 'PROCEDURE set_map_extents',
 '    (p_lat     IN NUMBER',
@@ -55,9 +56,9 @@ wwv_flow_api.create_plugin(
 'FUNCTION latlng2ch (lat IN NUMBER, lng IN NUMBER) RETURN VARCHAR2 IS',
 'BEGIN',
 '  RETURN ''"lat":''',
-'      || TO_CHAR(lat, ''fm990.0999999999999999'')',
+'      || TO_CHAR(lat, g_tochar_format)',
 '      || '',"lng":''',
-'      || TO_CHAR(lng, ''fm990.0999999999999999'');',
+'      || TO_CHAR(lng, g_tochar_format);',
 'END latlng2ch;',
 '',
 'FUNCTION get_markers',
@@ -139,7 +140,7 @@ wwv_flow_api.create_plugin(
 '             END',
 '          || '',"icon":''|| APEX_ESCAPE.js_literal(l_icon,''"'')',
 '          || CASE WHEN l_radius_km IS NOT NULL THEN',
-'             '',"rad":'' || TO_CHAR(l_radius_km,''fm99999999999990.09999999999999'')',
+'             '',"rad":'' || TO_CHAR(l_radius_km,g_tochar_format)',
 '		      || '',"col":'' || APEX_ESCAPE.js_literal(l_circle_color,''"'')',
 '		      ||   CASE WHEN l_circle_transp IS NOT NULL THEN',
 '             '',"trns":''|| TO_CHAR(l_circle_transp,''fm990.099'')',
@@ -298,8 +299,6 @@ wwv_flow_api.create_plugin(
 '',
 '    -- show entire map if no points to show',
 '    ELSIF l_data.COUNT = 0 THEN',
-'      l_lat := 0;',
-'      l_lng := 0;',
 '      l_latlong := ''0,0'';',
 '      l_lat_min := -90;',
 '      l_lat_max := 90;',
@@ -439,9 +438,6 @@ wwv_flow_api.create_plugin(
 '',
 '    -- show entire map if no points to show',
 '    ELSIF l_data.COUNT = 0 THEN',
-'      l_lat := 0;',
-'      l_lng := 0;',
-'      l_latlong := ''0,0'';',
 '      l_lat_min := -90;',
 '      l_lat_max := 90;',
 '      l_lng_min := -180;',
@@ -568,13 +564,13 @@ wwv_flow_api.create_plugin(
 'http://maps.google.com/mapfiles/ms/icons/red-pushpin.png',
 '<p>',
 'To create a Population Map (i.e. draw circles of varying radii instead of pins), supply additional columns in the query to indicate radius (in km), and optionally circle colour and transparency.'))
-,p_version_identifier=>'0.7.1'
+,p_version_identifier=>'0.7.2'
 ,p_about_url=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_files_version=>35
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(329071298666579777)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(435993713042065998)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'APPLICATION'
 ,p_attribute_sequence=>1
 ,p_display_sequence=>10
@@ -586,8 +582,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Optional. If you don''t set this, you may get a "Google Maps API warning: NoApiKeys" warning in the console log. You can add this later if required. Refer: https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(472457148478932279)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(579379562854418500)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>1
 ,p_display_sequence=>10
@@ -600,8 +596,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Desired height (in pixels) of the map region. Note: the width will adjust according to the available area of the containing window.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(472457493349935840)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(579379907725422061)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>2
 ,p_display_sequence=>20
@@ -612,8 +608,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'When the user clicks on a map marker, the corresponding ID from your data will be copied to this page item.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(472457830522941025)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(579380244898427246)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>3
 ,p_display_sequence=>30
@@ -626,8 +622,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'When the user clicks on a map marker, or adds a new marker, zoom the map to this level. Set to blank to not zoom on click.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(477542255972342459)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(584464670347828680)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>4
 ,p_display_sequence=>40
@@ -638,8 +634,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Position of the marker will be retrieved from and stored in this item as a Lat,Long value. Also, if the item value is changed, the marker will be moved on the map.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(477545567984388914)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(584467982359875135)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>5
 ,p_display_sequence=>50
@@ -663,8 +659,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'URL to the icon to show for the marker. Leave blank for the default red Google pin.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(477552189374177971)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(584474603749664192)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>6
 ,p_display_sequence=>60
@@ -676,8 +672,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Set the latitude and longitude as a pair of numbers to be used to position the map on page load, if no pin coordinates have been provided by the page item.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(477554552684878265)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(584476967060364486)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>7
 ,p_display_sequence=>70
@@ -685,14 +681,14 @@ wwv_flow_api.create_plugin_attribute(
 ,p_attribute_type=>'PAGE ITEM'
 ,p_is_required=>false
 ,p_is_translatable=>false
-,p_depending_on_attribute_id=>wwv_flow_api.id(477542255972342459)
+,p_depending_on_attribute_id=>wwv_flow_api.id(584464670347828680)
 ,p_depending_on_condition_type=>'NOT_NULL'
 ,p_help_text=>'Set to an item which contains the distance (in Kilometres) to draw a circle around the click point. Leave blank to not draw a circle. If the item is changed, the circle will be updated. If you set this attribute, you must also set Synchronize with It'
 ||'em.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(329073060060665619)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(435995474436151840)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>8
 ,p_display_sequence=>80
@@ -704,8 +700,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Set to Yes to enable Google sign-in on the map. Only works if you set the Google API Key.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(329082003105307793)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(436004417480794014)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>9
 ,p_display_sequence=>90
@@ -717,8 +713,8 @@ wwv_flow_api.create_plugin_attribute(
 ||' at the application level.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(329083234879478363)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(436005649254964584)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>10
 ,p_display_sequence=>100
@@ -728,7 +724,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_display_length=>10
 ,p_max_length=>40
 ,p_is_translatable=>false
-,p_depending_on_attribute_id=>wwv_flow_api.id(329082003105307793)
+,p_depending_on_attribute_id=>wwv_flow_api.id(436004417480794014)
 ,p_depending_on_condition_type=>'NOT_NULL'
 ,p_text_case=>'UPPER'
 ,p_examples=>'AU'
@@ -736,8 +732,8 @@ wwv_flow_api.create_plugin_attribute(
 ||'ition variable (e.g. &P1_COUNTRY.) but note that this will only apply if the page is refreshed.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(178575114485490930)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(285497528860977151)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>11
 ,p_display_sequence=>110
@@ -758,8 +754,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Easiest way is to copy one from a site like https://snazzymaps.com/'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(178637525682193470)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(285559940057679691)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>12
 ,p_display_sequence=>120
@@ -770,8 +766,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Google API Key required. When the user clicks a point on the map, a Google Maps reverse geocode will be executed and the first result (usually the address) will be copied to the item you specify here.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(185141267664125966)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(292063682039612187)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>13
 ,p_display_sequence=>130
@@ -783,8 +779,8 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'If set to Yes, on load the map will attempt to determine the user''s location (it will probably ask the user for permission first) and pan to that location. If successful, the geolocate event will be triggered.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(185143322278131318)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(292065736653617539)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>14
 ,p_display_sequence=>140
@@ -796,17 +792,14 @@ wwv_flow_api.create_plugin_attribute(
 ,p_max_length=>2
 ,p_unit=>'(0-23)'
 ,p_is_translatable=>false
-,p_depending_on_attribute_id=>wwv_flow_api.id(185141267664125966)
+,p_depending_on_attribute_id=>wwv_flow_api.id(292063682039612187)
 ,p_depending_on_condition_type=>'EQUALS'
 ,p_depending_on_expression=>'Y'
 ,p_help_text=>'If Geolocate is Yes, if the map is able to determine the user''s location it will zoom to this level.'
 );
-end;
-/
-begin
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(185179272786437158)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(292101687161923379)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>15
 ,p_display_sequence=>150
@@ -818,39 +811,42 @@ wwv_flow_api.create_plugin_attribute(
 ,p_null_text=>'(none)'
 ,p_help_text=>'Show travel directions between two locations. Google API Key required.'
 );
+end;
+/
+begin
 wwv_flow_api.create_plugin_attr_value(
- p_id=>wwv_flow_api.id(185181622083438507)
-,p_plugin_attribute_id=>wwv_flow_api.id(185179272786437158)
+ p_id=>wwv_flow_api.id(292104036458924728)
+,p_plugin_attribute_id=>wwv_flow_api.id(292101687161923379)
 ,p_display_sequence=>10
 ,p_display_value=>'Driving'
 ,p_return_value=>'DRIVING'
 ,p_is_quick_pick=>true
 );
 wwv_flow_api.create_plugin_attr_value(
- p_id=>wwv_flow_api.id(185182014694439281)
-,p_plugin_attribute_id=>wwv_flow_api.id(185179272786437158)
+ p_id=>wwv_flow_api.id(292104429069925502)
+,p_plugin_attribute_id=>wwv_flow_api.id(292101687161923379)
 ,p_display_sequence=>20
 ,p_display_value=>'Walking'
 ,p_return_value=>'WALKING'
 );
 wwv_flow_api.create_plugin_attr_value(
- p_id=>wwv_flow_api.id(185182385586440450)
-,p_plugin_attribute_id=>wwv_flow_api.id(185179272786437158)
+ p_id=>wwv_flow_api.id(292104799961926671)
+,p_plugin_attribute_id=>wwv_flow_api.id(292101687161923379)
 ,p_display_sequence=>30
 ,p_display_value=>'Bicycling'
 ,p_return_value=>'BICYCLING'
 );
 wwv_flow_api.create_plugin_attr_value(
- p_id=>wwv_flow_api.id(185182784341441528)
-,p_plugin_attribute_id=>wwv_flow_api.id(185179272786437158)
+ p_id=>wwv_flow_api.id(292105198716927749)
+,p_plugin_attribute_id=>wwv_flow_api.id(292101687161923379)
 ,p_display_sequence=>40
 ,p_display_value=>'Transit'
 ,p_return_value=>'TRANSIT'
 ,p_is_quick_pick=>true
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(185185430388467263)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(292107844763953484)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>16
 ,p_display_sequence=>160
@@ -858,13 +854,13 @@ wwv_flow_api.create_plugin_attribute(
 ,p_attribute_type=>'PAGE ITEM'
 ,p_is_required=>true
 ,p_is_translatable=>false
-,p_depending_on_attribute_id=>wwv_flow_api.id(185179272786437158)
+,p_depending_on_attribute_id=>wwv_flow_api.id(292101687161923379)
 ,p_depending_on_condition_type=>'NOT_NULL'
 ,p_help_text=>'Item that describes the origin location for directions. May be expressed as a lat,lng pair or as an address or place name.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(185187662766471601)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(292110077141957822)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>17
 ,p_display_sequence=>170
@@ -872,13 +868,13 @@ wwv_flow_api.create_plugin_attribute(
 ,p_attribute_type=>'PAGE ITEM'
 ,p_is_required=>true
 ,p_is_translatable=>false
-,p_depending_on_attribute_id=>wwv_flow_api.id(185179272786437158)
+,p_depending_on_attribute_id=>wwv_flow_api.id(292101687161923379)
 ,p_depending_on_condition_type=>'NOT_NULL'
 ,p_help_text=>'Item that describes the destination location for directions. May be expressed as a lat,lng pair or as an address or place name.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(185202653814828679)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(292125068190314900)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>18
 ,p_display_sequence=>180
@@ -886,13 +882,13 @@ wwv_flow_api.create_plugin_attribute(
 ,p_attribute_type=>'PAGE ITEM'
 ,p_is_required=>false
 ,p_is_translatable=>false
-,p_depending_on_attribute_id=>wwv_flow_api.id(185179272786437158)
+,p_depending_on_attribute_id=>wwv_flow_api.id(292101687161923379)
 ,p_depending_on_condition_type=>'NOT_NULL'
 ,p_help_text=>'Item to set the calculated Distance, in metres.'
 );
 wwv_flow_api.create_plugin_attribute(
- p_id=>wwv_flow_api.id(185205451703834528)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(292127866079320749)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_attribute_scope=>'COMPONENT'
 ,p_attribute_sequence=>19
 ,p_display_sequence=>190
@@ -900,37 +896,37 @@ wwv_flow_api.create_plugin_attribute(
 ,p_attribute_type=>'PAGE ITEM'
 ,p_is_required=>false
 ,p_is_translatable=>false
-,p_depending_on_attribute_id=>wwv_flow_api.id(185179272786437158)
+,p_depending_on_attribute_id=>wwv_flow_api.id(292101687161923379)
 ,p_depending_on_condition_type=>'NOT_NULL'
 ,p_help_text=>'Show calculated travel journey duration, in seconds.'
 );
 wwv_flow_api.create_plugin_event(
- p_id=>wwv_flow_api.id(103098003456156792)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(210020417831643013)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_name=>'addressfound'
 ,p_display_name=>'addressFound'
 );
 wwv_flow_api.create_plugin_event(
- p_id=>wwv_flow_api.id(185145777366146783)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(292068191741633004)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_name=>'geolocate'
 ,p_display_name=>'geolocate'
 );
 wwv_flow_api.create_plugin_event(
- p_id=>wwv_flow_api.id(472456672837928038)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(579379087213414259)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_name=>'mapclick'
 ,p_display_name=>'mapClick'
 );
 wwv_flow_api.create_plugin_event(
- p_id=>wwv_flow_api.id(329075915474949684)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(435998329850435905)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_name=>'maploaded'
 ,p_display_name=>'mapLoaded'
 );
 wwv_flow_api.create_plugin_event(
- p_id=>wwv_flow_api.id(479173252115944154)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(586095666491430375)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_name=>'markerclick'
 ,p_display_name=>'markerClick'
 );
@@ -1082,8 +1078,8 @@ end;
 /
 begin
 wwv_flow_api.create_plugin_file(
- p_id=>wwv_flow_api.id(185164312549952354)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(292086726925438575)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_file_name=>'jk64plugin.js'
 ,p_mime_type=>'application/x-javascript'
 ,p_file_charset=>'utf-8'
@@ -1192,8 +1188,8 @@ end;
 /
 begin
 wwv_flow_api.create_plugin_file(
- p_id=>wwv_flow_api.id(185179003741277782)
-,p_plugin_id=>wwv_flow_api.id(472456356265924755)
+ p_id=>wwv_flow_api.id(292101418116764003)
+,p_plugin_id=>wwv_flow_api.id(579378770641410976)
 ,p_file_name=>'jk64plugin.min.js'
 ,p_mime_type=>'application/x-javascript'
 ,p_file_charset=>'utf-8'

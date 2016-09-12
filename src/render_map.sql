@@ -1,5 +1,6 @@
--- v0.7.1
-g_num_format constant varchar2(100) := '99999999999990.09999999999999999';
+-- v0.7.2
+g_num_format constant varchar2(100) := '99999999999990.099999999999999999999999999999';
+g_tochar_format constant varchar2(100) := 'fm990.099999999999999999999999999999';
 
 PROCEDURE set_map_extents
     (p_lat     IN NUMBER
@@ -19,9 +20,9 @@ END set_map_extents;
 FUNCTION latlng2ch (lat IN NUMBER, lng IN NUMBER) RETURN VARCHAR2 IS
 BEGIN
   RETURN '"lat":'
-      || TO_CHAR(lat, 'fm990.0999999999999999')
+      || TO_CHAR(lat, g_tochar_format)
       || ',"lng":'
-      || TO_CHAR(lng, 'fm990.0999999999999999');
+      || TO_CHAR(lng, g_tochar_format);
 END latlng2ch;
 
 FUNCTION get_markers
@@ -103,7 +104,7 @@ BEGIN
              END
           || ',"icon":'|| APEX_ESCAPE.js_literal(l_icon,'"')
           || CASE WHEN l_radius_km IS NOT NULL THEN
-             ',"rad":' || TO_CHAR(l_radius_km,'fm99999999999990.09999999999999')
+             ',"rad":' || TO_CHAR(l_radius_km,g_tochar_format)
 		      || ',"col":' || APEX_ESCAPE.js_literal(l_circle_color,'"')
 		      ||   CASE WHEN l_circle_transp IS NOT NULL THEN
              ',"trns":'|| TO_CHAR(l_circle_transp,'fm990.099')
@@ -262,8 +263,6 @@ BEGIN
 
     -- show entire map if no points to show
     ELSIF l_data.COUNT = 0 THEN
-      l_lat := 0;
-      l_lng := 0;
       l_latlong := '0,0';
       l_lat_min := -90;
       l_lat_max := 90;
@@ -403,9 +402,6 @@ BEGIN
 
     -- show entire map if no points to show
     ELSIF l_data.COUNT = 0 THEN
-      l_lat := 0;
-      l_lng := 0;
-      l_latlong := '0,0';
       l_lat_min := -90;
       l_lat_max := 90;
       l_lng_min := -180;
