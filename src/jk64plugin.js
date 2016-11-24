@@ -77,7 +77,8 @@ function jk64plugin_repPin(opt,pData) {
 					 map: opt.map,
 					 position: pos,
 					 title: pData.name,
-					 icon: pData.icon
+					 icon: pData.icon,
+					 label: pData.label                                        
 				   });
 		google.maps.event.addListener(reppin, "click", function () {
 			apex.debug(opt.regionId+" repPin clicked "+pData.id);

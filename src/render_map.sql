@@ -1,6 +1,8 @@
--- v0.7.2
+-- v0.7.3
 g_num_format constant varchar2(100) := '99999999999990.099999999999999999999999999999';
 g_tochar_format constant varchar2(100) := 'fm990.099999999999999999999999999999';
+
+g_attr1_label constant varchar2(10) := 'LABEL';
 
 PROCEDURE set_map_extents
     (p_lat     IN NUMBER
@@ -26,13 +28,14 @@ BEGIN
 END latlng2ch;
 
 FUNCTION get_markers
-    (p_region  IN APEX_PLUGIN.t_region
-    ,p_lat_min IN OUT NUMBER
-    ,p_lat_max IN OUT NUMBER
-    ,p_lng_min IN OUT NUMBER
-    ,p_lng_max IN OUT NUMBER
+    (p_region     IN APEX_PLUGIN.t_region
+    ,p_lat_min    IN OUT NUMBER
+    ,p_lat_max    IN OUT NUMBER
+    ,p_lng_min    IN OUT NUMBER
+    ,p_lng_max    IN OUT NUMBER
+    ,p_attribute1 IN VARCHAR2
     ) RETURN APEX_APPLICATION_GLOBAL.VC_ARR2 IS
-
+    
     l_data           APEX_APPLICATION_GLOBAL.VC_ARR2;
     l_lat            NUMBER;
     l_lng            NUMBER;
@@ -42,7 +45,8 @@ FUNCTION get_markers
     l_circle_color   VARCHAR2(100);
     l_circle_transp  NUMBER;
     l_flex_fields    VARCHAR2(32767);
-    
+    l_marker_label   VARCHAR2(1);
+     
     l_column_value_list  APEX_PLUGIN_UTIL.t_column_value_list;
 
 BEGIN
@@ -53,7 +57,7 @@ BEGIN
         ,p_max_columns    => 19
         ,p_component_name => p_region.name
         ,p_max_rows       => p_region.fetched_rows);
-  
+    
     FOR i IN 1..l_column_value_list(1).count LOOP
     
         IF NOT l_column_value_list.EXISTS(1)
@@ -72,6 +76,7 @@ BEGIN
         l_circle_color  := '#0000cc';
         l_circle_transp := 0.3;
         l_flex_fields   := NULL;
+        l_marker_label  := NULL;
         
         IF l_column_value_list.EXISTS(5) THEN
           l_info := l_column_value_list(5)(i);
@@ -85,16 +90,29 @@ BEGIN
           l_circle_transp := TO_NUMBER(l_column_value_list(9)(i),g_num_format);
         END IF; END IF; END IF; END IF; END IF;
         
+        -- The remaining columns are up to 10 "flex" fields.
+        -- If one of them is equal to a special attribute ("label"), the very next
+        -- field is interpreted as the label.
         FOR j IN 10..19 LOOP
           IF l_column_value_list.EXISTS(j) THEN
-            l_flex_fields := l_flex_fields
-              || ',"attr'
-              || TO_CHAR(j-9,'fm00')
-              || '":'
-              || APEX_ESCAPE.js_literal(l_column_value_list(j)(i),'"');
+
+            if j = 10 and UPPER(p_attribute1) = g_attr1_label then
+
+              l_marker_label := substr(l_column_value_list(j)(i), 1, 1);
+
+            else
+
+              l_flex_fields := l_flex_fields
+                            || ',"attr'
+                            || TO_CHAR(j-9,'fm00')
+                            || '":'
+                            || APEX_ESCAPE.js_literal(l_column_value_list(j)(i),'"');
+
+            end if;
+
           END IF;
         END LOOP;
-       
+		
         l_data(NVL(l_data.LAST,0)+1) :=
              '{"id":'  || APEX_ESCAPE.js_literal(l_column_value_list(4)(i),'"')
           || ',"name":'|| APEX_ESCAPE.js_literal(l_column_value_list(3)(i),'"')
@@ -103,6 +121,7 @@ BEGIN
              ',"info":'|| APEX_ESCAPE.js_literal(l_info,'"')
              END
           || ',"icon":'|| APEX_ESCAPE.js_literal(l_icon,'"')
+          || ',"label":'|| APEX_ESCAPE.js_literal(l_marker_label,'"') 
           || CASE WHEN l_radius_km IS NOT NULL THEN
              ',"rad":' || TO_CHAR(l_radius_km,g_tochar_format)
 		      || ',"col":' || APEX_ESCAPE.js_literal(l_circle_color,'"')
@@ -179,6 +198,7 @@ FUNCTION render_map
     l_dest_item     plugin_attr := p_region.attribute_17;
     l_dirdist_item  plugin_attr := p_region.attribute_18;
     l_dirdur_item   plugin_attr := p_region.attribute_19;
+    l_attribute1    plugin_attr := p_region.attribute_20;
     
 BEGIN
     -- debug information will be included
@@ -226,11 +246,12 @@ BEGIN
     IF p_region.source IS NOT NULL THEN
 
       l_data := get_markers
-        (p_region  => p_region
-        ,p_lat_min => l_lat_min
-        ,p_lat_max => l_lat_max
-        ,p_lng_min => l_lng_min
-        ,p_lng_max => l_lng_max
+        (p_region     => p_region
+        ,p_lat_min    => l_lat_min
+        ,p_lat_max    => l_lat_max
+        ,p_lng_min    => l_lng_min
+        ,p_lng_max    => l_lng_max
+        ,p_attribute1 => l_attribute1
         );
         
     END IF;
@@ -352,6 +373,7 @@ FUNCTION ajax
     -- Component attributes
     l_sync_item     plugin_attr := p_region.attribute_04;
     l_latlong       plugin_attr := p_region.attribute_06;
+    l_attribute1    plugin_attr := p_region.attribute_20;
 
 BEGIN
     -- debug information will be included
@@ -365,11 +387,12 @@ BEGIN
     IF p_region.source IS NOT NULL THEN
 
       l_data := get_markers
-        (p_region  => p_region
-        ,p_lat_min => l_lat_min
-        ,p_lat_max => l_lat_max
-        ,p_lng_min => l_lng_min
-        ,p_lng_max => l_lng_max
+        (p_region     => p_region
+        ,p_lat_min    => l_lat_min
+        ,p_lat_max    => l_lat_max
+        ,p_lng_min    => l_lng_min
+        ,p_lng_max    => l_lng_max
+        ,p_attribute1 => l_attribute1
         );
         
     END IF;
