@@ -1,4 +1,19 @@
--- v0.7.3
+create or replace package reportmap_pkg as
+FUNCTION render_map
+    (p_region IN APEX_PLUGIN.t_region
+    ,p_plugin IN APEX_PLUGIN.t_plugin
+    ,p_is_printer_friendly IN BOOLEAN
+    ) RETURN APEX_PLUGIN.t_region_render_result;
+FUNCTION ajax
+    (p_region IN APEX_PLUGIN.t_region
+    ,p_plugin IN APEX_PLUGIN.t_plugin
+    ) RETURN APEX_PLUGIN.t_region_ajax_result;
+end;
+/
+show err
+
+create or replace package body reportmap_pkg as
+-- v0.8
 g_num_format constant varchar2(100) := '99999999999990.099999999999999999999999999999';
 g_tochar_format constant varchar2(100) := 'fm990.099999999999999999999999999999';
 
@@ -179,26 +194,28 @@ FUNCTION render_map
     l_api_key       plugin_attr := p_plugin.attribute_01;
 
     -- Component attributes
-    l_map_height    plugin_attr := p_region.attribute_01;
-    l_id_item       plugin_attr := p_region.attribute_02;
-    l_click_zoom    plugin_attr := p_region.attribute_03;    
-    l_sync_item     plugin_attr := p_region.attribute_04;
-    l_markericon    plugin_attr := p_region.attribute_05;
-    l_latlong       plugin_attr := p_region.attribute_06;
-    l_dist_item     plugin_attr := p_region.attribute_07;
-    l_sign_in       plugin_attr := p_region.attribute_08;
-    l_geocode_item  plugin_attr := p_region.attribute_09;
-    l_country       plugin_attr := p_region.attribute_10;
-    l_mapstyle      plugin_attr := p_region.attribute_11;
-    l_address_item  plugin_attr := p_region.attribute_12;
-    l_geolocate     plugin_attr := p_region.attribute_13;
-    l_geoloc_zoom   plugin_attr := p_region.attribute_14;
-    l_directions    plugin_attr := p_region.attribute_15;
-    l_origin_item   plugin_attr := p_region.attribute_16;
-    l_dest_item     plugin_attr := p_region.attribute_17;
-    l_dirdist_item  plugin_attr := p_region.attribute_18;
-    l_dirdur_item   plugin_attr := p_region.attribute_19;
-    l_attribute1    plugin_attr := p_region.attribute_20;
+    l_map_height        plugin_attr := p_region.attribute_01;
+    l_id_item           plugin_attr := p_region.attribute_02;
+    l_click_zoom        plugin_attr := p_region.attribute_03;    
+    l_sync_item         plugin_attr := p_region.attribute_04;
+    l_markericon        plugin_attr := p_region.attribute_05;
+    l_latlong           plugin_attr := p_region.attribute_06;
+    l_dist_item         plugin_attr := p_region.attribute_07;
+    --l_unused            plugin_attr := p_region.attribute_08; --attribute not used in this version
+    l_geocode_item      plugin_attr := p_region.attribute_09;
+    l_country           plugin_attr := p_region.attribute_10;
+    l_mapstyle          plugin_attr := p_region.attribute_11;
+    l_address_item      plugin_attr := p_region.attribute_12;
+    l_geolocate         plugin_attr := p_region.attribute_13;
+    l_geoloc_zoom       plugin_attr := p_region.attribute_14;
+    l_directions        plugin_attr := p_region.attribute_15;
+    l_origin_item       plugin_attr := p_region.attribute_16;
+    l_dest_item         plugin_attr := p_region.attribute_17;
+    l_dirdist_item      plugin_attr := p_region.attribute_18;
+    l_dirdur_item       plugin_attr := p_region.attribute_19;
+    l_attribute1        plugin_attr := p_region.attribute_20;
+    l_optimizewaypoints plugin_attr := p_region.attribute_21;
+    l_maptype           plugin_attr := p_region.attribute_22;
     
 BEGIN
     -- debug information will be included
@@ -211,7 +228,6 @@ BEGIN
 
     IF l_api_key IS NULL THEN
         -- these features require a Google API Key to work
-        l_sign_in      := 'N';
         l_geocode_item := NULL;
         l_country      := NULL;
         l_address_item := NULL;
@@ -222,9 +238,6 @@ BEGIN
         l_dirdur_item  := NULL;
     ELSE
         l_js_params := '?key=' || l_api_key;
-        IF l_sign_in = 'Y' THEN
-            l_js_params := l_js_params || '&'||'signed_in=true';
-        END IF;
     END IF;
 
     APEX_JAVASCRIPT.add_library
@@ -233,7 +246,7 @@ BEGIN
       ,p_skip_extension => true);
 
     APEX_JAVASCRIPT.add_library
-      (p_name                  => 'jk64plugin'
+      (p_name                  => 'jk64reportmap'
       ,p_directory             => p_plugin.file_prefix
       ,p_check_to_add_minified => TRUE);
 
@@ -293,59 +306,61 @@ BEGIN
     END IF;
         
     l_script := '<script>
-var opt_#REGION# = {
-   container: "map_#REGION#_container"
-  ,regionId: "#REGION#"
-  ,ajaxIdentifier: "'||APEX_PLUGIN.get_ajax_identifier||'"
-  ,ajaxItems: "'||APEX_PLUGIN_UTIL.page_item_names_to_jquery(p_region.ajax_items_to_submit)||'"
-  ,latlng: "'||l_latlong||'"
-  ,markerZoom: '||NVL(l_click_zoom,'null')||'
-  ,icon: "'||l_markericon||'"
-  ,idItem: "'||l_id_item||'"
-  ,syncItem: "'||l_sync_item||'"
-  ,distItem: "'||l_dist_item||'"
-  ,geocodeItem: "'||l_geocode_item||'"
-  ,country: "'||l_country||'"
-  ,southwest: {'||latlng2ch(l_lat_min,l_lng_min)||'}
-  ,northeast: {'||latlng2ch(l_lat_max,l_lng_max)||'}'||
+var opt_#REGION#=
+{container:"map_#REGION#_container"
+,regionId:"#REGION#"
+,ajaxIdentifier:"'||APEX_PLUGIN.get_ajax_identifier||'"
+,ajaxItems:"'||APEX_PLUGIN_UTIL.page_item_names_to_jquery(p_region.ajax_items_to_submit)||'"
+,maptype:"'||lower(l_maptype)||'"
+,latlng:"'||l_latlong||'"
+,markerZoom:'||NVL(l_click_zoom,'null')||'
+,icon:"'||l_markericon||'"
+,idItem:"'||l_id_item||'"
+,syncItem:"'||l_sync_item||'"
+,distItem:"'||l_dist_item||'"
+,geocodeItem:"'||l_geocode_item||'"
+,country:"'||l_country||'"
+,southwest:{'||latlng2ch(l_lat_min,l_lng_min)||'}
+,northeast:{'||latlng2ch(l_lat_max,l_lng_max)||'}'||
   CASE WHEN l_mapstyle IS NOT NULL THEN '
-  ,mapstyle: '||l_mapstyle END || '
-  ,addressItem: "'||l_address_item||'"'||
+,mapstyle:'||l_mapstyle END || '
+,addressItem:"'||l_address_item||'"'||
   CASE WHEN l_geolocate = 'Y' THEN '
-  ,geolocate: true' ||
+,geolocate:true' ||
     CASE WHEN l_geoloc_zoom IS NOT NULL THEN '
-  ,geolocateZoom: '||l_geoloc_zoom
+,geolocateZoom:'||l_geoloc_zoom
     END
   END || '
-  ,noDataMessage:  "'||p_region.no_data_found_message||'"'||
+,noDataMessage:"'||p_region.no_data_found_message||'"'||
   CASE WHEN p_region.source IS NOT NULL THEN '
-  ,expectData: true'
+,expectData:true'
   END ||
-  CASE WHEN l_directions IS NOT NULL
-        AND l_origin_item IS NOT NULL
-        AND l_dest_item IS NOT NULL THEN '
-  ,directions: "' || l_directions || '"
-  ,originItem: "' || l_origin_item || '"
-  ,destItem: "' || l_dest_item || '"' ||
+  CASE WHEN l_directions IS NOT NULL THEN '
+,directions:"' || l_directions || '"' ||
+    CASE WHEN l_origin_item IS NOT NULL THEN '
+,originItem:"' || l_origin_item || '"'
+    END ||
+    CASE WHEN l_dest_item IS NOT NULL THEN '
+,destItem:"' || l_dest_item || '"'
+    END ||
     CASE WHEN l_dirdist_item IS NOT NULL THEN '
-  ,dirdistItem: "' || l_dirdist_item || '"'
+,dirdistItem:"' || l_dirdist_item || '"'
     END ||
     CASE WHEN l_dirdur_item IS NOT NULL THEN '
-  ,dirdurItem: "' || l_dirdur_item || '"'
-    END
+,dirdurItem:"' || l_dirdur_item || '"'
+    END || '
+,optimizeWaypoints:' || case when l_optimizewaypoints = 'Y' then 'true' else 'false' end
   END || '
 };
-function click_#REGION#(id) {
-  jk64plugin_click(opt_#REGION#,id);
-}
+function click_#REGION#(id){jk64reportmap_click(opt_#REGION#,id);}
 function r_#REGION#(f){/in/.test(document.readyState)?setTimeout("r_#REGION#("+f+")",9):f()}
 r_#REGION#(function(){
-  opt_#REGION#.mapdata = [';
+opt_#REGION#.mapdata = [';
     sys.htp.p(REPLACE(l_script,'#REGION#',l_region));
     htp_arr(l_data);
     l_script := '];
-  jk64plugin_initMap(opt_#REGION#);
-  apex.jQuery("##REGION#").bind("apexrefresh", function(){jk64plugin_refreshMap(opt_#REGION#);});
+jk64reportmap_initMap(opt_#REGION#);
+apex.jQuery("##REGION#").bind("apexrefresh", function(){jk64reportmap_refreshMap(opt_#REGION#);});
 });</script>';
     sys.htp.p(REPLACE(l_script,'#REGION#',l_region));
     sys.htp.p('<div id="map_'||l_region||'_container" style="min-height:'||l_map_height||'px"></div>');
@@ -454,3 +469,7 @@ EXCEPTION
         APEX_DEBUG.error(SQLERRM);
         sys.htp.p('{"error":"'||sqlerrm||'"}');
 END ajax;
+
+end reportmap_pkg;
+/
+show err
