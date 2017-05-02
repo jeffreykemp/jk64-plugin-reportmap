@@ -3,7 +3,7 @@
   "version" : "0.8",
   "description" : "Google Map Report region plugin",
   "keywords" : ["map"],
-  "homepage" : "https://github.com/jeffreykemp/jk64-plugin-reportmap",
+  "homepage" : "https://jeffreykemp.github.io/jk64-plugin-reportmap/",
   "bugs" : {
     "url" : "https://github.com/jeffreykemp/jk64-plugin-reportmap/issues",
     "email" : "jeffrey.kemp@jk64.com"
