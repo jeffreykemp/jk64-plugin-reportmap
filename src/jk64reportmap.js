@@ -1,3 +1,16 @@
+//jk64 ReportMap v0.9
+
+function jk64reportmap_parseLatLng(v) {
+  apex.debug("jk64reportmap_parseLatLng "+v);
+  var pos;
+  if (v !== null && v !== undefined && v.indexOf(",") > -1) {
+     var arr = v.split(",");
+     apex.debug("parsed "+arr[0]+" "+arr[1]);
+     pos = new google.maps.LatLng(arr[0],arr[1]);
+  }
+  return pos;
+}
+
 function jk64reportmap_geocode(opt,geocoder) {
   geocoder.geocode(
     {address: $v(opt.geocodeItem)
@@ -122,7 +135,7 @@ function jk64reportmap_repPins(opt) {
 				opt.infoNoDataFound = new google.maps.InfoWindow(
 					{
 						content: opt.noDataMessage,
-						position: {lat:0,lng:0}
+						position: jk64reportmap_parseLatLng(opt.latlng)
 					});
 			}
 			opt.infoNoDataFound.open(opt.map);
@@ -340,7 +353,7 @@ function jk64reportmap_initMap(opt) {
 	apex.debug(opt.regionId+" initMap "+opt.maptype);
 	var myOptions = {
 		zoom: 1,
-		center: new google.maps.LatLng(opt.latlng),
+		center: jk64reportmap_parseLatLng(opt.latlng),
 		mapTypeId: opt.maptype
 	};
 	opt.map = new google.maps.Map(document.getElementById(opt.container),myOptions);
@@ -350,19 +363,16 @@ function jk64reportmap_initMap(opt) {
 	opt.map.fitBounds(new google.maps.LatLngBounds(opt.southwest,opt.northeast));
 	if (opt.syncItem!=="") {
 		var val = $v(opt.syncItem);
-		if (val !== null && val.indexOf(",") > -1) {
-			var arr = val.split(",");
-			apex.debug(opt.regionId+" init from item "+val);
-			var pos = new google.maps.LatLng(arr[0],arr[1]);
-			opt.userpin = new google.maps.Marker({map: opt.map, position: pos, icon: opt.icon});
+		if (val !== null) {
+			opt.userpin = new google.maps.Marker({map: opt.map, position: jk64reportmap_parseLatLng(val), icon: opt.icon});
 			jk64reportmap_setCircle(opt,pos);
 		}
 		//if the lat/long item is changed, move the pin
 		$("#"+opt.syncItem).change(function(){ 
 			var latlng = this.value;
 			if (latlng !== null && latlng !== undefined && latlng.indexOf(",") > -1) {
-				apex.debug(opt.regionId+" item changed "+latlng);
 				var arr = latlng.split(",");
+				apex.debug(opt.regionId+" item changed "+arr[0]+" "+arr[1]);
 				jk64reportmap_userPin(opt,arr[0],arr[1]);
 			}
 		});
@@ -373,7 +383,7 @@ function jk64reportmap_initMap(opt) {
 			if (this.value) {
 				var radius_metres = parseFloat(this.value)*1000;
 				if (opt.distcircle.getRadius() !== radius_metres) {
-					apex.debug(opt.regionId+" distitem changed "+this.value);
+					apex.debug(opt.regionId+" distitem changed "+radius_metres);
 					opt.distcircle.setRadius(radius_metres);
 				}
 			} else {
@@ -478,7 +488,7 @@ function jk64reportmap_refreshMap(opt) {
 					var val = $v(opt.syncItem);
 					if (val!==null && val.indexOf(",") > -1) {
 						var arr = val.split(",");
-						apex.debug(opt.regionId+" init from item "+val);
+						apex.debug(opt.regionId+" init from item "+arr[0]+" "+arr[1]);
 						jk64reportmap_userPin(opt,arr[0],arr[1]);
 					}
 				}

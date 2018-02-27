@@ -13,9 +13,9 @@ end;
 show err
 
 create or replace package body reportmap_pkg as
--- v0.8
-g_num_format constant varchar2(100) := '99999999999990.099999999999999999999999999999';
-g_tochar_format constant varchar2(100) := 'fm990.099999999999999999999999999999';
+-- jk64 ReportMap v0.9
+g_num_format constant varchar2(100) := '99999999999999.999999999999999999999999999999';
+g_tochar_format constant varchar2(100) := 'fm99999999999990.099999999999999999999999999999';
 
 g_attr1_label constant varchar2(10) := 'LABEL';
 
