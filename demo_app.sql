@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   19:23 Tuesday February 27, 2018
+--   Date and Time:   19:27 Tuesday February 27, 2018
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -113,7 +113,7 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20180227192306'
+,p_last_upd_yyyymmddhh24miss=>'20180227192732'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_ui_type_name => null
 );
@@ -9117,7 +9117,7 @@ wwv_flow_api.create_page(
 ,p_cache_mode=>'NOCACHE'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20180227192030'
+,p_last_upd_yyyymmddhh24miss=>'20180227192719'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(73507635119238450)
@@ -9162,8 +9162,7 @@ wwv_flow_api.create_page_plug(
 ,p_plug_source=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
 'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info',
 'from apex_collections',
-'where collection_name = ''MAP''',
-'and 1=0'))
+'where collection_name = ''MAP'''))
 ,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP'
 ,p_plug_query_row_template=>1
 ,p_plug_query_num_rows=>1000
@@ -9172,7 +9171,6 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_01=>'400'
 ,p_attribute_02=>'P1_ID'
 ,p_attribute_03=>'13'
-,p_attribute_06=>'-31.9505,115.8605'
 ,p_attribute_13=>'N'
 ,p_attribute_22=>'ROADMAP'
 );
