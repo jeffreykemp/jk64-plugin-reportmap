@@ -14,7 +14,7 @@ The user can click any marker to see a popup info window for it. You can have th
 
 ## PRE-REQUISITES ##
 
-* [Oracle Application Express 5.0.2](https://apex.oracle.com)
+* [Oracle Application Express 5.0.4](https://apex.oracle.com)
 
 ## INSTALLATION INSTRUCTIONS ##
 
