@@ -189,6 +189,8 @@ FUNCTION render_map
     l_lng_min      number;
     l_lng_max      number;
     l_js_params    varchar2(1000);
+    l_zoom_enabled varchar2(1000) := 'true';
+    l_pan_enabled  varchar2(1000) := 'true';
 
     -- Plugin attributes (application level)
     l_api_key       plugin_attr := p_plugin.attribute_01;
@@ -216,6 +218,9 @@ FUNCTION render_map
     l_attribute1        plugin_attr := p_region.attribute_20;
     l_optimizewaypoints plugin_attr := p_region.attribute_21;
     l_maptype           plugin_attr := p_region.attribute_22;
+    l_zoom_expr         plugin_attr := p_region.attribute_23;
+    l_pan_expr          plugin_attr := p_region.attribute_24;
+    l_gesture_handling  plugin_attr := p_region.attribute_25;
     
 BEGIN
     -- debug information will be included
@@ -239,6 +244,24 @@ BEGIN
     ELSE
         l_js_params := '?key=' || l_api_key;
     END IF;
+    
+    if l_zoom_expr is not null then
+      l_zoom_enabled := apex_plugin_util.get_plsql_expression_result (
+        'case when (' || l_zoom_expr
+        || ') then ''true'' else ''false'' end');
+      if l_zoom_enabled not in ('true','false') then
+        raise_application_error(-20000, 'Zoom attribute must evaluate to true or false.');
+      end if;
+    end if;
+
+    if l_pan_expr is not null then
+      l_pan_enabled := apex_plugin_util.get_plsql_expression_result (
+        'case when (' || l_pan_expr
+        || ') then ''true'' else ''false'' end');
+      if l_pan_enabled not in ('true','false') then
+        raise_application_error(-20000, 'Pan attribute must evaluate to true or false.');
+      end if;
+    end if;
 
     APEX_JAVASCRIPT.add_library
       (p_name           => 'js' || l_js_params
@@ -351,6 +374,9 @@ var opt_#REGION#=
     END || '
 ,optimizeWaypoints:' || case when l_optimizewaypoints = 'Y' then 'true' else 'false' end
   END || '
+  ,zoom: '||l_zoom_enabled||'
+  ,pan: '||l_pan_enabled||'
+  ,gestureHandling: "'||nvl(l_gesture_handling,'auto')||'"
 };
 function click_#REGION#(id){jk64reportmap_click(opt_#REGION#,id);}
 function r_#REGION#(f){/in/.test(document.readyState)?setTimeout("r_#REGION#("+f+")",9):f()}

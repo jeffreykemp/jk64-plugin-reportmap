@@ -357,6 +357,13 @@ function jk64reportmap_initMap(opt) {
 		mapTypeId: opt.maptype
 	};
 	opt.map = new google.maps.Map(document.getElementById(opt.container),myOptions);
+  opt.map.setOptions({
+       draggable: opt.pan
+      ,zoomControl: opt.zoom
+      ,scrollwheel: opt.zoom
+      ,disableDoubleClickZoom: !(opt.zoom)
+      ,gestureHandling: opt.gestureHandling
+    });
 	if (opt.mapstyle) {
 		opt.map.setOptions({styles: opt.mapstyle});
 	}
