@@ -203,7 +203,7 @@ FUNCTION render_map
     l_markericon        plugin_attr := p_region.attribute_05;
     l_latlong           plugin_attr := p_region.attribute_06;
     l_dist_item         plugin_attr := p_region.attribute_07;
-    --l_unused            plugin_attr := p_region.attribute_08; --attribute not used in this version
+    l_pan_on_click      plugin_attr := p_region.attribute_08;
     l_geocode_item      plugin_attr := p_region.attribute_09;
     l_country           plugin_attr := p_region.attribute_10;
     l_mapstyle          plugin_attr := p_region.attribute_11;
@@ -337,6 +337,7 @@ var opt_#REGION#=
 ,maptype:"'||lower(l_maptype)||'"
 ,latlng:"'||l_latlong||'"
 ,markerZoom:'||NVL(l_click_zoom,'null')||'
+,markerPan:'||case l_pan_on_click when 'N' then 'false' else 'true' end||'
 ,icon:"'||l_markericon||'"
 ,idItem:"'||l_id_item||'"
 ,syncItem:"'||l_sync_item||'"

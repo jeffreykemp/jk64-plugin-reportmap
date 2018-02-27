@@ -19,8 +19,10 @@ function jk64reportmap_geocode(opt,geocoder) {
     if (status === google.maps.GeocoderStatus.OK) {
       var pos = results[0].geometry.location;
       apex.debug(opt.regionId+" geocode ok");
-      opt.map.setCenter(pos);
-      opt.map.panTo(pos);
+      if (opt.markerPan) {
+        opt.map.setCenter(pos);
+        opt.map.panTo(pos);
+      }
       if (opt.markerZoom) {
         opt.map.setZoom(opt.markerZoom);
       }
@@ -106,7 +108,9 @@ function jk64reportmap_repPin(opt,pData) {
 				  });
 				opt.iw.open(opt.map, this);
 			}
-			opt.map.panTo(this.getPosition());
+      if (opt.markerPan) {
+  			opt.map.panTo(this.getPosition());
+      }
 			if (opt.markerZoom) {
 				opt.map.setZoom(opt.markerZoom);
 			}
@@ -434,7 +438,9 @@ function jk64reportmap_initMap(opt) {
 			jk64reportmap_refreshMap(opt);
 		} else if (opt.markerZoom) {
 			apex.debug(opt.regionId+" pan+zoom");
-			opt.map.panTo(event.latLng);
+      if (opt.markerPan) {
+			  opt.map.panTo(event.latLng);
+      }
 			opt.map.setZoom(opt.markerZoom);
 		}
 		if (opt.addressItem!=="") {
