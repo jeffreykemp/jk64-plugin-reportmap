@@ -1,4 +1,4 @@
-//jk64 ReportMap v0.9
+//jk64 ReportMap v0.9.1
 
 function jk64reportmap_parseLatLng(v) {
   apex.debug("jk64reportmap_parseLatLng "+v);
@@ -203,8 +203,8 @@ function jk64reportmap_setCircle(opt,pos) {
 
 function jk64reportmap_userPin(opt,lat,lng) {
   if (lat!==null && lng!==null) {
-    var oldpos = opt.userpin?opt.userpin.getPosition():new google.maps.LatLng(0,0);
-    if (lat==oldpos.lat() && lng==oldpos.lng()) {
+    var oldpos = opt.userpin?opt.userpin.getPosition():(new google.maps.LatLng(0,0));
+    if (oldpos && lat==oldpos.lat() && lng==oldpos.lng()) {
       apex.debug(opt.regionId+" userpin not changed");
     } else {
       var pos = new google.maps.LatLng(lat,lng);
