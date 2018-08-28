@@ -376,8 +376,10 @@ function jk64reportmap_initMap(opt) {
 		var val = $v(opt.syncItem);
 		if (val !== null) {
 			var pos = jk64reportmap_parseLatLng(val);
-			opt.userpin = new google.maps.Marker({map: opt.map, position: pos, icon: opt.icon});
-			jk64reportmap_setCircle(opt,pos);
+      if (pos) {
+  			opt.userpin = new google.maps.Marker({map: opt.map, position: pos, icon: opt.icon}); 
+			  jk64reportmap_setCircle(opt,pos);
+      }
 		}
 		//if the lat/long item is changed, move the pin
 		$("#"+opt.syncItem).change(function(){ 
