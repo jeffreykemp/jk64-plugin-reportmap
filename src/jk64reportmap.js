@@ -1,7 +1,8 @@
-//jk64 ReportMap v0.9.1
+var reportmap = {
+//jk64 ReportMap v0.10
 
-function jk64reportmap_parseLatLng(v) {
-  apex.debug("jk64reportmap_parseLatLng "+v);
+parseLatLng : function (v) {
+  apex.debug("reportmap.parseLatLng "+v);
   var pos;
   if (v !== null && v !== undefined && v.indexOf(",") > -1) {
      var arr = v.split(",");
@@ -9,9 +10,10 @@ function jk64reportmap_parseLatLng(v) {
      pos = new google.maps.LatLng(arr[0],arr[1]);
   }
   return pos;
-}
+},
 
-function jk64reportmap_geocode(opt,geocoder) {
+geocode : function (opt,geocoder) {
+	apex.debug(opt.regionId+" reportmap.geocode");
   geocoder.geocode(
     {address: $v(opt.geocodeItem)
     ,componentRestrictions: opt.country!==""?{country:opt.country}:{}
@@ -26,7 +28,7 @@ function jk64reportmap_geocode(opt,geocoder) {
       if (opt.markerZoom) {
         opt.map.setZoom(opt.markerZoom);
       }
-      jk64reportmap_userPin(opt,pos.lat(), pos.lng());
+      reportmap.userPin(opt,pos.lat(), pos.lng());
       if (opt.addressItem) {
         $s(opt.addressItem,results[0].formatted_address);
       }
@@ -41,9 +43,10 @@ function jk64reportmap_geocode(opt,geocoder) {
       apex.debug(opt.regionId+" geocode was unsuccessful for the following reason: "+status);
     }
   });
-}
+},
 
-function jk64reportmap_markerclick(opt,pData) {
+markerclick : function (opt,pData) {
+	apex.debug(opt.regionId+" reportmap.markerclick");
 	if (opt.idItem!=="") {
 		$s(opt.idItem,pData.id);
 	}
@@ -65,9 +68,9 @@ function jk64reportmap_markerclick(opt,pData) {
 		attr09:pData.attr09,
 		attr10:pData.attr10
 	});	
-}
+},
 
-function jk64reportmap_repPin(opt,pData) {
+repPin : function (opt,pData) {
 	var pos = new google.maps.LatLng(pData.lat, pData.lng);
 	if (pData.rad) {
 		var circ = new google.maps.Circle({
@@ -83,7 +86,7 @@ function jk64reportmap_repPin(opt,pData) {
 		});
 		google.maps.event.addListener(circ, "click", function () {
 			apex.debug(opt.regionId+" circle clicked "+pData.id);
-			jk64reportmap_markerclick(opt,pData);
+			reportmap.markerclick(opt,pData);
 		});
 		if (!opt.circles) { opt.circles=[]; }
 		opt.circles.push({"id":pData.id,"circ":circ});
@@ -114,21 +117,22 @@ function jk64reportmap_repPin(opt,pData) {
 			if (opt.markerZoom) {
 				opt.map.setZoom(opt.markerZoom);
 			}
-			jk64reportmap_markerclick(opt,pData);
+			reportmap.markerclick(opt,pData);
 		});
 		if (!opt.reppin) { opt.reppin=[]; }
 		opt.reppin.push({"id":pData.id,"marker":reppin});
 	}
-}
+},
 
-function jk64reportmap_repPins(opt) {
+repPins : function (opt) {
+	apex.debug(opt.regionId+" reportmap.repPins");
 	if (opt.mapdata.length>0) {
 		if (opt.infoNoDataFound) {
 			apex.debug(opt.regionId+" hide No Data Found infowindow");
 			opt.infoNoDataFound.close();
 		}
 		for (var i = 0; i < opt.mapdata.length; i++) {
-			jk64reportmap_repPin(opt,opt.mapdata[i]);
+			reportmap.repPin(opt,opt.mapdata[i]);
 		}
 	} else {
 		if (opt.noDataMessage !== "") {
@@ -139,15 +143,16 @@ function jk64reportmap_repPins(opt) {
 				opt.infoNoDataFound = new google.maps.InfoWindow(
 					{
 						content: opt.noDataMessage,
-						position: jk64reportmap_parseLatLng(opt.latlng)
+						position: reportmap.parseLatLng(opt.latlng)
 					});
 			}
 			opt.infoNoDataFound.open(opt.map);
 		}
 	}
-}
+},
 
-function jk64reportmap_click(opt,id) {
+click : function (opt,id) {
+	apex.debug(opt.regionId+" reportmap.click");
   var found = false;
   for (var i = 0; i < opt.reppin.length; i++) {
     if (opt.reppin[i].id==id) {
@@ -159,9 +164,9 @@ function jk64reportmap_click(opt,id) {
   if (!found) {
     apex.debug(opt.regionId+" id not found:"+id);
   }
-}
+},
 
-function jk64reportmap_setCircle(opt,pos) {
+setCircle : function (opt,pos) {
   if (opt.distItem!=="") {
     if (opt.distcircle) {
       apex.debug(opt.regionId+" move circle");
@@ -186,7 +191,7 @@ function jk64reportmap_setCircle(opt,pos) {
         var radius_km = opt.distcircle.getRadius()/1000;
         apex.debug(opt.regionId+" circle radius changed "+radius_km);
         $s(opt.distItem, radius_km);
-        jk64reportmap_refreshMap(opt);
+        reportmap.refresh(opt);
       });
       google.maps.event.addListener(opt.distcircle, "center_changed", function (event) {
         var ctr = opt.distcircle.getCenter()
@@ -194,14 +199,14 @@ function jk64reportmap_setCircle(opt,pos) {
         apex.debug(opt.regionId+" circle center changed "+latlng);
         if (opt.syncItem!=="") {
           $s(opt.syncItem,latlng);
-          jk64reportmap_refreshMap(opt);
+          reportmap.refresh(opt);
         }
       });
     }
   }
-}
+},
 
-function jk64reportmap_userPin(opt,lat,lng) {
+userPin : function (opt,lat,lng) {
   if (lat!==null && lng!==null) {
     var oldpos = opt.userpin?opt.userpin.getPosition():(new google.maps.LatLng(0,0));
     if (oldpos && lat==oldpos.lat() && lng==oldpos.lng()) {
@@ -212,11 +217,11 @@ function jk64reportmap_userPin(opt,lat,lng) {
         apex.debug(opt.regionId+" move existing pin to new position on map "+lat+","+lng);
         opt.userpin.setMap(opt.map);
         opt.userpin.setPosition(pos);
-        jk64reportmap_setCircle(opt,pos);
+        reportmap.setCircle(opt,pos);
       } else {
         apex.debug(opt.regionId+" create userpin "+lat+","+lng);
         opt.userpin = new google.maps.Marker({map: opt.map, position: pos, icon: opt.icon});
-        jk64reportmap_setCircle(opt,pos);
+        reportmap.setCircle(opt,pos);
       }
     }
   } else if (opt.userpin) {
@@ -227,20 +232,25 @@ function jk64reportmap_userPin(opt,lat,lng) {
       opt.distcircle.setMap(null);
     }
   }
-}
+},
 
-function jk64reportmap_getAddress(opt,lat,lng) {
+getAddress : function (opt,lat,lng) {
+	apex.debug(opt.regionId+" reportmap.getAddress");
 	var latlng = {lat: lat, lng: lng};
 	opt.geocoder.geocode({'location': latlng}, function(results, status) {
 		if (status === google.maps.GeocoderStatus.OK) {
 			if (results[1]) {
 				$s(opt.addressItem,results[0].formatted_address);
         apex.debug(opt.regionId+" addressfound '"+results[0].formatted_address+"'");
+        var components = results[0].address_components;
+        for (i=0; i<components.length; i++) {
+          apex.debug(opt.regionId+" result[0] "+components[i].types+"="+components[i].short_name+" ("+components[i].long_name+")");
+        }
         apex.jQuery("#"+opt.regionId).trigger("addressfound", {
           map:opt.map,
           lat:lat,
           lng:lng,
-          formatted_address:results[0].formatted_address
+          result:results[0]
         });
 			} else {
 				window.alert('No results found');
@@ -249,9 +259,10 @@ function jk64reportmap_getAddress(opt,lat,lng) {
 			window.alert('Geocoder failed due to: ' + status);
 		}
 	});
-}
+},
 
-function jk64reportmap_geolocate(opt) {
+geolocate : function (opt) {
+	apex.debug(opt.regionId+" reportmap.geolocate");
 	if (navigator.geolocation) {
 		apex.debug(opt.regionId+" geolocate");
 		navigator.geolocation.getCurrentPosition(function(position) {
@@ -268,9 +279,9 @@ function jk64reportmap_geolocate(opt) {
 	} else {
 		apex.debug(opt.regionId+" browser does not support geolocation");
 	}
-}
+},
 
-function jk64reportmap_convertLatLng(str) {
+convertLatLng : function (str) {
 	// see if the string can be interpreted as a lat,lng pair; otherwise,
 	// we will assume it's an address or location name
 	var arr = str.split(",");
@@ -279,9 +290,10 @@ function jk64reportmap_convertLatLng(str) {
 	} else {
 		return {lat: parseFloat(arr[0]), lng: parseFloat(arr[1])};
 	}
-}
+},
 
-function jk64reportmap_directionsresp(response,status,opt) {
+directionsresp : function (response,status,opt) {
+	apex.debug(opt.regionId+" reportmap.directionsresp");
   if (status == google.maps.DirectionsStatus.OK) {
     opt.directionsDisplay.setDirections(response);
     if ((opt.dirdistItem !== "") || (opt.dirdurItem !== "")) {
@@ -303,25 +315,25 @@ function jk64reportmap_directionsresp(response,status,opt) {
   } else {
     window.alert('Directions request failed due to ' + status);
   }
-}
+},
 
-function jk64reportmap_directions(opt) {
-	apex.debug(opt.regionId+" directions "+opt.directions);
+directions : function (opt) {
+	apex.debug(opt.regionId+" reportmap.directions "+opt.directions);
 	var origin
 	   ,dest
      ,routeindex = opt.directions.indexOf("-ROUTE")
      ,travelmode;
 	if (routeindex<0) {
     //simple directions between two items
-    origin = jk64reportmap_convertLatLng($v(opt.originItem));
-    dest   = jk64reportmap_convertLatLng($v(opt.destItem));
+    origin = reportmap.convertLatLng($v(opt.originItem));
+    dest   = reportmap.convertLatLng($v(opt.destItem));
     if (origin !== "" && dest !== "") {
       travelmode = opt.directions;
 	  	opt.directionsService.route({
 		  	origin:origin,
 			  destination:dest,
 			  travelMode:google.maps.TravelMode[travelmode]
-		  }, function(response,status){jk64reportmap_directionsresp(response,status,opt)});
+		  }, function(response,status){reportmap.directionsresp(response,status,opt)});
     }
   } else {
     //route via waypoints
@@ -349,15 +361,15 @@ function jk64reportmap_directions(opt) {
       waypoints:waypoints,
       optimizeWaypoints:opt.optimizeWaypoints,
 			travelMode:google.maps.TravelMode[travelmode]
-		}, function(response,status){jk64reportmap_directionsresp(response,status,opt)});
+		}, function(response,status){reportmap.directionsresp(response,status,opt)});
 	}
-}
+},
 
-function jk64reportmap_initMap(opt) {
-	apex.debug(opt.regionId+" initMap "+opt.maptype);
+init : function (opt) {
+	apex.debug(opt.regionId+" reportmap.init "+opt.maptype);
 	var myOptions = {
 		zoom: 1,
-		center: jk64reportmap_parseLatLng(opt.latlng),
+		center: reportmap.parseLatLng(opt.latlng),
 		mapTypeId: opt.maptype
 	};
 	opt.map = new google.maps.Map(document.getElementById(opt.container),myOptions);
@@ -375,10 +387,10 @@ function jk64reportmap_initMap(opt) {
 	if (opt.syncItem!=="") {
 		var val = $v(opt.syncItem);
 		if (val !== null) {
-			var pos = jk64reportmap_parseLatLng(val);
+			var pos = reportmap.parseLatLng(val);
       if (pos) {
   			opt.userpin = new google.maps.Marker({map: opt.map, position: pos, icon: opt.icon}); 
-			  jk64reportmap_setCircle(opt,pos);
+			  reportmap.setCircle(opt,pos);
       }
 		}
 		//if the lat/long item is changed, move the pin
@@ -387,7 +399,7 @@ function jk64reportmap_initMap(opt) {
 			if (latlng !== null && latlng !== undefined && latlng.indexOf(",") > -1) {
 				var arr = latlng.split(",");
 				apex.debug(opt.regionId+" item changed "+arr[0]+" "+arr[1]);
-				jk64reportmap_userPin(opt,arr[0],arr[1]);
+				reportmap.userPin(opt,arr[0],arr[1]);
 			}
 		});
 	}
@@ -409,7 +421,7 @@ function jk64reportmap_initMap(opt) {
 		});
 	}
 	if (opt.expectData) {
-		jk64reportmap_repPins(opt);
+		reportmap.repPins(opt);
 	}
 	if (opt.addressItem!=="") {
 		opt.geocoder = new google.maps.Geocoder;
@@ -418,14 +430,14 @@ function jk64reportmap_initMap(opt) {
 		opt.directionsDisplay = new google.maps.DirectionsRenderer;
     opt.directionsService = new google.maps.DirectionsService;
 		opt.directionsDisplay.setMap(opt.map);
-		jk64reportmap_directions(opt);
+		reportmap.directions(opt);
 		//if the origin or dest item is changed for simple directions, recalc the directions
     if (opt.directions.indexOf("-ROUTE")<0) {
   		$("#"+opt.originItem).change(function(){
-	  		jk64reportmap_directions(opt);
+	  		reportmap.directions(opt);
 		  });
 		  $("#"+opt.destItem).change(function(){
-			  jk64reportmap_directions(opt);
+			  reportmap.directions(opt);
 	  	});
     }
 	}
@@ -434,11 +446,11 @@ function jk64reportmap_initMap(opt) {
 		   ,lng = event.latLng.lng();
 		apex.debug(opt.regionId+" map clicked "+lat+","+lng);
 		if ((opt.syncItem!=="") || (opt.addressItem!=="")) {
-			jk64reportmap_userPin(opt,lat,lng);
+			reportmap.userPin(opt,lat,lng);
 		}
 		if (opt.syncItem!=="") {
 			$s(opt.syncItem,lat+","+lng);
-			jk64reportmap_refreshMap(opt);
+			reportmap.refresh(opt);
 		} else if (opt.markerZoom) {
 			apex.debug(opt.regionId+" pan+zoom");
       if (opt.markerPan) {
@@ -447,25 +459,25 @@ function jk64reportmap_initMap(opt) {
 			opt.map.setZoom(opt.markerZoom);
 		}
 		if (opt.addressItem!=="") {
-			jk64reportmap_getAddress(opt,lat,lng);
+			reportmap.getAddress(opt,lat,lng);
 		}
 		apex.jQuery("#"+opt.regionId).trigger("mapclick", {map:opt.map, lat:lat, lng:lng});
 	});
 	if (opt.geocodeItem!="") {
 		var geocoder = new google.maps.Geocoder();
 		$("#"+opt.geocodeItem).change(function(){
-			jk64reportmap_geocode(opt,geocoder);
+			reportmap.geocode(opt,geocoder);
 		});
 	  }
 	if (opt.geolocate) {
-		jk64reportmap_geolocate(opt);
+		reportmap.geolocate(opt);
 	}
-	apex.debug(opt.regionId+" initMap finished");
+	apex.debug(opt.regionId+" reportmap.init finished");
 	apex.jQuery("#"+opt.regionId).trigger("maploaded", {map:opt.map});
-}
+},
 
-function jk64reportmap_refreshMap(opt) {
-	apex.debug(opt.regionId+" refreshMap");
+refresh : function (opt) {
+	apex.debug(opt.regionId+" reportmap.refresh");
 	apex.jQuery("#"+opt.regionId).trigger("apexbeforerefresh");
 	apex.server.plugin
 		(opt.ajaxIdentifier
@@ -498,18 +510,20 @@ function jk64reportmap_refreshMap(opt) {
 				apex.debug(opt.regionId+" pData.mapdata.length="+pData.mapdata.length);
 				opt.mapdata = pData.mapdata;
 				if (opt.expectData) {
-					jk64reportmap_repPins(opt);
+					reportmap.repPins(opt);
 				}
 				if (opt.syncItem!=="") {
 					var val = $v(opt.syncItem);
 					if (val!==null && val.indexOf(",") > -1) {
 						var arr = val.split(",");
 						apex.debug(opt.regionId+" init from item "+arr[0]+" "+arr[1]);
-						jk64reportmap_userPin(opt,arr[0],arr[1]);
+						reportmap.userPin(opt,arr[0],arr[1]);
 					}
 				}
 				apex.jQuery("#"+opt.regionId).trigger("apexafterrefresh");
 			}
 		} );
-	apex.debug(opt.regionId+" refreshMap finished");
+	apex.debug(opt.regionId+" reportmap.refresh finished");
+}
+
 }
