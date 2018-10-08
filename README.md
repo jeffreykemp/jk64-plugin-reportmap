@@ -14,7 +14,7 @@ The user can click any marker to see a popup info window for it. You can have th
 
 ## PRE-REQUISITES ##
 
-* [Oracle Application Express 5.0.4](https://apex.oracle.com)
+* [Oracle Application Express 5.0.4](https://apex.oracle.com) or later
 * You need a [Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key)
 
 ## INSTALLATION INSTRUCTIONS ##
