@@ -15,12 +15,13 @@ The user can click any marker to see a popup info window for it. You can have th
 ## PRE-REQUISITES ##
 
 * [Oracle Application Express 5.0.4](https://apex.oracle.com)
+* You need a [Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key)
 
 ## INSTALLATION INSTRUCTIONS ##
 
 1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
 2. Install the plugin to your application - **region_type_plugin_com_jk64_report_google_map.sql**
-3. Supply your [**Google API Key**](https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key)
+3. Supply your **Google API Key**
 4. Add a region to the page, select type **JK64 Report Google Map [Plug-In]**
 5. For **SQL Source**, enter a query with at least 4 columns (see example below)
 6. Update the **Number of Rows** to a reasonable upper limit (default is 15, you probably want a higher limit)
