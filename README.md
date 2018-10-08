@@ -8,6 +8,8 @@ This allows you to add a Google Map region to any page, showing a number of mark
 
 The user can click any marker to see a popup info window for it. You can have the region synchronize the map with an item you nominate - if so, the corresponding ID for the marker they click will be copied to the item.
 
+**Warning:** if you are upgrading from v0.9.1 or earlier, make sure to review the [Release Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/tag/v0.10) first.
+
 ## DEMO ##
 
 [https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64](https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64)
