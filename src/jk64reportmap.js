@@ -1,5 +1,5 @@
 var reportmap = {
-//jk64 ReportMap v0.10
+//jk64 ReportMap v0.11
 
 parseLatLng : function (v) {
   apex.debug("reportmap.parseLatLng "+v);
@@ -239,7 +239,7 @@ getAddress : function (opt,lat,lng) {
 	var latlng = {lat: lat, lng: lng};
 	opt.geocoder.geocode({'location': latlng}, function(results, status) {
 		if (status === google.maps.GeocoderStatus.OK) {
-			if (results[1]) {
+			if (results[0]) {
 				$s(opt.addressItem,results[0].formatted_address);
         apex.debug(opt.regionId+" addressfound '"+results[0].formatted_address+"'");
         var components = results[0].address_components;
