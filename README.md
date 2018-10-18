@@ -34,4 +34,4 @@ The user can click any marker to see a popup info window for it. You can have th
 SELECT lat, lng, name, id FROM mydata
 ```
 
-For more info including version history and plugin references, refer to the [WIKI](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki).
+For more info including sample queries, plugin attributes and triggers, refer to the [WIKI](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki).
