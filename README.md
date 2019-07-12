@@ -12,10 +12,7 @@ The user can click any marker to see a popup info window for it. You can have th
 
 **NOTICE**
 
-Version 1.0 of this plugin is currently in development. It will not be a drop-in replacement for v0.10 of the plugin which is no longer being supported. In particular:
-
-* It will be upgraded to support Oracle Application Express 18.1 or later
-* A number of attributes will be deprecated, changed or removed entirely
+*Version 1.0 of this plugin is currently in development. It will not be a drop-in replacement for v0.10 of the plugin which is no longer being supported. In particular, it will be upgraded to support Oracle Application Express 18.1 or later, and a number of attributes will be deprecated, changed or removed entirely.*
 
 ## DEMO ##
 
