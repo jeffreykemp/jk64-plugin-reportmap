@@ -1,4 +1,4 @@
-# Report Map (Google Maps) ![APEX Plugin](https://cdn.rawgit.com/Dani3lSun/apex-github-badges/b7e95341/badges/apex-plugin-badge.svg) ![APEX 18.2](https://github.com/Dani3lSun/apex-github-badges/blob/master/badges/apex-18_2-badge.svg)
+# Report Map (Google Maps) ![APEX Plugin](https://cdn.rawgit.com/Dani3lSun/apex-github-badges/b7e95341/badges/apex-plugin-badge.svg) ![APEX 5.0](https://cdn.rawgit.com/jeffreykemp/apex-github-badges/master/badges/apex-5.0-badge.svg)
 
 **A Region plugin for Oracle Application Express**
 
@@ -8,11 +8,7 @@ This allows you to add a Google Map region to any page, showing a number of mark
 
 The user can click any marker to see a popup info window for it. You can have the region synchronize the map with an item you nominate - if so, the corresponding ID for the marker they click will be copied to the item.
 
-**Warning:** if you are upgrading to v0.10 from v0.9.1 or earlier, make sure to review the [Release Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/tag/v0.10) first.
-
-**NOTICE**
-
-*Version 1.0 of this plugin is currently in development. It will not be a drop-in replacement for v0.10 of the plugin which is no longer being supported. In particular, it will be upgraded to support Oracle Application Express 18.2, and a number of attributes will be deprecated, changed or removed entirely.*
+**Warning:** if you are upgrading from v0.9.1 or earlier, make sure to review the [Release Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/tag/v0.10) first.
 
 ## DEMO ##
 
@@ -20,7 +16,7 @@ The user can click any marker to see a popup info window for it. You can have th
 
 ## PRE-REQUISITES ##
 
-* Oracle Application Express 5.0.4 or later *Note: version 1.0 will require APEX 18.2 or later*
+* [Oracle Application Express 5.0.4](https://apex.oracle.com) or later
 * You need a [Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key)
 
 ## INSTALLATION INSTRUCTIONS ##
