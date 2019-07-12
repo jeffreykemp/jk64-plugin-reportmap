@@ -11,6 +11,7 @@ The user can click any marker to see a popup info window for it. You can have th
 **Warning:** if you are upgrading to v0.10 from v0.9.1 or earlier, make sure to review the [Release Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/tag/v0.10) first.
 
 **NOTICE**
+
 Version 1.0 of this plugin is currently in development. It will not be a drop-in replacement for v0.10 of the plugin which is no longer being supported. In particular:
 
 * It will be upgraded to support Oracle Application Express 18.1 or later
