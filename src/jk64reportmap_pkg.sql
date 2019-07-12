@@ -1,5 +1,5 @@
 create or replace package jk64reportmap_pkg as
--- jk64 ReportMap v0.10
+-- jk64 ReportMap v1.0 Jul 2019
 
 function render
     (p_region in apex_plugin.t_region
@@ -17,12 +17,10 @@ end jk64reportmap_pkg;
 show err
 
 create or replace package body jk64reportmap_pkg as
--- jk64 ReportMap v0.10
+-- jk64 ReportMap v1.0 Jul 2019
 
 g_num_format    constant varchar2(100) := '99999999999999.999999999999999999999999999999';
 g_tochar_format constant varchar2(100) := 'fm99999999999990.099999999999999999999999999999';
-
-g_attr1_label   constant varchar2(10)  := 'LABEL';
 
 procedure set_map_extents
     (p_lat     in number
@@ -53,7 +51,6 @@ function get_markers
     ,p_lat_max    in out number
     ,p_lng_min    in out number
     ,p_lng_max    in out number
-    ,p_attribute1 in varchar2
     ) return apex_application_global.vc_arr2 is
     
     l_data           apex_application_global.vc_arr2;
@@ -61,20 +58,28 @@ function get_markers
     l_lng            number;
     l_info           varchar2(4000);
     l_icon           varchar2(4000);
-    l_radius_km      number;
-    l_circle_color   varchar2(100);
-    l_circle_transp  number;
-    l_flex_fields    varchar2(32767);
     l_marker_label   varchar2(1);
      
     l_column_value_list  apex_plugin_util.t_column_value_list;
 
 begin
 
+/* Column list is as follows:
+
+   lat,  - required
+   lng,  - required
+   name, - required
+   id,   - required
+   info, - optional
+   icon, - optional
+   label - optional
+
+*/
+
     l_column_value_list := apex_plugin_util.get_data
         (p_sql_statement  => p_region.source
         ,p_min_columns    => 4
-        ,p_max_columns    => 19
+        ,p_max_columns    => 7
         ,p_component_name => p_region.name
         ,p_max_rows       => p_region.fetched_rows);
     
@@ -91,51 +96,19 @@ begin
         l_lng  := to_number(l_column_value_list(2)(i),g_num_format);
         
         -- default values if not supplied in query
-        l_icon          := null;
-        l_radius_km     := null;
-        l_circle_color  := '#0000cc';
-        l_circle_transp := 0.3;
-        l_flex_fields   := null;
-        l_marker_label  := null;
+        l_info         := null;
+        l_icon         := null;
+        l_marker_label := null;
         
         if l_column_value_list.exists(5) then
           l_info := l_column_value_list(5)(i);
           if l_column_value_list.exists(6) then
             l_icon := l_column_value_list(6)(i);
             if l_column_value_list.exists(7) then
-              l_radius_km := to_number(l_column_value_list(7)(i),g_num_format);
-              if l_column_value_list.exists(8) then
-                l_circle_color := l_column_value_list(8)(i);
-                if l_column_value_list.exists(9) then
-                  l_circle_transp := to_number(l_column_value_list(9)(i),g_num_format);
-                end if;
-              end if;
+              l_marker_label := substr(l_column_value_list(7)(i),1,1);
             end if;
           end if;
         end if;
-        
-        -- The remaining columns are up to 10 "flex" fields.
-        -- If one of them is equal to a special attribute ("label"), the very next
-        -- field is interpreted as the label.
-        for j in 10..19 loop
-            if l_column_value_list.exists(j) then
-  
-                if j = 10 and upper(p_attribute1) = g_attr1_label then
-    
-                    l_marker_label := substr(l_column_value_list(j)(i), 1, 1);
-    
-                else
-    
-                    l_flex_fields := l_flex_fields
-                                  || ',"attr'
-                                  || to_char(j-9,'fm00')
-                                  || '":'
-                                  || apex_escape.js_literal(l_column_value_list(j)(i),'"');
-    
-                end if;
-  
-            end if;
-        end loop;
 		
         l_data(nvl(l_data.last,0)+1) :=
                '{"id":'  || apex_escape.js_literal(l_column_value_list(4)(i),'"')
@@ -146,14 +119,6 @@ begin
                end
             || ',"icon":'|| apex_escape.js_literal(l_icon,'"')
             || ',"label":'|| apex_escape.js_literal(l_marker_label,'"') 
-            || case when l_radius_km is not null then
-               ',"rad":' || to_char(l_radius_km,g_tochar_format)
-            || ',"col":' || apex_escape.js_literal(l_circle_color,'"')
-            ||   case when l_circle_transp is not null then
-               ',"trns":'|| to_char(l_circle_transp,'fm990.099')
-                 end
-               end
-            || l_flex_fields
             || '}';
     
         set_map_extents
@@ -197,33 +162,22 @@ function render
     l_lat_max      number;
     l_lng_min      number;
     l_lng_max      number;
-    l_zoom_enabled varchar2(1000) := 'true';
-    l_pan_enabled  varchar2(1000) := 'true';
+    l_zoom_enabled varchar2(10) := 'true';
+    l_pan_enabled  varchar2(10) := 'true';
 
     -- Plugin attributes (application level)
     l_api_key           plugin_attr := p_plugin.attribute_01;
 
     -- Component attributes
     l_map_height        plugin_attr := p_region.attribute_01;
-    l_id_item           plugin_attr := p_region.attribute_02;
-    l_click_zoom        plugin_attr := p_region.attribute_03;    
-    l_sync_item         plugin_attr := p_region.attribute_04;
-    l_markericon        plugin_attr := p_region.attribute_05;
+    l_click_zoom        plugin_attr := p_region.attribute_03;
     l_latlong           plugin_attr := p_region.attribute_06;
-    l_dist_item         plugin_attr := p_region.attribute_07;
     l_pan_on_click      plugin_attr := p_region.attribute_08;
-    l_geocode_item      plugin_attr := p_region.attribute_09;
     l_country           plugin_attr := p_region.attribute_10;
     l_mapstyle          plugin_attr := p_region.attribute_11;
-    l_address_item      plugin_attr := p_region.attribute_12;
-    l_geolocate         plugin_attr := p_region.attribute_13;
-    l_geoloc_zoom       plugin_attr := p_region.attribute_14;
     l_directions        plugin_attr := p_region.attribute_15;
     l_origin_item       plugin_attr := p_region.attribute_16;
     l_dest_item         plugin_attr := p_region.attribute_17;
-    l_dirdist_item      plugin_attr := p_region.attribute_18;
-    l_dirdur_item       plugin_attr := p_region.attribute_19;
-    l_attribute1        plugin_attr := p_region.attribute_20;
     l_optimizewaypoints plugin_attr := p_region.attribute_21;
     l_maptype           plugin_attr := p_region.attribute_22;
     l_zoom_expr         plugin_attr := p_region.attribute_23;
@@ -264,11 +218,6 @@ begin
         ,p_directory      => 'https://maps.googleapis.com/maps/api/'
         ,p_skip_extension => true);
 
-    apex_javascript.add_library
-        (p_name                  => 'jk64reportmap'
-        ,p_directory             => p_plugin.file_prefix
-        ,p_check_to_add_minified => true);
-
     l_region := case
                 when p_region.static_id is not null
                 then p_region.static_id
@@ -283,14 +232,8 @@ begin
             ,p_lat_max    => l_lat_max
             ,p_lng_min    => l_lng_min
             ,p_lng_max    => l_lng_max
-            ,p_attribute1 => l_attribute1
             );
         
-    end if;
-    
-    -- if sync item is set, include its position in the initial map extent
-    if l_sync_item is not null then
-        l_latlong := nvl(v(l_sync_item),l_latlong);
     end if;
     
     if l_latlong is not null then
@@ -299,6 +242,7 @@ begin
     end if;
     
     if l_lat is not null and l_data.count > 0 then
+
         set_map_extents
             (p_lat     => l_lat
             ,p_lng     => l_lng
@@ -309,6 +253,7 @@ begin
             );
 
     elsif l_data.count = 0 and l_lat is not null then
+
         l_lat_min := greatest(l_lat - 10, -80);
         l_lat_max := least(l_lat + 10, 80);
         l_lng_min := greatest(l_lng - 10, -180);
@@ -316,6 +261,7 @@ begin
 
     -- show entire map if no points to show
     elsif l_data.count = 0 then
+
         l_latlong := '0,0';
         l_lat_min := -90;
         l_lat_max := 90;
@@ -323,12 +269,6 @@ begin
         l_lng_max := 180;
 
     end if;
-    
-    l_maptype           := lower(l_maptype);
-    l_click_zoom        := nvl(l_click_zoom,'null');
-    l_pan_on_click      := case l_pan_on_click when 'N' then 'false' else 'true' end;
-    l_optimizewaypoints := case when l_optimizewaypoints = 'Y' then 'true' else 'false' end;
-    l_gesture_handling  := nvl(l_gesture_handling,'auto');
         
     l_script := '<script>
 var opt_#REGION#=
@@ -336,15 +276,10 @@ var opt_#REGION#=
 ,regionId:"#REGION#"
 ,ajaxIdentifier:"' || apex_plugin.get_ajax_identifier || '"
 ,ajaxItems:"' || apex_plugin_util.page_item_names_to_jquery(p_region.ajax_items_to_submit) || '"
-,maptype:"' || l_maptype || '"
+,maptype:"' || lower(l_maptype) || '"
 ,latlng:"' || l_latlong || '"
-,markerZoom:' || l_click_zoom || '
-,markerPan:' || l_pan_on_click || '
-,icon:"' || l_markericon || '"
-,idItem:"' || l_id_item || '"
-,syncItem:"' || l_sync_item || '"
-,distItem:"' || l_dist_item || '"
-,geocodeItem:"' || l_geocode_item || '"
+,markerZoom:' || nvl(l_click_zoom,'null') || '
+,markerPan:' || case l_pan_on_click when 'N' then 'false' else 'true' end || '
 ,country:"' || l_country || '"
 ,southwest:{' || latlng2ch(l_lat_min,l_lng_min) || '}
 ,northeast:{' || latlng2ch(l_lat_max,l_lng_max) || '}'
@@ -352,44 +287,29 @@ var opt_#REGION#=
 ,mapstyle:' || l_mapstyle
      end
 || '
-,addressItem:"' || l_address_item || '"'
-||   case when l_geolocate = 'Y' then '
-,geolocate:true'
-     ||   case when l_geoloc_zoom is not null then '
-,geolocateZoom:' || l_geoloc_zoom
-          end
+,noDataMessage:"' || p_region.no_data_found_message || '"
+,expectData:' || case when p_region.source is not null then 'true' else 'false' end ||
+     case when l_directions is not null then '
+,directions:"' || l_directions || '"
+,optimizeWaypoints:' || case when l_optimizewaypoints='Y' then 'true' else 'false' end
      end
-|| '
-,noDataMessage:"' || p_region.no_data_found_message || '"'
-||   case when p_region.source is not null then '
-,expectData:true'
-     end
-||   case when l_directions is not null then '
-,directions:"' || l_directions || '"'
-     ||   case when l_origin_item is not null then '
+||   case when l_origin_item is not null then '
 ,originItem:"' || l_origin_item || '"'
-          end
-     ||   case when l_dest_item is not null then '
-,destItem:"' || l_dest_item || '"'
-          end
-     ||   case when l_dirdist_item is not null then '
-,dirdistItem:"' || l_dirdist_item || '"'
-          end
-     ||   case when l_dirdur_item is not null then '
-,dirdurItem:"' || l_dirdur_item || '"'
-          end
-     || '
-,optimizeWaypoints:' || l_optimizewaypoints
      end
-|| '
+||   case when l_dest_item is not null then '
+,destItem:"' || l_dest_item || '"'
+     end || '
 ,zoom:' || l_zoom_enabled || '
 ,pan:' || l_pan_enabled || '
-,gestureHandling:"' || l_gesture_handling || '"
+,gestureHandling:"' || nvl(l_gesture_handling,'auto') || '"
 };
 function click_#REGION#(id){reportmap.click(opt_#REGION#,id);}
+function getAddress_#REGION#(lat,lng){reportmap.getAddress(opt_#REGION#,lat,lng);}
 function r_#REGION#(f){/in/.test(document.readyState)?setTimeout("r_#REGION#("+f+")",9):f()}
 r_#REGION#(function(){
 opt_#REGION#.mapdata = [';
+--note: the "function click_#REGION#" is only kept for backwards compatibility, normally apps can just call routines
+--      such as reportmap.gotoAddress directly.
 
     sys.htp.p(replace(l_script,'#REGION#',l_region));
     
@@ -424,9 +344,7 @@ function ajax
     l_lng_max      number;
 
     -- Component attributes
-    l_sync_item    plugin_attr := p_region.attribute_04;
     l_latlong      plugin_attr := p_region.attribute_06;
-    l_attribute1   plugin_attr := p_region.attribute_20;
 
 begin
     -- debug information will be included
@@ -445,16 +363,10 @@ begin
             ,p_lat_max    => l_lat_max
             ,p_lng_min    => l_lng_min
             ,p_lng_max    => l_lng_max
-            ,p_attribute1 => l_attribute1
             );
         
     end if;
-    
-    -- if sync item is set, include its position in the initial map extent
-    if l_sync_item is not null then
-        l_latlong := nvl(v(l_sync_item),l_latlong);
-    end if;
-    
+        
     if l_latlong is not null then
         l_lat := to_number(substr(l_latlong,1,instr(l_latlong,',')-1),g_num_format);
         l_lng := to_number(substr(l_latlong,instr(l_latlong,',')+1),g_num_format);

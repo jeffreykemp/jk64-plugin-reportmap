@@ -1,21 +1,46 @@
 var reportmap = {
-//jk64 ReportMap v0.11
+//jk64 ReportMap v1.0 Jul 2019
 
+//return google maps LatLng based on parsing the given string
+//the delimiter may be a space ( ) or a semicolon (;) or a comma (,) with one exception:
+//if the decimal point is indicated by a comma (,) the separator must be a space ( ) or semicolon (;)
+//e.g.:
+//    -17.9609 122.2122
+//    -17.9609,122.2122
+//    -17.9609;122.2122
+//    -17,9609 122,2122
+//    -17,9609;122,2122
 parseLatLng : function (v) {
   apex.debug("reportmap.parseLatLng "+v);
   var pos;
-  if (v !== null && v !== undefined && v.indexOf(",") > -1) {
-     var arr = v.split(",");
-     apex.debug("parsed "+arr[0]+" "+arr[1]);
-     pos = new google.maps.LatLng(arr[0],arr[1]);
+  if (v !== null && v !== undefined) {
+     var arr;
+     if (v.indexOf(";")>-1) {
+       arr = v.split(";");
+     } else if (v.indexOf(" ")>-1) {
+       arr = v.split(" ");
+     } else if (v.indexOf(",")>-1) {
+       arr = v.split(",");
+     }
+     if (arr && arr.length==2) {
+       //convert to use period (.) for decimal point
+       arr[0] = arr[0].replace(/,/g, ".");
+       arr[1] = arr[1].replace(/,/g, ".");
+       apex.debug("parsed "+arr[0]+" "+arr[1]);
+       pos = new google.maps.LatLng(parseFloat(arr[0]),parseFloat(arr[1]));
+     } else {
+       apex.debug('no LatLng found in "'+v+'"');
+     }
   }
   return pos;
 },
 
-geocode : function (opt,geocoder) {
-	apex.debug(opt.regionId+" reportmap.geocode");
+//search the map for an address; if found, put a pin at that location and raise addressfound trigger
+gotoAddress : function (opt,addressText) {
+	apex.debug(opt.regionId+" reportmap.gotoAddress");
+  var geocoder = new google.maps.Geocoder;
   geocoder.geocode(
-    {address: $v(opt.geocodeItem)
+    {address: addressText
     ,componentRestrictions: opt.country!==""?{country:opt.country}:{}
   }, function(results, status) {
     if (status === google.maps.GeocoderStatus.OK) {
@@ -29,15 +54,12 @@ geocode : function (opt,geocoder) {
         opt.map.setZoom(opt.markerZoom);
       }
       reportmap.userPin(opt,pos.lat(), pos.lng());
-      if (opt.addressItem) {
-        $s(opt.addressItem,results[0].formatted_address);
-      }
       apex.debug(opt.regionId+" addressfound '"+results[0].formatted_address+"'");
       apex.jQuery("#"+opt.regionId).trigger("addressfound", {
         map:opt.map,
         lat:pos.lat(),
         lng:pos.lng(),
-        formatted_address:results[0].formatted_address
+        result:results[0]
       });
     } else {
       apex.debug(opt.regionId+" geocode was unsuccessful for the following reason: "+status);
@@ -45,85 +67,54 @@ geocode : function (opt,geocoder) {
   });
 },
 
+//this is called when the user clicks a report marker
 markerclick : function (opt,pData) {
 	apex.debug(opt.regionId+" reportmap.markerclick");
-	if (opt.idItem!=="") {
-		$s(opt.idItem,pData.id);
-	}
 	apex.jQuery("#"+opt.regionId).trigger("markerclick", {
 		map:opt.map,
 		id:pData.id,
 		name:pData.name,
 		lat:pData.lat,
-		lng:pData.lng,
-		rad:pData.rad,
-		attr01:pData.attr01,
-		attr02:pData.attr02,
-		attr03:pData.attr03,
-		attr04:pData.attr04,
-		attr05:pData.attr05,
-		attr06:pData.attr06,
-		attr07:pData.attr07,
-		attr08:pData.attr08,
-		attr09:pData.attr09,
-		attr10:pData.attr10
+		lng:pData.lng
 	});	
 },
 
+//place a report pin on the map
 repPin : function (opt,pData) {
 	var pos = new google.maps.LatLng(pData.lat, pData.lng);
-	if (pData.rad) {
-		var circ = new google.maps.Circle({
-          strokeColor: pData.col,
-          strokeOpacity: 1.0,
-          strokeWeight: 1,
-          fillColor: pData.col,
-          fillOpacity: pData.trns,
-          clickable: true,
-          map: opt.map,
-          center: pos,
-          radius: pData.rad*1000
-		});
-		google.maps.event.addListener(circ, "click", function () {
-			apex.debug(opt.regionId+" circle clicked "+pData.id);
-			reportmap.markerclick(opt,pData);
-		});
-		if (!opt.circles) { opt.circles=[]; }
-		opt.circles.push({"id":pData.id,"circ":circ});
-	} else {
-		var reppin = new google.maps.Marker({
-					 map: opt.map,
-					 position: pos,
-					 title: pData.name,
-					 icon: pData.icon,
-					 label: pData.label                                        
-				   });
-		google.maps.event.addListener(reppin, "click", function () {
-			apex.debug(opt.regionId+" repPin clicked "+pData.id);
-			if (pData.info) {
-				if (opt.iw) {
-					opt.iw.close();
-				} else {
-					opt.iw = new google.maps.InfoWindow();
-				}
-				opt.iw.setOptions({
-				   content: pData.info
-				  });
-				opt.iw.open(opt.map, this);
-			}
-      if (opt.markerPan) {
-  			opt.map.panTo(this.getPosition());
+  var reppin = new google.maps.Marker({
+         map: opt.map,
+         position: pos,
+         title: pData.name,
+         icon: pData.icon,
+         label: pData.label                                        
+         });
+  google.maps.event.addListener(reppin, "click", function () {
+    apex.debug(opt.regionId+" repPin clicked "+pData.id);
+    if (pData.info) {
+      if (opt.iw) {
+        opt.iw.close();
+      } else {
+        opt.iw = new google.maps.InfoWindow();
       }
-			if (opt.markerZoom) {
-				opt.map.setZoom(opt.markerZoom);
-			}
-			reportmap.markerclick(opt,pData);
-		});
-		if (!opt.reppin) { opt.reppin=[]; }
-		opt.reppin.push({"id":pData.id,"marker":reppin});
-	}
+      opt.iw.setOptions({
+         content: pData.info
+        });
+      opt.iw.open(opt.map, this);
+    }
+    if (opt.markerPan) {
+      opt.map.panTo(this.getPosition());
+    }
+    if (opt.markerZoom) {
+      opt.map.setZoom(opt.markerZoom);
+    }
+    reportmap.markerclick(opt,pData);
+  });
+  if (!opt.reppin) { opt.reppin=[]; }
+  opt.reppin.push({"id":pData.id,"marker":reppin});
 },
 
+//put all the report pins on the map, or show the "no data found" message
 repPins : function (opt) {
 	apex.debug(opt.regionId+" reportmap.repPins");
 	if (opt.mapdata.length>0) {
@@ -151,6 +142,8 @@ repPins : function (opt) {
 	}
 },
 
+//call this to simulate a mouse click on the report pin for the given id value
+//e.g. this will show the info window for the given report pin and trigger the markerclick event
 click : function (opt,id) {
 	apex.debug(opt.regionId+" reportmap.click");
   var found = false;
@@ -166,47 +159,19 @@ click : function (opt,id) {
   }
 },
 
-setCircle : function (opt,pos) {
-  if (opt.distItem!=="") {
-    if (opt.distcircle) {
-      apex.debug(opt.regionId+" move circle");
-      opt.distcircle.setCenter(pos);
-      opt.distcircle.setMap(opt.map);
-    } else {
-      var radius_km = parseFloat($v(opt.distItem));
-      apex.debug(opt.regionId+" create circle radius="+radius_km);
-      opt.distcircle = new google.maps.Circle({
-          strokeColor: "#5050FF",
-          strokeOpacity: 0.5,
-          strokeWeight: 2,
-          fillColor: "#0000FF",
-          fillOpacity: 0.05,
-          clickable: false,
-          editable: true,
-          map: opt.map,
-          center: pos,
-          radius: radius_km*1000
-        });
-      google.maps.event.addListener(opt.distcircle, "radius_changed", function (event) {
-        var radius_km = opt.distcircle.getRadius()/1000;
-        apex.debug(opt.regionId+" circle radius changed "+radius_km);
-        $s(opt.distItem, radius_km);
-        reportmap.refresh(opt);
-      });
-      google.maps.event.addListener(opt.distcircle, "center_changed", function (event) {
-        var ctr = opt.distcircle.getCenter()
-           ,latlng = ctr.lat()+","+ctr.lng();
-        apex.debug(opt.regionId+" circle center changed "+latlng);
-        if (opt.syncItem!=="") {
-          $s(opt.syncItem,latlng);
-          reportmap.refresh(opt);
-        }
-      });
-    }
-  }
+//parse the given string as a lat,long pair, put a pin at that location
+gotoPosByString : function (opt,v) {
+  apex.debug(opt.regionId+" reportmap.gotoPos");
+  var latlng = parseLatLng(v);
+  if (latlng) {
+		apex.debug(opt.regionId+" item changed "+latlng.lat()+" "+latlng.lng());
+		reportmap.userPin(opt,latlng.lat(),latlng.lng());
+	}
 },
 
-userPin : function (opt,lat,lng) {
+//place or move the user pin to the given location
+gotoPos : function (opt,lat,lng) {
+	apex.debug(opt.regionId+" reportmap.userPin");
   if (lat!==null && lng!==null) {
     var oldpos = opt.userpin?opt.userpin.getPosition():(new google.maps.LatLng(0,0));
     if (oldpos && lat==oldpos.lat() && lng==oldpos.lng()) {
@@ -217,11 +182,9 @@ userPin : function (opt,lat,lng) {
         apex.debug(opt.regionId+" move existing pin to new position on map "+lat+","+lng);
         opt.userpin.setMap(opt.map);
         opt.userpin.setPosition(pos);
-        reportmap.setCircle(opt,pos);
       } else {
         apex.debug(opt.regionId+" create userpin "+lat+","+lng);
         opt.userpin = new google.maps.Marker({map: opt.map, position: pos, icon: opt.icon});
-        reportmap.setCircle(opt,pos);
       }
     }
   } else if (opt.userpin) {
@@ -234,13 +197,14 @@ userPin : function (opt,lat,lng) {
   }
 },
 
-getAddress : function (opt,lat,lng) {
-	apex.debug(opt.regionId+" reportmap.getAddress");
+//search for the address at a given location by lat/long
+searchAddress : function (opt,lat,lng) {
+	apex.debug(opt.regionId+" reportmap.searchAddress");
 	var latlng = {lat: lat, lng: lng};
-	opt.geocoder.geocode({'location': latlng}, function(results, status) {
+  var geocoder = new google.maps.Geocoder;
+	geocoder.geocode({'location': latlng}, function(results, status) {
 		if (status === google.maps.GeocoderStatus.OK) {
 			if (results[0]) {
-				$s(opt.addressItem,results[0].formatted_address);
         apex.debug(opt.regionId+" addressfound '"+results[0].formatted_address+"'");
         var components = results[0].address_components;
         for (i=0; i<components.length; i++) {
@@ -253,14 +217,17 @@ getAddress : function (opt,lat,lng) {
           result:results[0]
         });
 			} else {
+        apex.debug(opt.regionId+" searchAddress: No results found");
 				window.alert('No results found');
 			}
 		} else {
+      apex.debug(opt.regionId+' Geocoder failed due to: ' + status);
 			window.alert('Geocoder failed due to: ' + status);
 		}
 	});
 },
 
+//search for the user device's location if possible
 geolocate : function (opt) {
 	apex.debug(opt.regionId+" reportmap.geolocate");
 	if (navigator.geolocation) {
@@ -281,42 +248,33 @@ geolocate : function (opt) {
 	}
 },
 
-convertLatLng : function (str) {
-	// see if the string can be interpreted as a lat,lng pair; otherwise,
-	// we will assume it's an address or location name
-	var arr = str.split(",");
-	if ((arr.length!=2) || isNaN(arr[0]) || isNaN(arr[1])) {
-		return str;
-	} else {
-		return {lat: parseFloat(arr[0]), lng: parseFloat(arr[1])};
-	}
-},
-
+//this is called when directions are requested
 directionsresp : function (response,status,opt) {
 	apex.debug(opt.regionId+" reportmap.directionsresp");
   if (status == google.maps.DirectionsStatus.OK) {
     opt.directionsDisplay.setDirections(response);
-    if ((opt.dirdistItem !== "") || (opt.dirdurItem !== "")) {
-      var totalDistance = 0, totalDuration = 0;
-      for (var i=0; i < response.routes.length; i++) {
-        for (var j=0; j < response.routes[i].legs.length; j++) {
-          var leg = response.routes[i].legs[j];
-          totalDistance = totalDistance + leg.distance.value;
-          totalDuration = totalDuration + leg.duration.value;
-        }
-      }
-      if (opt.dirdistItem !== "") {
-        $s(opt.dirdistItem, totalDistance);
-      }
-      if (opt.dirdurItem !== "") {
-        $s(opt.dirdurItem, totalDuration);
+    var totalDistance = 0, totalDuration = 0, legCount = 0;
+    for (var i=0; i < response.routes.length; i++) {
+      legCount = legCount + response.routes[i].legs.length;
+      for (var j=0; j < response.routes[i].legs.length; j++) {
+        var leg = response.routes[i].legs[j];
+        totalDistance = totalDistance + leg.distance.value;
+        totalDuration = totalDuration + leg.duration.value;
       }
     }
+    apex.jQuery("#"+opt.regionId).trigger("directions",{
+      map:opt.map,
+      distance:totalDistance,
+      duration:totalDuration,
+      legs:legCount
+    });
   } else {
+    apex.debug(opt.regionId+' Directions request failed due to ' + status);
     window.alert('Directions request failed due to ' + status);
   }
 },
 
+//show directions on the map
 directions : function (opt) {
 	apex.debug(opt.regionId+" reportmap.directions "+opt.directions);
 	var origin
@@ -325,8 +283,10 @@ directions : function (opt) {
      ,travelmode;
 	if (routeindex<0) {
     //simple directions between two items
-    origin = reportmap.convertLatLng($v(opt.originItem));
-    dest   = reportmap.convertLatLng($v(opt.destItem));
+    origin = $v(opt.originItem);
+    dest   = $v(opt.destItem);
+    origin = reportmap.parseLatLng(origin)||origin;
+    dest   = reportmap.parseLatLng(dest)||dest;
     if (origin !== "" && dest !== "") {
       travelmode = opt.directions;
 	  	opt.directionsService.route({
@@ -365,6 +325,7 @@ directions : function (opt) {
 	}
 },
 
+//initialise the map after page load
 init : function (opt) {
 	apex.debug(opt.regionId+" reportmap.init "+opt.maptype);
 	var myOptions = {
@@ -384,49 +345,12 @@ init : function (opt) {
 		opt.map.setOptions({styles: opt.mapstyle});
 	}
 	opt.map.fitBounds(new google.maps.LatLngBounds(opt.southwest,opt.northeast));
-	if (opt.syncItem!=="") {
-		var val = $v(opt.syncItem);
-		if (val !== null) {
-			var pos = reportmap.parseLatLng(val);
-      if (pos) {
-  			opt.userpin = new google.maps.Marker({map: opt.map, position: pos, icon: opt.icon}); 
-			  reportmap.setCircle(opt,pos);
-      }
-		}
-		//if the lat/long item is changed, move the pin
-		$("#"+opt.syncItem).change(function(){ 
-			var latlng = this.value;
-			if (latlng !== null && latlng !== undefined && latlng.indexOf(",") > -1) {
-				var arr = latlng.split(",");
-				apex.debug(opt.regionId+" item changed "+arr[0]+" "+arr[1]);
-				reportmap.userPin(opt,arr[0],arr[1]);
-			}
-		});
-	}
-	if (opt.distItem!="") {
-		//if the distance item is changed, redraw the circle
-		$("#"+opt.distItem).change(function(){
-			if (this.value) {
-				var radius_metres = parseFloat(this.value)*1000;
-				if (opt.distcircle.getRadius() !== radius_metres) {
-					apex.debug(opt.regionId+" distitem changed "+radius_metres);
-					opt.distcircle.setRadius(radius_metres);
-				}
-			} else {
-				if (opt.distcircle) {
-					apex.debug(opt.regionId+" distitem cleared");
-					opt.distcircle.setMap(null);
-				}
-			}
-		});
-	}
 	if (opt.expectData) {
 		reportmap.repPins(opt);
 	}
-	if (opt.addressItem!=="") {
-		opt.geocoder = new google.maps.Geocoder;
-	}
 	if (opt.directions) {
+    //directions is DRIVING-ROUTE, WALKING-ROUTE, BICYCLING-ROUTE, TRANSIT-ROUTE,
+    //              DRIVING, WALKING, BICYCLING, or TRANSIT
 		opt.directionsDisplay = new google.maps.DirectionsRenderer;
     opt.directionsService = new google.maps.DirectionsService;
 		opt.directionsDisplay.setMap(opt.map);
@@ -445,37 +369,20 @@ init : function (opt) {
 		var lat = event.latLng.lat()
 		   ,lng = event.latLng.lng();
 		apex.debug(opt.regionId+" map clicked "+lat+","+lng);
-		if ((opt.syncItem!=="") || (opt.addressItem!=="")) {
-			reportmap.userPin(opt,lat,lng);
-		}
-		if (opt.syncItem!=="") {
-			$s(opt.syncItem,lat+","+lng);
-			reportmap.refresh(opt);
-		} else if (opt.markerZoom) {
+    if (opt.markerZoom) {
 			apex.debug(opt.regionId+" pan+zoom");
       if (opt.markerPan) {
 			  opt.map.panTo(event.latLng);
       }
 			opt.map.setZoom(opt.markerZoom);
 		}
-		if (opt.addressItem!=="") {
-			reportmap.getAddress(opt,lat,lng);
-		}
 		apex.jQuery("#"+opt.regionId).trigger("mapclick", {map:opt.map, lat:lat, lng:lng});
 	});
-	if (opt.geocodeItem!="") {
-		var geocoder = new google.maps.Geocoder();
-		$("#"+opt.geocodeItem).change(function(){
-			reportmap.geocode(opt,geocoder);
-		});
-	  }
-	if (opt.geolocate) {
-		reportmap.geolocate(opt);
-	}
 	apex.debug(opt.regionId+" reportmap.init finished");
 	apex.jQuery("#"+opt.regionId).trigger("maploaded", {map:opt.map});
 },
 
+//refresh the pins on the map based on the SQL query
 refresh : function (opt) {
 	apex.debug(opt.regionId+" reportmap.refresh");
 	apex.jQuery("#"+opt.regionId).trigger("apexbeforerefresh");
@@ -500,25 +407,10 @@ refresh : function (opt) {
 					}
 					opt.reppin.delete;
 				}
-				if (opt.circles) {
-					apex.debug(opt.regionId+" remove all circles");
-					for (var i = 0; i < opt.circles.length; i++) {
-					opt.circles[i].circ.setMap(null);
-					}
-					opt.circles.delete;
-				}
 				apex.debug(opt.regionId+" pData.mapdata.length="+pData.mapdata.length);
 				opt.mapdata = pData.mapdata;
 				if (opt.expectData) {
 					reportmap.repPins(opt);
-				}
-				if (opt.syncItem!=="") {
-					var val = $v(opt.syncItem);
-					if (val!==null && val.indexOf(",") > -1) {
-						var arr = val.split(",");
-						apex.debug(opt.regionId+" init from item "+arr[0]+" "+arr[1]);
-						reportmap.userPin(opt,arr[0],arr[1]);
-					}
 				}
 				apex.jQuery("#"+opt.regionId).trigger("apexafterrefresh");
 			}

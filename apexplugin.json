@@ -1,6 +1,6 @@
 {
   "name" : "jk64ReportMap",
-  "version" : "0.10",
+  "version" : "1.0",
   "description" : "Google Map Report region plugin",
   "keywords" : ["map"],
   "homepage" : "https://jeffreykemp.github.io/jk64-plugin-reportmap/",
@@ -12,7 +12,7 @@
   "author" : {
     "name" : "Jeffrey Kemp",
     "email" : "jeffrey.kemp@jk64.com",
-    "url" : "http://jeffkemponoracle.com/",
+    "url" : "https://jeffkemponoracle.com/",
     "twitter" : "jeffreykemp",
     "donationUrl" : "https://paypal.me/JEFFREYKEMP/3"
   },
@@ -23,7 +23,7 @@
  "oracle" : {
     "versions" : ["11.2.0.1", "12.1.0.1"],
     "apex" : {
-      "versions" : ["5.0.4"],
+      "versions" : ["18.2"],
       "plugin" : {
         "internalName" : "COM.JK64.REPORT_GOOGLE_MAP",
         "type" : "region",
