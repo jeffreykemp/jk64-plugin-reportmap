@@ -67,30 +67,19 @@ gotoAddress : function (opt,addressText) {
   });
 },
 
-//this is called when the user clicks a report marker
-markerclick : function (opt,pData) {
-	apex.debug(opt.regionId+" reportmap.markerclick");
-	apex.jQuery("#"+opt.regionId).trigger("markerclick", {
-		map:opt.map,
-		id:pData.id,
-		name:pData.name,
-		lat:pData.lat,
-		lng:pData.lng
-	});	
-},
-
 //place a report pin on the map
 repPin : function (opt,pData) {
 	var pos = new google.maps.LatLng(pData.lat, pData.lng);
   var reppin = new google.maps.Marker({
-         map: opt.map,
-         position: pos,
-         title: pData.name,
-         icon: pData.icon,
-         label: pData.label                                        
-         });
+        map: opt.map,
+        position: pos,
+        title: pData.name,
+        icon: pData.icon,
+        label: pData.label,
+        draggable: opt.isDraggable                                                                        
+      });
   google.maps.event.addListener(reppin, "click", function () {
-    apex.debug(opt.regionId+" repPin clicked "+pData.id);
+    apex.debug(opt.regionId+" repPin "+pData.id+" clicked");
     if (pData.info) {
       if (opt.iw) {
         opt.iw.close();
@@ -108,10 +97,27 @@ repPin : function (opt,pData) {
     if (opt.markerZoom) {
       opt.map.setZoom(opt.markerZoom);
     }
-    reportmap.markerclick(opt,pData);
+    apex.jQuery("#"+opt.regionId).trigger("markerclick", {
+      map:opt.map,
+      id:pData.id,
+      name:pData.name,
+      lat:pData.lat,
+      lng:pData.lng
+    });	
+  });
+  google.maps.event.addListener(reppin, "dragend", function () {
+		apex.debug(opt.regionId+" repPin "+pData.id+" moved to position ("+this.getPosition().lat()+","+this.getPosition().lng()+")");
+    apex.jQuery("#"+opt.regionId).trigger("markerdrag", {
+      map:opt.map,
+      id:pData.id,
+      name:pData.name,
+      lat:this.getPosition().lat(),
+      lng:this.getPosition().lng()
+    });	
   });
   if (!opt.reppin) { opt.reppin=[]; }
   opt.reppin.push({"id":pData.id,"marker":reppin});
+  return reppin;
 },
 
 //put all the report pins on the map, or show the "no data found" message
@@ -122,10 +128,41 @@ repPins : function (opt) {
 			apex.debug(opt.regionId+" hide No Data Found infowindow");
 			opt.infoNoDataFound.close();
 		}
+    var marker, markers = [];
 		for (var i = 0; i < opt.mapdata.length; i++) {
-			reportmap.repPin(opt,opt.mapdata[i]);
+      if (opt.heatmap) {
+        markers.push({
+          location:new google.maps.LatLng(opt.mapdata[i].a, opt.mapdata[i].b),
+          weight:opt.mapdata[i].c
+        });
+      } else {
+        marker = reportmap.repPin(opt,opt.mapdata[i]);
+        if (opt.markerClustering) {
+          markers.push(marker);
+        }
+      }
 		}
-	} else {
+    if (opt.markerClustering) {
+      // Add a marker clusterer to manage the markers.
+      // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
+      var markerCluster = new MarkerClusterer(opt.map, markers,{imagePath:opt.imagePrefix});
+    } else if (opt.heatmap) {
+      if (opt.heatmapLayer) {
+        apex.debug(opt.regionId+" hide heatmapLayer");
+        opt.heatmapLayer.setMap(null);
+        apex.debug(opt.regionId+" remove heatmapLayer");
+        opt.heatmapLayer.delete;
+        opt.heatmapLayer = null;
+      }
+      opt.heatmapLayer = new google.maps.visualization.HeatmapLayer({
+        data: markers,
+        map: opt.map,
+        dissipating: opt.dissipating,
+        opacity: opt.opacity,
+        radius: opt.radius
+      });
+    }
+  } else {
 		if (opt.noDataMessage !== "") {
 			apex.debug(opt.regionId+" show No Data Found infowindow");
 			if (opt.infoNoDataFound) {
@@ -333,6 +370,11 @@ init : function (opt) {
 		center: reportmap.parseLatLng(opt.latlng),
 		mapTypeId: opt.maptype
 	};
+  // get absolute URL for this site, including /apex/ or /ords/ (this is required by some google maps APIs)
+  var filePath = window.location.origin + window.location.pathname;
+  filePath = filePath.substring(0, filePath.lastIndexOf("/"));
+  opt.imagePrefix = filePath + "/" + opt.pluginFilePrefix + "images/m";
+  apex.debug('opt.imagePrefix="'+opt.imagePrefix+'"');
 	opt.map = new google.maps.Map(document.getElementById(opt.container),myOptions);
   opt.map.setOptions({
        draggable: opt.pan
@@ -407,6 +449,9 @@ refresh : function (opt) {
 					}
 					opt.reppin.delete;
 				}
+        if (opt.markers) {
+          opt.markers.delete;
+        }
 				apex.debug(opt.regionId+" pData.mapdata.length="+pData.mapdata.length);
 				opt.mapdata = pData.mapdata;
 				if (opt.expectData) {

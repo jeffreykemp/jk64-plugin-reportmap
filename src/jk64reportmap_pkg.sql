@@ -1,28 +1,33 @@
-create or replace package jk64reportmap_pkg as
--- jk64 ReportMap v1.0 Jul 2019
-
-function render
-    (p_region in apex_plugin.t_region
-    ,p_plugin in apex_plugin.t_plugin
-    ,p_is_printer_friendly in boolean
-    ) return apex_plugin.t_region_render_result;
-
-function ajax
-    (p_region in apex_plugin.t_region
-    ,p_plugin in apex_plugin.t_plugin
-    ) return apex_plugin.t_region_ajax_result;
-
-end jk64reportmap_pkg;
-/
-show err
-
-create or replace package body jk64reportmap_pkg as
+--create or replace package jk64reportmap_pkg as
+---- jk64 ReportMap v1.0 Jul 2019
+--
+--function render
+--    (p_region in apex_plugin.t_region
+--    ,p_plugin in apex_plugin.t_plugin
+--    ,p_is_printer_friendly in boolean
+--    ) return apex_plugin.t_region_render_result;
+--
+--function ajax
+--    (p_region in apex_plugin.t_region
+--    ,p_plugin in apex_plugin.t_plugin
+--    ) return apex_plugin.t_region_ajax_result;
+--
+--end jk64reportmap_pkg;
+--/
+--
+--create or replace package body jk64reportmap_pkg as
 -- jk64 ReportMap v1.0 Jul 2019
 
 g_num_format    constant varchar2(100) := '99999999999999.999999999999999999999999999999';
 g_tochar_format constant varchar2(100) := 'fm99999999999990.099999999999999999999999999999';
 
-procedure set_map_extents
+-- if only one row is returned by the query, add this +/- to the latitude extents so it
+-- shows the neighbourhood instead of zooming to the max
+g_single_row_lat_margin constant number := 0.005;
+
+subtype plugin_attr is varchar2(32767);
+
+procedure get_map_bounds
     (p_lat     in number
     ,p_lng     in number
     ,p_lat_min in out number
@@ -35,7 +40,7 @@ begin
     p_lat_max := greatest(nvl(p_lat_max, p_lat), p_lat);
     p_lng_min := least   (nvl(p_lng_min, p_lng), p_lng);
     p_lng_max := greatest(nvl(p_lng_max, p_lng), p_lng);
-end set_map_extents;
+end get_map_bounds;
 
 function latlng2ch (lat in number, lng in number) return varchar2 is
 begin
@@ -53,75 +58,67 @@ function get_markers
     ,p_lng_max    in out number
     ) return apex_application_global.vc_arr2 is
     
+    l_options        plugin_attr := p_region.attribute_02;
+    
     l_data           apex_application_global.vc_arr2;
     l_lat            number;
     l_lng            number;
     l_info           varchar2(4000);
     l_icon           varchar2(4000);
     l_marker_label   varchar2(1);
+    l_weight         number;
      
     l_column_value_list  apex_plugin_util.t_column_value_list;
 
 begin
 
-/* Column list is as follows:
+/* For most cases, column list is as follows:
 
-   lat,  - required
-   lng,  - required
-   name, - required
-   id,   - required
-   info, - optional
-   icon, - optional
-   label - optional
+   lat,   - required
+   lng,   - required
+   name,  - required
+   id,    - required
+   info,  - optional
+   icon,  - optional
+   label  - optional
+   
+   If the "Heatmap" option is chosen, the column list is as follows:
+   
+   lat,   - required
+   lng,   - required
+   weight - required
 
 */
+    
+    if instr(':'||l_options||':',':HEATMAP:')>0 then
 
-    l_column_value_list := apex_plugin_util.get_data
+      l_column_value_list := apex_plugin_util.get_data
         (p_sql_statement  => p_region.source
-        ,p_min_columns    => 4
-        ,p_max_columns    => 7
+        ,p_min_columns    => 3
+        ,p_max_columns    => 3
         ,p_component_name => p_region.name
         ,p_max_rows       => p_region.fetched_rows);
+
+      for i in 1..l_column_value_list(1).count loop
     
-    for i in 1..l_column_value_list(1).count loop
-    
-        if not l_column_value_list.exists(1)
-        or not l_column_value_list.exists(2)
-        or not l_column_value_list.exists(3)
-        or not l_column_value_list.exists(4) then
-            raise_application_error(-20000, 'Report Map Query must have at least 4 columns (lat, lng, name, id)');
-        end if;
-  
-        l_lat  := to_number(l_column_value_list(1)(i),g_num_format);
-        l_lng  := to_number(l_column_value_list(2)(i),g_num_format);
-        
-        -- default values if not supplied in query
-        l_info         := null;
-        l_icon         := null;
-        l_marker_label := null;
-        
-        if l_column_value_list.exists(5) then
-          l_info := l_column_value_list(5)(i);
-          if l_column_value_list.exists(6) then
-            l_icon := l_column_value_list(6)(i);
-            if l_column_value_list.exists(7) then
-              l_marker_label := substr(l_column_value_list(7)(i),1,1);
-            end if;
+          if not l_column_value_list.exists(1)
+          or not l_column_value_list.exists(2)
+          or not l_column_value_list.exists(3) then
+              raise_application_error(-20000, 'Report Map Query must have at least 3 columns (lat, lng, weight)');
           end if;
-        end if;
-		
-        l_data(nvl(l_data.last,0)+1) :=
-               '{"id":'  || apex_escape.js_literal(l_column_value_list(4)(i),'"')
-            || ',"name":'|| apex_escape.js_literal(l_column_value_list(3)(i),'"')
-            || ','       || latlng2ch(l_lat,l_lng)
-            || case when l_info is not null then
-               ',"info":'|| apex_escape.js_literal(l_info,'"')
-               end
-            || ',"icon":'|| apex_escape.js_literal(l_icon,'"')
-            || ',"label":'|| apex_escape.js_literal(l_marker_label,'"') 
+
+          l_lat    := to_number(l_column_value_list(1)(i));
+          l_lng    := to_number(l_column_value_list(2)(i));
+          l_weight := to_number(l_column_value_list(3)(i));
+          
+          -- minimise size of data to be sent
+          l_data(nvl(l_data.last,0)+1) :=
+               '{"a":' || to_char(l_lat, g_tochar_format)
+            || ',"b":' || to_char(l_lng, g_tochar_format)
+            || ',"c":'  || to_char(l_weight, 'fm9999990')
             || '}';
-    
-        set_map_extents
+      
+          get_map_bounds
             (p_lat     => l_lat
             ,p_lng     => l_lng
             ,p_lat_min => p_lat_min
@@ -129,9 +126,76 @@ begin
             ,p_lng_min => p_lng_min
             ,p_lng_max => p_lng_max
             );
+        
+      end loop;
+    
+    else
+  
+      l_column_value_list := apex_plugin_util.get_data
+          (p_sql_statement  => p_region.source
+          ,p_min_columns    => 4
+          ,p_max_columns    => 7
+          ,p_component_name => p_region.name
+          ,p_max_rows       => p_region.fetched_rows);
+  
+      for i in 1..l_column_value_list(1).count loop
       
-    end loop;
+          if not l_column_value_list.exists(1)
+          or not l_column_value_list.exists(2)
+          or not l_column_value_list.exists(3)
+          or not l_column_value_list.exists(4) then
+              raise_application_error(-20000, 'Report Map Query must have at least 4 columns (lat, lng, name, id)');
+          end if;
+    
+          l_lat  := to_number(l_column_value_list(1)(i),g_num_format);
+          l_lng  := to_number(l_column_value_list(2)(i),g_num_format);
+          
+          -- default values if not supplied in query
+          l_info         := null;
+          l_icon         := null;
+          l_marker_label := null;
+          
+          if l_column_value_list.exists(5) then
+            l_info := l_column_value_list(5)(i);
+            if l_column_value_list.exists(6) then
+              l_icon := l_column_value_list(6)(i);
+              if l_column_value_list.exists(7) then
+                l_marker_label := substr(l_column_value_list(7)(i),1,1);
+              end if;
+            end if;
+          end if;
+      
+          l_data(nvl(l_data.last,0)+1) :=
+                 '{"id":'  || apex_escape.js_literal(l_column_value_list(4)(i),'"')
+              || ',"name":'|| apex_escape.js_literal(l_column_value_list(3)(i),'"')
+              || ','       || latlng2ch(l_lat,l_lng)
+              || case when l_info is not null then
+                 ',"info":'|| apex_escape.js_literal(l_info,'"')
+                 end
+              || ',"icon":'|| apex_escape.js_literal(l_icon,'"')
+              || ',"label":'|| apex_escape.js_literal(l_marker_label,'"')
+              || '}';
+      
+          get_map_bounds
+              (p_lat     => l_lat
+              ,p_lng     => l_lng
+              ,p_lat_min => p_lat_min
+              ,p_lat_max => p_lat_max
+              ,p_lng_min => p_lng_min
+              ,p_lng_max => p_lng_max
+              );
+        
+      end loop;
 
+    end if;
+    
+    -- handle edge case when there is exactly one row from query
+    -- (otherwise the map zooms to maximum)
+    if l_data.count = 1 then
+      p_lat_min := p_lat_min - g_single_row_lat_margin;
+      p_lat_max := p_lat_max + g_single_row_lat_margin;
+    end if;
+    
     return l_data;
 end get_markers;
 
@@ -148,15 +212,13 @@ function render
     ,p_plugin in apex_plugin.t_plugin
     ,p_is_printer_friendly in boolean
     ) return apex_plugin.t_region_render_result is
-
-    subtype plugin_attr is varchar2(32767);
     
     l_result       apex_plugin.t_region_render_result;
 
     l_lat          number;
     l_lng          number;
     l_region       varchar2(100);
-    l_script       varchar2(32767);
+    l_buffer       varchar2(32767);
     l_data         apex_application_global.vc_arr2;
     l_lat_min      number;
     l_lat_max      number;
@@ -170,9 +232,9 @@ function render
 
     -- Component attributes
     l_map_height        plugin_attr := p_region.attribute_01;
+    l_options           plugin_attr := p_region.attribute_02;
     l_click_zoom        plugin_attr := p_region.attribute_03;
     l_latlong           plugin_attr := p_region.attribute_06;
-    l_pan_on_click      plugin_attr := p_region.attribute_08;
     l_country           plugin_attr := p_region.attribute_10;
     l_mapstyle          plugin_attr := p_region.attribute_11;
     l_directions        plugin_attr := p_region.attribute_15;
@@ -184,6 +246,13 @@ function render
     l_pan_expr          plugin_attr := p_region.attribute_24;
     l_gesture_handling  plugin_attr := p_region.attribute_25;
     
+    -- options
+    l_pan_on_click      varchar2(5);
+    l_lazyload          boolean;
+    l_draggable         varchar2(5);
+    l_marker_clustering varchar2(5);
+    l_heatmap           varchar2(5);
+    
 begin
     -- debug information will be included
     if apex_application.g_debug then
@@ -191,6 +260,10 @@ begin
             (p_plugin => p_plugin
             ,p_region => p_region
             ,p_is_printer_friendly => p_is_printer_friendly);
+    end if;
+    
+    if l_api_key is null then
+      raise_application_error(-20000, 'Google Maps API Key is required (set in Component Settings)');
     end if;
     
     if l_zoom_expr is not null then
@@ -212,17 +285,41 @@ begin
             raise_application_error(-20000, 'Pan attribute must evaluate to true or false.');
         end if;
     end if;
+    
+    l_pan_on_click      := case when instr(':'||l_options||':',':PAN_ON_CLICK:')>0 then 'true' else 'false' end;
+    l_lazyload          := instr(':'||l_options||':',':LAZYLOAD:')>0;
+    l_draggable         := case when instr(':'||l_options||':',':DRAGGABLE:')>0 then 'true' else 'false' end;
+    l_marker_clustering := case when instr(':'||l_options||':',':CLUSTER:')>0 then 'true' else 'false' end;
+    l_heatmap           := case when instr(':'||l_options||':',':HEATMAP:')>0 then 'true' else 'false' end;
+    
+    if l_heatmap='true' and l_marker_clustering='true' then
+        raise_application_error(-20000, 'Heatmap and Marker Clustering options cannot be used together.');
+    end if;
 
     apex_javascript.add_library
         (p_name           => 'js?key=' || l_api_key
+                          || case when l_heatmap='true' then '&libraries=visualization' end
         ,p_directory      => 'https://maps.googleapis.com/maps/api/'
         ,p_skip_extension => true);
+    
+    apex_javascript.add_library
+        (p_name                  => 'jk64reportmap'
+        ,p_directory             => p_plugin.file_prefix
+        ,p_check_to_add_minified => true);
+
+    if l_marker_clustering = 'true' then
+        apex_javascript.add_library
+            (p_name                  => 'markerclusterer'
+            ,p_directory             => p_plugin.file_prefix
+            ,p_check_to_add_minified => true);
+    end if;
 
     l_region := case
                 when p_region.static_id is not null
                 then p_region.static_id
                 else 'R'||p_region.id
                 end;
+    apex_debug.message('map region: ' || l_region);
     
     if p_region.source is not null then
 
@@ -243,7 +340,7 @@ begin
     
     if l_lat is not null and l_data.count > 0 then
 
-        set_map_extents
+        get_map_bounds
             (p_lat     => l_lat
             ,p_lng     => l_lng
             ,p_lat_min => l_lat_min
@@ -270,16 +367,23 @@ begin
 
     end if;
         
-    l_script := '<script>
+    l_buffer := '<script>
 var opt_#REGION#=
 {container:"map_#REGION#_container"
 ,regionId:"#REGION#"
 ,ajaxIdentifier:"' || apex_plugin.get_ajax_identifier || '"
 ,ajaxItems:"' || apex_plugin_util.page_item_names_to_jquery(p_region.ajax_items_to_submit) || '"
+,pluginFilePrefix:"' || p_plugin.file_prefix || '"
 ,maptype:"' || lower(l_maptype) || '"
 ,latlng:"' || l_latlong || '"
 ,markerZoom:' || nvl(l_click_zoom,'null') || '
-,markerPan:' || case l_pan_on_click when 'N' then 'false' else 'true' end || '
+,isDraggable:' || l_draggable || '
+,markerClustering:' || l_marker_clustering || '
+,heatmap:' || l_heatmap || '
+,dissipating:' || 'false' ||'
+,opacity:' || '0.6' || '
+,radius:' || '5' || '
+,markerPan:' || l_pan_on_click || '
 ,country:"' || l_country || '"
 ,southwest:{' || latlng2ch(l_lat_min,l_lng_min) || '}
 ,northeast:{' || latlng2ch(l_lat_max,l_lng_max) || '}'
@@ -303,25 +407,24 @@ var opt_#REGION#=
 ,pan:' || l_pan_enabled || '
 ,gestureHandling:"' || nvl(l_gesture_handling,'auto') || '"
 };
-function click_#REGION#(id){reportmap.click(opt_#REGION#,id);}
-function getAddress_#REGION#(lat,lng){reportmap.getAddress(opt_#REGION#,lat,lng);}
 function r_#REGION#(f){/in/.test(document.readyState)?setTimeout("r_#REGION#("+f+")",9):f()}
 r_#REGION#(function(){
 opt_#REGION#.mapdata = [';
---note: the "function click_#REGION#" is only kept for backwards compatibility, normally apps can just call routines
---      such as reportmap.gotoAddress directly.
 
-    sys.htp.p(replace(l_script,'#REGION#',l_region));
+    sys.htp.p(replace(l_buffer,'#REGION#',l_region));
     
-    htp_arr(l_data);
+    if not l_lazyload then
+      htp_arr(l_data);
+    end if;
 
-    l_script := '];
+    l_buffer := '];
 reportmap.init(opt_#REGION#);
 apex.jQuery("##REGION#").bind("apexrefresh", function(){reportmap.refresh(opt_#REGION#);});
+' || case when l_lazyload then 'reportmap.refresh(opt_#REGION#);' end || '
 });</script>
 <div id="map_#REGION#_container" style="min-height:' || l_map_height || 'px"></div>';
 
-    sys.htp.p(replace(l_script,'#REGION#',l_region));
+    sys.htp.p(replace(l_buffer,'#REGION#',l_region));
   
     return l_result;
 end render;
@@ -330,8 +433,6 @@ function ajax
     (p_region in apex_plugin.t_region
     ,p_plugin in apex_plugin.t_plugin
     ) return apex_plugin.t_region_ajax_result is
-
-    subtype plugin_attr is varchar2(32767);
 
     l_result apex_plugin.t_region_ajax_result;
 
@@ -365,6 +466,8 @@ begin
             ,p_lng_max    => l_lng_max
             );
         
+      apex_debug.message('data.count='||l_data.count);
+
     end if;
         
     if l_latlong is not null then
@@ -373,7 +476,7 @@ begin
     end if;
     
     if l_lat is not null and l_data.count > 0 then
-        set_map_extents
+        get_map_bounds
             (p_lat     => l_lat
             ,p_lng     => l_lng
             ,p_lat_min => l_lat_min
@@ -401,8 +504,6 @@ begin
     sys.htp.p('Cache-Control: no-cache');
     sys.htp.p('Pragma: no-cache');
     sys.owa_util.http_header_close;
-
-    apex_debug.message('l_lat_min='||l_lat_min||' data='||l_data.count);
     
     sys.htp.p(
            '{"southwest":{'
@@ -423,6 +524,5 @@ exception
         sys.htp.p('{"error":"'||sqlerrm||'"}');
 end ajax;
 
-end jk64reportmap_pkg;
-/
-show err
+--end jk64reportmap_pkg;
+--/
