@@ -11,36 +11,39 @@ $( function() {
       ajaxItems:"",
       pluginFilePrefix:"",
       expectData:true,
-      visualisation:"pins",
-      maptype:"",
-      latlng:"",
-      markerZoom:null,
-      isDraggable:false,
-      dissipating:false,
-      opacity:0.6,
-      radius:5,
-      panOnClick:false,
-      country:"",
+      defaultLatLng:"",
       southwest:{lat:-60,lng:-180},
       northeast:{lat:70,lng:180},
-      mapstyle:"",
-      noDataMessage:"No data to show",
-      directions:"",
+      visualisation:"pins",
+      mapType:"roadmap",
+      clickZoomLevel:null,
+      isDraggable:false,
+      heatmapDissipating:false,
+      heatmapOpacity:0.6,
+      heatmapRadius:5,
+      panOnClick:true,
+      restrictCountry:"",
+      mapStyle:"",
+      travelMode:"DRIVING",
       optimizeWaypoints:false,
       originItem:"",
       destItem:"",
-      zoom:true,
-      pan:true,
+      allowZoom:true,
+      allowPan:true,
       gestureHandling:"auto",
+      noDataMessage:"No data to show",
+      noAddressResults:"Address not found",
+      directionsNotFound:"At least one of the origin, destination, or waypoints could not be geocoded.",
+      directionsZeroResults:"No route could be found between the origin and destination.",
 
       // Callbacks
-      parseLatLng: null,
+      click: null,
+      geolocate: null,
+      gotoAddress: null,
       gotoPos: null,
       gotoPosByString: null,
-      gotoAddress: null,
-      click: null,
-      searchAddress: null,
-      geolocate: null
+      refresh: null,
+      searchAddress: null
     },
     
     //return google maps LatLng based on parsing the given string
@@ -52,8 +55,8 @@ $( function() {
     //    -17.9609;122.2122
     //    -17,9609 122,2122
     //    -17,9609;122,2122
-    parseLatLng : function (v) {
-      apex.debug("reportmap.parseLatLng "+v);
+    _parseLatLng : function (v) {
+      apex.debug("reportmap._parseLatLng "+v);
       var pos;
       if (v !== null && v !== undefined) {
          var arr;
@@ -76,78 +79,98 @@ $( function() {
       }
       return pos;
     },
+    
+    _showMessage : function (msg) {
+      apex.debug("reportmap._showMessage ");
+      var _this = this;
+      if (_this.infoWindow) {
+        _this.infoWindow.close();
+      } else {
+        _this.infoWindow = new google.maps.InfoWindow(
+          {
+            content: msg,
+            position: _this.map.getCenter()
+          });
+      }
+      _this.infoWindow.open(_this.map);
+    },
+    
+    _hideMessage : function() {
+      apex.debug("reportmap._hideMessage ");
+      var _this = this;
+      if (_this.infoWindow) {
+        _this.infoWindow.close();
+      }
+    },
 
     //place a report pin on the map
     _repPin : function (pData) {
       var _this = this;
-      var pos = new google.maps.LatLng(pData.lat, pData.lng);
+      var pos = new google.maps.LatLng(pData.x, pData.y);
       var reppin = new google.maps.Marker({
             map: _this.map,
             position: pos,
-            title: pData.name,
-            icon: pData.icon,
-            label: pData.label,
+            title: pData.n,
+            icon: pData.c,
+            label: pData.l,
             draggable: _this.options.isDraggable                                                                        
           });
       google.maps.event.addListener(reppin, "click", function () {
-        apex.debug("repPin "+pData.id+" clicked");
-        if (pData.info) {
+        apex.debug("repPin "+pData.d+" clicked");
+        if (pData.i) {
           if (_this.iw) {
             _this.iw.close();
           } else {
             _this.iw = new google.maps.InfoWindow();
           }
           _this.iw.setOptions({
-             content: pData.info
+             content: pData.i
             });
           _this.iw.open(_this.map, this);
         }
         if (_this.options.panOnClick) {
           _this.map.panTo(this.getPosition());
         }
-        if (_this.options.markerZoom) {
-          _this.map.setZoom(_this.options.markerZoom);
+        if (_this.options.clickZoomLevel) {
+          _this.map.setZoom(_this.options.clickZoomLevel);
         }
         apex.jQuery("#"+_this.options.regionId).trigger("markerclick", {
           map:_this.map,
-          id:pData.id,
-          name:pData.name,
-          lat:pData.lat,
-          lng:pData.lng
+          id:pData.d,
+          name:pData.n,
+          lat:pData.x,
+          lng:pData.y
         });	
       });
       google.maps.event.addListener(reppin, "dragend", function () {
         var pos = this.getPosition();
-        apex.debug("repPin "+pData.id+" moved to position ("+pos.lat()+","+pos.lng()+")");
+        apex.debug("repPin "+pData.d+" moved to position ("+pos.lat()+","+pos.lng()+")");
         apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", {
           map:_this.map,
-          id:pData.id,
-          name:pData.name,
+          id:pData.d,
+          name:pData.n,
           lat:pos.lat(),
           lng:pos.lng()
         });	
       });
       if (!_this.reppin) { _this.reppin=[]; }
-      _this.reppin.push({"id":pData.id,"marker":reppin});
+      _this.reppin.push({"id":pData.d,"marker":reppin});
       return reppin;
     },
 
     //put all the report pins on the map, or show the "no data found" message
     _repPins : function () {
-      apex.debug("reportmap.repPins");
+      apex.debug("reportmap._repPins");
       var _this = this;
       if (_this.mapdata) {
         if (_this.mapdata.length>0) {
-          if (_this.infoNoDataFound) {
-            apex.debug("hide No Data Found infowindow");
-            _this.infoNoDataFound.close();
-          }
+          _this._hideMessage();
           var marker, markers = [];
           for (var i = 0; i < _this.mapdata.length; i++) {
             if (_this.options.visualisation=="heatmap") {
               markers.push({
-                location:new google.maps.LatLng(_this.mapdata[i].a, _this.mapdata[i].b),
-                weight:_this.mapdata[i].c
+                location:new google.maps.LatLng(_this.mapdata[i].x, _this.mapdata[i].y),
+                weight:_this.mapdata[i].d
               });
             } else {
               marker = _this._repPin(_this.mapdata[i]);
@@ -162,33 +185,23 @@ $( function() {
             var markerCluster = new MarkerClusterer(_this.map, markers,{imagePath:_this.imagePrefix});
           } else if (_this.options.visualisation=="heatmap") {
             if (_this.heatmapLayer) {
-              apex.debug("hide heatmapLayer");
-              _this.heatmapLayer.setMap(null);
               apex.debug("remove heatmapLayer");
+              _this.heatmapLayer.setMap(null);
               _this.heatmapLayer.delete;
               _this.heatmapLayer = null;
             }
             _this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
               data: markers,
               map: _this.map,
-              dissipating: _this.options.dissipating,
-              opacity: _this.options.opacity,
-              radius: _this.options.radius
+              dissipating: _this.options.heatmapDissipating,
+              opacity: _this.options.heatmapOpacity,
+              radius: _this.options.heatmapRadius
             });
           }
         } else {
           if (_this.options.noDataMessage !== "") {
             apex.debug("show No Data Found infowindow");
-            if (_this.infoNoDataFound) {
-              _this.infoNoDataFound.close();
-            } else {
-              _this.infoNoDataFound = new google.maps.InfoWindow(
-                {
-                  content: _this.options.noDataMessage,
-                  position: _this.parseLatLng(_this.options.latlng)
-                });
-            }
-            _this.infoNoDataFound.open(_this.map);
+            _this._showMessage(_this.options.noDataMessage);
           }
         }
       }
@@ -234,9 +247,8 @@ $( function() {
     gotoPosByString : function (v) {
       apex.debug("reportmap.gotoPosByString");
       var _this = this;
-      var latlng = _this.parseLatLng(v);
+      var latlng = _this._parseLatLng(v);
       if (latlng) {
-        apex.debug("item changed "+latlng.lat()+" "+latlng.lng());
         _this.gotoPos(latlng.lat(),latlng.lng());
       }
     },
@@ -248,15 +260,15 @@ $( function() {
       var geocoder = new google.maps.Geocoder;
       geocoder.geocode(
         {address: addressText
-        ,componentRestrictions: _this.options.country!==""?{country:_this.options.country}:{}
+        ,componentRestrictions: _this.options.restrictCountry!==""?{country:_this.options.restrictCountry}:{}
       }, function(results, status) {
         if (status === google.maps.GeocoderStatus.OK) {
           var pos = results[0].geometry.location;
           apex.debug("geocode ok");
           _this.map.setCenter(pos);
           _this.map.panTo(pos);
-          if (_this.options.markerZoom) {
-            _this.map.setZoom(_this.options.markerZoom);
+          if (_this.options.clickZoomLevel) {
+            _this.map.setZoom(_this.options.clickZoomLevel);
           }
           _this.gotoPos(pos.lat(), pos.lng());
           apex.debug("addressfound '"+results[0].formatted_address+"'");
@@ -267,7 +279,7 @@ $( function() {
             result:results[0]
           });
         } else {
-          apex.debug("geocode was unsuccessful for the following reason: "+status);
+          apex.debug("Geocoder failed: "+status);
         }
       });
     },
@@ -312,11 +324,10 @@ $( function() {
             });
           } else {
             apex.debug("searchAddress: No results found");
-            window.alert('No results found');
+            _this._showMessage(_this.options.noAddressResults);
           }
         } else {
-          apex.debug("Geocoder failed due to: " + status);
-          window.alert("Geocoder failed due to: " + status);
+          apex.debug("Geocoder failed: " + status);
         }
       });
     },
@@ -345,7 +356,7 @@ $( function() {
 
     //this is called when directions are requested
     _directionsresp : function (response,status) {
-      apex.debug("reportmap._directionsresp");
+      apex.debug("reportmap._directionsresp "+status);
       var _this = this;
       if (status == google.maps.DirectionsStatus.OK) {
         _this.directionsDisplay.setDirections(response);
@@ -364,59 +375,72 @@ $( function() {
           duration:totalDuration,
           legs:legCount
         });
+      } else if (status == google.maps.DirectionsStatus.NOT_FOUND) {
+        _this._showMessage(_this.options.directionsNotFound);
+      } else if (status == google.maps.DirectionsStatus.ZERO_RESULTS) {
+        _this._showMessage(_this.options.directionsZeroResults);
       } else {
-        apex.debug("Directions request failed due to "+status);
-        window.alert("Directions request failed due to "+status);
+        apex.debug("Directions request failed: "+status);
       }
     },
 
     //show directions on the map
     _directions : function () {
-      apex.debug("reportmap._directions "+this.options.directions);
+      apex.debug("reportmap._directions "+this.options.travelMode);
       var _this = this;
       var origin
-         ,dest
-         ,routeindex = _this.options.directions.indexOf("-ROUTE")
-         ,travelmode;
-      if (routeindex<0) {
-        //simple directions between two items
-        origin = $v(_this.options.originItem);
-        dest   = $v(_this.options.destItem);
-        origin = _this.parseLatLng(origin)||origin;
-        dest   = _this.parseLatLng(dest)||dest;
-        if (origin !== "" && dest !== "") {
-          travelmode = _this.options.directions;
+         ,dest;
+      if (!_this.directionsDisplay) {
+        _this.directionsDisplay = new google.maps.DirectionsRenderer;
+        _this.directionsService = new google.maps.DirectionsService;
+        _this.directionsDisplay.setMap(_this.map);
+      }
+      if (_this.mapdata) {
+        //route via waypoints
+        apex.debug("route "+_this.mapdata.length+" waypoints");
+        if (_this.mapdata.length>1) {
+          var waypoints = [], latLng;
+          for (var i = 0; i < _this.mapdata.length; i++) {
+            latLng = new google.maps.LatLng(_this.mapdata[i].x, _this.mapdata[i].y);
+            if (i == 0) {
+              origin = latLng;
+            } else if (i == _this.mapdata.length-1) {
+              dest = latLng;
+            } else {
+              waypoints.push({
+                location: latLng,
+                stopover: true
+              });
+            }
+          }
+          apex.debug("origin="+origin+" dest="+dest+" waypoints:"+waypoints.length+" via:"+_this.options.travelMode);
           _this.directionsService.route({
             origin:origin,
             destination:dest,
-            travelMode:google.maps.TravelMode[travelmode]
+            waypoints:waypoints,
+            optimizeWaypoints:_this.options.optimizeWaypoints,
+            travelMode:google.maps.TravelMode[_this.options.travelMode]
           }, function(response,status){_this._directionsresp(response,status)});
+        } else {
+          apex.debug("not enough waypoints - need at least an origin and a destination point");
+        }
+      } else if (_this.options.originItem&&_this.options.destItem) {
+        //simple directions between two items
+        origin = $v(_this.options.originItem);
+        dest   = $v(_this.options.destItem);
+        origin = _this._parseLatLng(origin)||origin;
+        dest   = _this._parseLatLng(dest)||dest;
+        if (origin !== "" && dest !== "") {
+          _this.directionsService.route({
+            origin:origin,
+            destination:dest,
+            travelMode:google.maps.TravelMode[_this.options.travelMode]
+          }, function(response,status){_this._directionsresp(response,status)});
+        } else {
+          apex.debug("No directions to show - need both origin and destination location");
         }
       } else {
-        //route via waypoints
-        travelmode = _this.options.directions.slice(0,routeindex);
-        apex.debug("route via "+travelmode+" with "+_this.mapdata.length+" waypoints");
-        var waypoints = [];
-        for (var i = 0; i < _this.mapdata.length; i++) {
-          if (i == 0) {
-            origin = new google.maps.LatLng(_this.mapdata[i].lat, _this.mapdata[i].lng);
-          } else if (i == _this.mapdata.length-1) {
-            dest = new google.maps.LatLng(_this.mapdata[i].lat, _this.mapdata[i].lng);
-          } else {
-            waypoints.push({
-              location: new google.maps.LatLng(_this.mapdata[i].lat, _this.mapdata[i].lng),
-              stopover: true
-            });
-          }
-        }
-        apex.debug("origin="+origin+" dest="+dest+" waypoints:"+waypoints.length);
-        _this.directionsService.route({
-          origin:origin,
-          destination:dest,
-          waypoints:waypoints,
-          optimizeWaypoints:this.options.optimizeWaypoints,
-          travelMode:google.maps.TravelMode[travelmode]
-        }, function(response,status){_this._directionsresp(response,status)});
+        apex.debug("Unable to show directions: no data, no origin/destination");
       }
     },
 
@@ -426,8 +450,8 @@ $( function() {
       var _this = this;
       var myOptions = {
         zoom: 1,
-        center: _this.parseLatLng(_this.options.latlng),
-        mapTypeId: _this.maptype
+        center: _this._parseLatLng(_this.options.defaultLatLng),
+        mapTypeId: _this.mapType
       };
       // get absolute URL for this site, including /apex/ or /ords/ (this is required by some google maps APIs)
       var filePath = window.location.origin + window.location.pathname;
@@ -436,27 +460,24 @@ $( function() {
       apex.debug('_this.imagePrefix="'+_this.imagePrefix+'"');
       _this.map = new google.maps.Map(document.getElementById(_this.element.prop("id")),myOptions);
       _this.map.setOptions({
-           draggable: _this.options.pan
-          ,zoomControl: _this.options.zoom
-          ,scrollwheel: _this.options.zoom
-          ,disableDoubleClickZoom: !(_this.options.zoom)
+           draggable: _this.options.allowPan
+          ,zoomControl: _this.options.allowZoom
+          ,scrollwheel: _this.options.allowZoom
+          ,disableDoubleClickZoom: !(_this.options.allowZoom)
           ,gestureHandling: _this.options.gestureHandling
         });
-      if (_this.mapstyle) {
-        _this.map.setOptions({styles: _this.mapstyle});
+      if (_this.mapStyle) {
+        _this.map.setOptions({styles:_this.mapStyle});
       }
       _this.map.fitBounds(new google.maps.LatLngBounds(_this.options.southwest,_this.options.northeast));
-      if (_this.options.directions) {
-        //directions is DRIVING-ROUTE, WALKING-ROUTE, BICYCLING-ROUTE, TRANSIT-ROUTE,
-        //              DRIVING, WALKING, BICYCLING, or TRANSIT
-        _this.directionsDisplay = new google.maps.DirectionsRenderer;
-        _this.directionsService = new google.maps.DirectionsService;
-        _this.directionsDisplay.setMap(_this.map);
+      if (_this.options.visualisation=='directions') {
         //if the origin or dest item is changed for simple directions, recalc the directions
-        if (_this.options.directions.indexOf("-ROUTE")<0) {
+        if (_this.options.originItem) {
           $("#"+_this.options.originItem).change(function(){
             _this._directions();
           });
+        }
+        if (_this.options.destItem) {
           $("#"+_this.options.destItem).change(function(){
             _this._directions();
           });
@@ -466,26 +487,27 @@ $( function() {
         var lat = event.latLng.lat()
            ,lng = event.latLng.lng();
         apex.debug("map clicked "+lat+","+lng);
-        if (_this.options.markerZoom) {
+        if (_this.options.clickZoomLevel) {
           apex.debug("pan+zoom");
           if (_this.options.panOnClick) {
             _this.map.panTo(event.latLng);
           }
-          _this.map.setZoom(_this.options.markerZoom);
+          _this.map.setZoom(_this.options.clickZoomLevel);
         }
         apex.jQuery("#"+_this.options.regionId).trigger("mapclick", {map:_this.map, lat:lat, lng:lng});
       });
       apex.debug("reportmap.init finished");
       apex.jQuery("#"+_this.options.regionId).trigger("maploaded", {map:_this.map});
       if (_this.options.expectData) {
-        _this._refresh();
+        _this.refresh();
       }
     },
     
-          // Called when created, and later when changing options
-    _refresh: function() {
-      apex.debug("reportmap._refresh");
+    // Called when created, and later when changing options
+    refresh: function() {
+      apex.debug("reportmap.refresh");
       var _this = this;
+      _this._hideMessage();
       if (_this.options.expectData) {
         apex.jQuery("#"+_this.options.regionId).trigger("apexbeforerefresh");
         apex.server.plugin
@@ -506,14 +528,16 @@ $( function() {
               apex.debug("pData.mapdata.length="+pData.mapdata.length);
               _this.mapdata = pData.mapdata;
               _this._repPins();
-              if (_this.options.directions) {
+              if (_this.options.visualisation=="directions") {
                 _this._directions();
               }
               apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
             }
           } );
+      } else if (_this.options.visualisation=='directions') {
+        _this._directions();
       }
-      apex.debug("reportmap._refresh finished");
+      apex.debug("reportmap.refresh finished");
       // Trigger a callback/event
       _this._trigger( "change" );
     },
@@ -534,7 +558,7 @@ $( function() {
     _setOptions: function() {
       // _super and _superApply handle keeping the right this-context
       this._superApply( arguments );
-      this._refresh();
+      this.refresh();
     },
 
     // _setOption is called for each individual option that is changing
