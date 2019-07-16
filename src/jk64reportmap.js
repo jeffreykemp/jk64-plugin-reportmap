@@ -1,7 +1,6 @@
 //jk64 ReportMap v1.0 Jul 2019
 
 $( function() {
-  // widget definition
   $.widget( "jk64.reportmap", {
     
     // default options
@@ -11,7 +10,8 @@ $( function() {
       ajaxItems:"",
       pluginFilePrefix:"",
       expectData:true,
-      defaultLatLng:"",
+      initialCenter:{lat:0,lng:0},
+      initialZoom:2,
       southwest:{lat:-60,lng:-180},
       northeast:{lat:70,lng:180},
       visualisation:"pins",
@@ -26,8 +26,6 @@ $( function() {
       mapStyle:"",
       travelMode:"DRIVING",
       optimizeWaypoints:false,
-      originItem:"",
-      destItem:"",
       allowZoom:true,
       allowPan:true,
       gestureHandling:"auto",
@@ -37,13 +35,14 @@ $( function() {
       directionsZeroResults:"No route could be found between the origin and destination.",
 
       // Callbacks
-      click: null,
-      geolocate: null,
-      gotoAddress: null,
-      gotoPos: null,
-      gotoPosByString: null,
-      refresh: null,
-      searchAddress: null
+      click: null,            //simulate a click on a marker
+      geolocate: null,        //find the user's device location
+      gotoAddress: null,      //search by address and place the pin there
+      gotoPos: null,          //place the pin at a given position {lat,lng}
+      gotoPosByString: null,  //place the pin at a given position (lat,lng provided as a string)
+      refresh: null,          //refresh the map (re-run the query)
+      getAddressByPos: null,  //get closest address to the given location
+      showDirections: null    //show route between two locations
     },
     
     //return google maps LatLng based on parsing the given string
@@ -258,6 +257,7 @@ $( function() {
       apex.debug("reportmap.gotoAddress");
       var _this = this;
       var geocoder = new google.maps.Geocoder;
+      _this._hideMessage();
       geocoder.geocode(
         {address: addressText
         ,componentRestrictions: _this.options.restrictCountry!==""?{country:_this.options.restrictCountry}:{}
@@ -302,12 +302,13 @@ $( function() {
       }
     },
 
-    //search for the address at a given location by lat/long
-    searchAddress : function (lat,lng) {
-      apex.debug("reportmap.searchAddress");
+    //get the closest address to a given location by lat/long
+    getAddressByPos : function (lat,lng) {
+      apex.debug("reportmap.getAddressByPos");
       var _this = this;
       var latlng = {lat: lat, lng: lng};
       var geocoder = new google.maps.Geocoder;
+      _this._hideMessage();
       geocoder.geocode({'location': latlng}, function(results, status) {
         if (status === google.maps.GeocoderStatus.OK) {
           if (results[0]) {
@@ -323,7 +324,7 @@ $( function() {
               result:results[0]
             });
           } else {
-            apex.debug("searchAddress: No results found");
+            apex.debug("getAddressByPos: No results found");
             _this._showMessage(_this.options.noAddressResults);
           }
         } else {
@@ -355,8 +356,8 @@ $( function() {
     },
 
     //this is called when directions are requested
-    _directionsresp : function (response,status) {
-      apex.debug("reportmap._directionsresp "+status);
+    _directionsResponse : function (response,status) {
+      apex.debug("reportmap._directionsResponse "+status);
       var _this = this;
       if (status == google.maps.DirectionsStatus.OK) {
         _this.directionsDisplay.setDirections(response);
@@ -383,22 +384,51 @@ $( function() {
         apex.debug("Directions request failed: "+status);
       }
     },
-
-    //show directions on the map
-    _directions : function () {
-      apex.debug("reportmap._directions "+this.options.travelMode);
+    
+    //show simple route between two points
+    showDirections : function (origin, destination, travelMode = "DRIVING") {
+      apex.debug("reportmap.showDirections");
       var _this = this;
-      var origin
-         ,dest;
-      if (!_this.directionsDisplay) {
-        _this.directionsDisplay = new google.maps.DirectionsRenderer;
-        _this.directionsService = new google.maps.DirectionsService;
-        _this.directionsDisplay.setMap(_this.map);
+      _this.origin = origin;
+      _this.destination = destination;
+      _this._hideMessage();
+      if (_this.origin&&_this.destination) {
+        if (!_this.directionsDisplay) {
+          _this.directionsDisplay = new google.maps.DirectionsRenderer;
+          _this.directionsService = new google.maps.DirectionsService;
+          _this.directionsDisplay.setMap(_this.map);
+        }
+        //simple directions between two locations
+        _this.origin = _this._parseLatLng(_this.origin)||_this.origin;
+        _this.destination = _this._parseLatLng(_this.destination)||_this.destination;
+        if (_this.origin !== "" && _this.destination !== "") {
+          _this.directionsService.route({
+            origin:_this.origin,
+            destination:_this.destination,
+            travelMode:google.maps.TravelMode[travelMode]
+          }, function(response,status){_this._directionsResponse(response,status)});
+        } else {
+          apex.debug("No directions to show - need both origin and destination location");
+        }
+      } else {
+        apex.debug("Unable to show directions: no data, no origin/destination");
       }
+    },
+
+    //directions visualisation based on query data
+    _directions : function () {
+      apex.debug("reportmap._directions");
+      var _this = this;
       if (_this.mapdata) {
-        //route via waypoints
         apex.debug("route "+_this.mapdata.length+" waypoints");
         if (_this.mapdata.length>1) {
+          var origin
+             ,dest;
+          if (!_this.directionsDisplay) {
+            _this.directionsDisplay = new google.maps.DirectionsRenderer;
+            _this.directionsService = new google.maps.DirectionsService;
+            _this.directionsDisplay.setMap(_this.map);
+          }
           var waypoints = [], latLng;
           for (var i = 0; i < _this.mapdata.length; i++) {
             latLng = new google.maps.LatLng(_this.mapdata[i].x, _this.mapdata[i].y);
@@ -420,69 +450,39 @@ $( function() {
             waypoints:waypoints,
             optimizeWaypoints:_this.options.optimizeWaypoints,
             travelMode:google.maps.TravelMode[_this.options.travelMode]
-          }, function(response,status){_this._directionsresp(response,status)});
+          }, function(response,status){_this._directionsResponse(response,status)});
         } else {
           apex.debug("not enough waypoints - need at least an origin and a destination point");
         }
-      } else if (_this.options.originItem&&_this.options.destItem) {
-        //simple directions between two items
-        origin = $v(_this.options.originItem);
-        dest   = $v(_this.options.destItem);
-        origin = _this._parseLatLng(origin)||origin;
-        dest   = _this._parseLatLng(dest)||dest;
-        if (origin !== "" && dest !== "") {
-          _this.directionsService.route({
-            origin:origin,
-            destination:dest,
-            travelMode:google.maps.TravelMode[_this.options.travelMode]
-          }, function(response,status){_this._directionsresp(response,status)});
-        } else {
-          apex.debug("No directions to show - need both origin and destination location");
-        }
       } else {
-        apex.debug("Unable to show directions: no data, no origin/destination");
+        apex.debug("Unable to show directions: no data");
       }
     },
 
     // The constructor
     _create: function() {
-      apex.debug("reportmap._create "+this.element.prop("id"));
       var _this = this;
-      var myOptions = {
-        zoom: 1,
-        center: _this._parseLatLng(_this.options.defaultLatLng),
-        mapTypeId: _this.mapType
-      };
+      apex.debug("reportmap._create "+_this.element.prop("id"));
       // get absolute URL for this site, including /apex/ or /ords/ (this is required by some google maps APIs)
       var filePath = window.location.origin + window.location.pathname;
       filePath = filePath.substring(0, filePath.lastIndexOf("/"));
       _this.imagePrefix = filePath + "/" + _this.options.pluginFilePrefix + "images/m";
       apex.debug('_this.imagePrefix="'+_this.imagePrefix+'"');
+      var myOptions = {
+        zoom: _this.options.initialZoom,
+        center: _this.options.initialCenter,
+        mapTypeId: _this.mapType,
+        draggable: _this.options.allowPan,
+        zoomControl: _this.options.allowZoom,
+        scrollwheel: _this.options.allowZoom,
+        disableDoubleClickZoom: !(_this.options.allowZoom),
+        gestureHandling: _this.options.gestureHandling
+      };
+      if (_this.options.mapStyle) {
+        myOptions["styles"] = _this.options.mapStyle;
+      }
       _this.map = new google.maps.Map(document.getElementById(_this.element.prop("id")),myOptions);
-      _this.map.setOptions({
-           draggable: _this.options.allowPan
-          ,zoomControl: _this.options.allowZoom
-          ,scrollwheel: _this.options.allowZoom
-          ,disableDoubleClickZoom: !(_this.options.allowZoom)
-          ,gestureHandling: _this.options.gestureHandling
-        });
-      if (_this.mapStyle) {
-        _this.map.setOptions({styles:_this.mapStyle});
-      }
       _this.map.fitBounds(new google.maps.LatLngBounds(_this.options.southwest,_this.options.northeast));
-      if (_this.options.visualisation=='directions') {
-        //if the origin or dest item is changed for simple directions, recalc the directions
-        if (_this.options.originItem) {
-          $("#"+_this.options.originItem).change(function(){
-            _this._directions();
-          });
-        }
-        if (_this.options.destItem) {
-          $("#"+_this.options.destItem).change(function(){
-            _this._directions();
-          });
-        }
-      }
       google.maps.event.addListener(_this.map, "click", function (event) {
         var lat = event.latLng.lat()
            ,lng = event.latLng.lng();
@@ -496,11 +496,11 @@ $( function() {
         }
         apex.jQuery("#"+_this.options.regionId).trigger("mapclick", {map:_this.map, lat:lat, lng:lng});
       });
-      apex.debug("reportmap.init finished");
       apex.jQuery("#"+_this.options.regionId).trigger("maploaded", {map:_this.map});
       if (_this.options.expectData) {
         _this.refresh();
       }
+      apex.debug("reportmap.init finished");
     },
     
     // Called when created, and later when changing options
@@ -534,8 +534,6 @@ $( function() {
               apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
             }
           } );
-      } else if (_this.options.visualisation=='directions') {
-        _this._directions();
       }
       apex.debug("reportmap.refresh finished");
       // Trigger a callback/event
@@ -546,11 +544,15 @@ $( function() {
     // revert other modifications here
     _destroy: function() {
       // remove generated elements
-      if (this.heatmapLayer) {
-        this.heatmapLayer.remove();
+      var _this = this;
+      if (_this.heatmapLayer) {
+        _this.heatmapLayer.remove();
       }
-      this._removePins();
-      this.map.remove();
+      if (_this.iw) {
+        _this.iw.close();
+      }
+      _this._removePins();
+      _this.map.remove();
     },
 
     // _setOptions is called with a hash of all options that are changing

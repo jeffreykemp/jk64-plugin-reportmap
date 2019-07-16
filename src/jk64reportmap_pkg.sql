@@ -25,23 +25,27 @@ g_num_format constant varchar2(100) := '99999999999999.9999999999999999999999999
 
 -- format to use to convert a lat/lng number to string for passing via javascript
 -- 0.0000001 is enough precision for the practical limit of commercial surveying, error up to +/- 11.132 mm at the equator
-g_tochar_format constant varchar2(100) := 'fm990.0999999';
+g_tochar_format   constant varchar2(100) := 'fm990.0999999';
+g_coord_precision constant number := 6;
 
 -- if only one row is returned by the query, add this +/- to the latitude extents so it
 -- shows the neighbourhood instead of zooming to the max
 g_single_row_lat_margin constant number := 0.005;
 
-g_visualisation_pins       constant varchar2(10) := 'PINS';
+g_visualisation_pins       constant varchar2(10) := 'PINS'; -- default
 g_visualisation_cluster    constant varchar2(10) := 'CLUSTER';
 g_visualisation_heatmap    constant varchar2(10) := 'HEATMAP';
 g_visualisation_directions constant varchar2(10) := 'DIRECTIONS';
 
-g_maptype_roadmap    constant varchar2(10) := 'ROADMAP';
-g_maptype_satellite	 constant varchar2(10) := 'SATELLITE';
-g_maptype_hybrid	   constant varchar2(10) := 'HYBRID';
-g_maptype_terrain	   constant varchar2(10) := 'TERRAIN';
+g_maptype_roadmap          constant varchar2(10) := 'ROADMAP'; -- default
+g_maptype_satellite	       constant varchar2(10) := 'SATELLITE';
+g_maptype_hybrid	         constant varchar2(10) := 'HYBRID';
+g_maptype_terrain	         constant varchar2(10) := 'TERRAIN';
 
-g_travelmode_driving constant varchar2(10) := 'DRIVING';
+g_travelmode_driving       constant varchar2(10) := 'DRIVING'; -- default
+g_travelmode_walking       constant varchar2(10) := 'WALKING';
+g_travelmode_bicycling     constant varchar2(10) := 'BICYCLING';
+g_travelmode_transit       constant varchar2(10) := 'TRANSIT';
 
 subtype plugin_attr is varchar2(32767);
 
@@ -60,13 +64,16 @@ begin
     p_lng_max := greatest(nvl(p_lng_max, p_lng), p_lng);
 end get_map_bounds;
 
-function latlng_to_char (lat in number, lng in number) return varchar2 is
+function latlng_literal (lat in number, lng in number) return varchar2 is
 begin
-    return '"lat":'
-        || to_char(lat, g_tochar_format)
-        || ',"lng":'
-        || to_char(lng, g_tochar_format);
-end latlng_to_char;
+    return case when lat is not null and lng is not null then
+        '{'
+        || apex_javascript.add_attribute('lat', round(lat,g_coord_precision))
+        || apex_javascript.add_attribute('lng', round(lng,g_coord_precision)
+           , false, false)
+        || '}'
+        end;
+end latlng_literal;
 
 function get_markers
     (p_region  in apex_plugin.t_region
@@ -79,6 +86,8 @@ function get_markers
     l_data           apex_application_global.vc_arr2;
     l_lat            number;
     l_lng            number;
+    l_name           varchar2(4000);
+    l_id             varchar2(4000);
     l_info           varchar2(4000);
     l_icon           varchar2(4000);
     l_marker_label   varchar2(1);
@@ -129,12 +138,13 @@ begin
             l_weight := to_number(l_column_value_list(3)(i));
             
             -- minimise size of data to be sent
-            l_data(nvl(l_data.last,0)+1) :=
-                   '{"x":' || to_char(l_lat, g_tochar_format)
-                || ',"y":' || to_char(l_lng, g_tochar_format)
-                || ',"d":' || to_char(l_weight, 'fm9999990')
+            l_data(nvl(l_data.last,0)+1) := '{'
+                || apex_javascript.add_attribute('x',round(l_lat,g_coord_precision))
+                || apex_javascript.add_attribute('y',round(l_lng,g_coord_precision))
+                || apex_javascript.add_attribute('d',least(round(l_weight),1) -- should be an integer
+                   ,false,false)
                 || '}';
-        
+
             get_map_bounds
                 (p_lat     => l_lat
                 ,p_lng     => l_lng
@@ -166,6 +176,8 @@ begin
       
             l_lat  := to_number(l_column_value_list(1)(i),g_num_format);
             l_lng  := to_number(l_column_value_list(2)(i),g_num_format);
+            l_name := l_column_value_list(3)(i);
+            l_id   := l_column_value_list(4)(i);
             
             -- default values if not supplied in query
             l_info         := null;
@@ -182,18 +194,17 @@ begin
               end if;
             end if;
         
-            l_data(nvl(l_data.last,0)+1) :=
-                   '{"d":'  || apex_escape.js_literal(l_column_value_list(4)(i),'"')
-                || ',"n":' || apex_escape.js_literal(l_column_value_list(3)(i),'"')
-                || ',"x":' || to_char(l_lat,g_tochar_format)
-                || ',"y":' || to_char(l_lng,g_tochar_format)
-                || case when l_info is not null then
-                   ',"i":' || apex_escape.js_literal(l_info,'"')
-                   end
-                || ',"c":' || apex_escape.js_literal(l_icon,'"')
-                || ',"l":' || apex_escape.js_literal(l_marker_label,'"')
+            l_data(nvl(l_data.last,0)+1) :='{'
+                || apex_javascript.add_attribute('d',sys.htf.escape_sc(l_id))
+                || apex_javascript.add_attribute('n',sys.htf.escape_sc(l_name))
+                || apex_javascript.add_attribute('x',round(l_lat,g_coord_precision))
+                || apex_javascript.add_attribute('y',round(l_lng,g_coord_precision))
+                || apex_javascript.add_attribute('i',sys.htf.escape_sc(l_info))
+                || apex_javascript.add_attribute('c',sys.htf.escape_sc(l_icon))
+                || apex_javascript.add_attribute('l',sys.htf.escape_sc(l_marker_label)
+                   ,false,false)
                 || '}';
-        
+
             get_map_bounds
                 (p_lat     => l_lat
                 ,p_lng     => l_lng
@@ -216,14 +227,6 @@ begin
     
     return l_data;
 end get_markers;
-
-procedure htp_arr (arr in apex_application_global.vc_arr2) is
-begin
-    for i in 1..arr.count loop
-        -- use prn to avoid loading a whole lot of unnecessary \n characters
-        sys.htp.prn(case when i > 1 then ',' end || arr(i));
-    end loop;
-end htp_arr;
 
 procedure val_integer (p_val in varchar2, p_min in number, p_max in number, p_label in varchar2) is
     n number;
@@ -267,19 +270,18 @@ function render
     l_directions_zero_results_msg  plugin_attr := p_plugin.attribute_04;
 
     -- Component attributes
-    l_map_height        plugin_attr := p_region.attribute_01;
-    l_visualisation     plugin_attr := p_region.attribute_02;
-    l_click_zoom_level  plugin_attr := p_region.attribute_03;
-    l_options           plugin_attr := p_region.attribute_04;
-    l_default_latlng    plugin_attr := p_region.attribute_06;
-    l_restrict_country  plugin_attr := p_region.attribute_10;
-    l_mapstyle          plugin_attr := p_region.attribute_11;
-    l_travel_mode       plugin_attr := p_region.attribute_15;
-    l_origin_item       plugin_attr := p_region.attribute_16;
-    l_dest_item         plugin_attr := p_region.attribute_17;
-    l_optimizewaypoints plugin_attr := p_region.attribute_21;
-    l_maptype           plugin_attr := p_region.attribute_22;
-    l_gesture_handling  plugin_attr := p_region.attribute_25;
+    l_map_height          plugin_attr := p_region.attribute_01;
+    l_visualisation       plugin_attr := p_region.attribute_02;
+    l_click_zoom_level    plugin_attr := p_region.attribute_03;
+    l_options             plugin_attr := p_region.attribute_04;
+    l_initial_zoom_level  plugin_attr := p_region.attribute_05;
+    l_initial_center      plugin_attr := p_region.attribute_06;
+    l_restrict_country    plugin_attr := p_region.attribute_10;
+    l_mapstyle            plugin_attr := p_region.attribute_11;
+    l_travel_mode         plugin_attr := p_region.attribute_15;
+    l_optimizewaypoints   plugin_attr := p_region.attribute_21;
+    l_maptype             plugin_attr := p_region.attribute_22;
+    l_gesture_handling    plugin_attr := p_region.attribute_25;
     
     l_opt varchar2(32767);
     
@@ -296,6 +298,7 @@ begin
       raise_application_error(-20000, 'Google Maps API Key is required (set in Component Settings)');
     end if;
     
+    val_integer(l_initial_zoom_level, p_min=>0, p_max=>23, p_label=>'Initial Zoom Level');
     val_integer(l_click_zoom_level, p_min=>0, p_max=>23, p_label=>'Zoom Level on Click');
     
     apex_javascript.add_library
@@ -325,138 +328,70 @@ begin
                    end;
     apex_debug.message('map region: ' || l_region_id);
     
---    if p_region.source is not null then
---
---        l_data := get_markers
---            (p_region  => p_region
---            ,p_lat_min => l_lat_min
---            ,p_lat_max => l_lat_max
---            ,p_lng_min => l_lng_min
---            ,p_lng_max => l_lng_max
---            );
---        
---    end if;
-    
-    if l_default_latlng is not null then
-        parse_latlng(l_default_latlng, p_lat=>l_lat, p_lng=>l_lng);
+    if l_initial_center is not null then
+        parse_latlng(l_initial_center, p_lat=>l_lat, p_lng=>l_lng);
     end if;
-    
---    if l_lat is not null and l_data.count > 0 then
---
---        get_map_bounds
---            (p_lat     => l_lat
---            ,p_lng     => l_lng
---            ,p_lat_min => l_lat_min
---            ,p_lat_max => l_lat_max
---            ,p_lng_min => l_lng_min
---            ,p_lng_max => l_lng_max
---            );
---
---    elsif l_data.count = 0 and l_lat is not null then
-      if l_lat is not null then
 
-          l_lat_min := greatest(l_lat - 10, -80);
-          l_lat_max := least(l_lat + 10, 80);
-          l_lng_min := greatest(l_lng - 10, -180);
-          l_lng_max := least(l_lng + 10, 180);
+    if l_lat is not null then
 
---    -- show entire map if no points to show
---    elsif l_data.count = 0 then
---
---        l_latlong := '0,0';
---        l_lat_min := -90;
---        l_lat_max := 90;
---        l_lng_min := -180;
---        l_lng_max := 180;
+        l_lat_min := greatest(l_lat - 10, -60);
+        l_lat_max := least(l_lat + 10, 70);
+        l_lng_min := greatest(l_lng - 10, -180);
+        l_lng_max := least(l_lng + 10, 180);
 
     end if;
     
-    l_opt := 'regionId:"' || l_region_id || '"'
-          || ',ajaxIdentifier:"' || apex_plugin.get_ajax_identifier || '"'
-          || ',ajaxItems:"' || apex_plugin_util.page_item_names_to_jquery(p_region.ajax_items_to_submit) || '"'
-          || ',pluginFilePrefix:"' || p_plugin.file_prefix || '"';
-    if p_region.source is null then
-        l_opt := l_opt || ',expectData:false';
-    end if;
-    if nvl(l_visualisation,g_visualisation_pins) != g_visualisation_pins then
-        l_opt := l_opt || ',visualisation:' || apex_escape.js_literal(lower(l_visualisation),'"');
-    end if;
-    if nvl(l_maptype,g_maptype_roadmap) != g_maptype_roadmap then
-        l_opt := l_opt || ',mapType:' || apex_escape.js_literal(lower(l_maptype),'"');
-    end if;
-    if l_default_latlng is not null then
-        l_opt := l_opt || ',defaultLatLng:"' || l_default_latlng || '"';
-    end if;
-    if l_click_zoom_level is not null then
-        l_opt := l_opt || ',clickZoomLevel:' || l_click_zoom_level;
-    end if;
-    if instr(':'||l_options||':',':DRAGGABLE:')>0 then
-        l_opt := l_opt || ',isDraggable:true';
-    end if;
+    l_opt := '{'
+      || apex_javascript.add_attribute('regionId', l_region_id)
+      || apex_javascript.add_attribute('expectData', nullif(p_region.source is not null,true))
+      || apex_javascript.add_attribute('visualisation', lower(nullif(l_visualisation,g_visualisation_pins)))
+      || apex_javascript.add_attribute('mapType', lower(nullif(l_maptype,g_maptype_roadmap)))
+      || apex_javascript.add_attribute('initialZoom', nullif(l_initial_zoom_level,2))
+      || case when l_lat!=0 or l_lng!=0 then
+         '"initialCenter":{"lat":' || round(l_lat,g_coord_precision) || ','
+                       || '"lng":' || round(l_lng,g_coord_precision) || '},'
+         end
+      || apex_javascript.add_attribute('clickZoomLevel', l_click_zoom_level)
+      || apex_javascript.add_attribute('isDraggable', nullif(instr(':'||l_options||':',':DRAGGABLE:')>0,false))
 --    if l_visualisation = g_visualisation_heatmap then --TODO: make these options plugin attributes?
 --        l_opt := l_opt
 --             || ',heatmapDissipating:false'
 --             || ',heatmapOpacity:0.6'
 --             || ',heatmapRadius:5';
 --    end if;
-    if instr(':'||l_options||':',':PAN_ON_CLICK:')=0 then
-        l_opt := l_opt || ',panOnClick:false';
-    end if;
-    if l_restrict_country is not null then
-        l_opt := l_opt || ',l_search_country:' || apex_escape.js_literal(l_restrict_country,'"');
-    end if;
-    if l_lat_min is not null and l_lng_min is not null and l_lat_max is not null and l_lng_max is not null then
-        l_opt := l_opt
-              || ',southwest:{' || latlng_to_char(l_lat_min,l_lng_min) || '}'
-              || ',northeast:{' || latlng_to_char(l_lat_max,l_lng_max) || '}';
-    end if;
-    if l_mapstyle is not null then
-        l_opt := l_opt || ',mapStyle:' || l_mapstyle;
-    end if;
-    if l_visualisation = g_visualisation_directions then
-        if nvl(l_travel_mode,g_travelmode_driving) != g_travelmode_driving then
-            l_opt := l_opt || ',travelMode:' || apex_escape.js_literal(l_travel_mode,'"');
-        end if;
-        if l_optimizewaypoints='Y' then
-            l_opt := l_opt || ',optimizeWaypoints:true';
-        end if;
-        if l_origin_item is not null then
-            l_opt := l_opt || ',originItem:"' || l_origin_item || '"';
-        end if;
-        if l_dest_item is not null then
-            l_opt := l_opt || ',destItem:"' || l_dest_item || '"';
-        end if;
-    end if;
-    if instr(':'||l_options||':',':ZOOM_ALLOWED:')=0 then
-        l_opt := l_opt || ',allowZoom:false';
-    end if;
-    if instr(':'||l_options||':',':PAN_ALLOWED:')=0 then    
-        l_opt := l_opt || ',allowPan:false';
-    end if;
-    if l_gesture_handling is not null then
-        l_opt := l_opt || ',gestureHandling:' || apex_escape.js_literal(l_gesture_handling,'"');
-    end if;
-    if p_region.no_data_found_message is not null then
-        l_opt := l_opt || ',noDataMessage:' || apex_escape.js_literal(p_region.no_data_found_message,'"');
-    end if;
-    if l_no_address_results_msg is not null then
-        l_opt := l_opt || ',noDataMessage:' || apex_escape.js_literal(l_no_address_results_msg,'"');
-    end if;
-    if l_directions_not_found_msg is not null then
-        l_opt := l_opt || ',directionsNotFound:' || apex_escape.js_literal(l_directions_not_found_msg,'"');
-    end if;
-    if l_directions_zero_results_msg is not null then
-        l_opt := l_opt || ',directionsZeroResults:' || apex_escape.js_literal(l_directions_zero_results_msg,'"');
-    end if;
+      || apex_javascript.add_attribute('panOnClick', nullif(instr(':'||l_options||':',':PAN_ON_CLICK:')>0,true))
+      || apex_javascript.add_attribute('restrictCountry', l_restrict_country)
+      || case when l_lat_min is not null and l_lng_min is not null
+               and l_lat_max is not null and l_lng_max is not null then
+              '"southwest":' || latlng_literal(l_lat_min,l_lng_min) || ','
+           || '"northeast":' || latlng_literal(l_lat_max,l_lng_max) || ','
+         end
+      || case when l_mapstyle is not null then
+         '"mapStyle":' || l_mapstyle || ','
+         end
+      || case when l_visualisation = g_visualisation_directions then
+            apex_javascript.add_attribute('travelMode', nullif(l_travel_mode,g_travelmode_driving))
+         || apex_javascript.add_attribute('optimizeWaypoints', nullif(l_optimizewaypoints='Y',false))
+         end
+      || apex_javascript.add_attribute('allowZoom', nullif(instr(':'||l_options||':',':ZOOM_ALLOWED:')>0,true))
+      || apex_javascript.add_attribute('allowPan', nullif(instr(':'||l_options||':',':PAN_ALLOWED:')>0,true))
+      || apex_javascript.add_attribute('gestureHandling', l_gesture_handling)
+      || apex_javascript.add_attribute('noDataMessage', p_region.no_data_found_message)
+      || apex_javascript.add_attribute('noAddressResults', l_no_address_results_msg)
+      || apex_javascript.add_attribute('directionsNotFound', l_directions_not_found_msg)
+      || apex_javascript.add_attribute('directionsZeroResults', l_directions_zero_results_msg)
+      || apex_javascript.add_attribute('ajaxIdentifier', apex_plugin.get_ajax_identifier)
+      || apex_javascript.add_attribute('ajaxItems', apex_plugin_util.page_item_names_to_jquery(p_region.ajax_items_to_submit))
+      || apex_javascript.add_attribute('pluginFilePrefix', p_plugin.file_prefix
+         ,false,false)
+      || '}';
         
     -- we don't want the init to run until after the page is loaded including all resources; the r_ function
     -- method here waits until the document is ready before running the jquery plugin initialisation
     sys.htp.p('<script>');
     sys.htp.p('function r_' || l_region_id || '(f){/in/.test(document.readyState)?setTimeout("r_' || l_region_id || '("+f+")",9):f()}');
     sys.htp.p('r_' || l_region_id || '(function(){');
-    sys.htp.p('$("#map_' || l_region_id || '").reportmap({');
-    sys.htp.p(l_opt);
-    sys.htp.p('});');
+    sys.htp.p('$("#map_' || l_region_id || '").reportmap(' || l_opt || ');');
     if p_region.init_javascript_code is not null then
       -- make "this" point to the reportmap object; this.map will be the google map object
       sys.htp.p('var m=$("#map_' || l_region_id || '").reportmap("instance");');
@@ -489,7 +424,7 @@ function ajax
 
     -- Component attributes
     l_visualisation     plugin_attr := p_region.attribute_02;
-    l_default_latlng    plugin_attr := p_region.attribute_06;
+    l_initial_center    plugin_attr := p_region.attribute_06;
 
 begin
     -- debug information will be included
@@ -514,8 +449,8 @@ begin
 
     end if;
         
-    if l_default_latlng is not null then
-        parse_latlng(l_default_latlng, p_lat=>l_lat, p_lng=>l_lng);
+    if l_initial_center is not null then
+        parse_latlng(l_initial_center, p_lat=>l_lat, p_lng=>l_lng);
     end if;
     
     if l_lat is not null and l_data.count > 0 then
@@ -534,10 +469,10 @@ begin
         l_lng_min := greatest(l_lng - 10, -180);
         l_lng_max := least(l_lng + 10, 180);
 
-    -- show entire map if no points to show
+    -- show (most of the) entire map if no points to show
     elsif l_data.count = 0 then
-        l_lat_min := -90;
-        l_lat_max := 90;
+        l_lat_min := -60;
+        l_lat_max := 70;
         l_lng_min := -180;
         l_lng_max := 180;
 
@@ -548,14 +483,15 @@ begin
     sys.htp.p('Pragma: no-cache');
     sys.owa_util.http_header_close;
     
-    sys.htp.p(
-           '{"southwest":{'
-        || latlng_to_char(l_lat_min,l_lng_min)
-        || '},"northeast":{'
-        || latlng_to_char(l_lat_max,l_lng_max)
-        || '},"mapdata":[');
+    sys.htp.p('{'
+      || '"southwest":' || latlng_literal(l_lat_min,l_lng_min) || ','
+      || '"northeast":' || latlng_literal(l_lat_max,l_lng_max) || ','
+      || '"mapdata":[');
 
-    htp_arr(l_data);
+    for i in 1..l_data.count loop
+        -- use prn to avoid downloading a whole lot of unnecessary \n characters
+        sys.htp.prn(case when i > 1 then ',' end || l_data(i));
+    end loop;
 
     sys.htp.p(']}');
 
