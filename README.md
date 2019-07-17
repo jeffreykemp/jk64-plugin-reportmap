@@ -42,9 +42,8 @@ Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to
 1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
 2. Install the plugin to your application - **region_type_plugin_com_jk64_report_google_map.sql**
 3. Supply your public **Google API Key** (Component Settings)
-4. Add a region to the page, select type **JK64 Report Google Map [Plug-In]**
+4. Add a region to the page, select type **JK64 Report Google Map R1 [Plug-In]**
 5. For **SQL Source**, enter a query with at least 4 columns (see example below)
-6. Update the **Number of Rows** to a reasonable upper limit (default is 15, you probably want a higher limit)
 
 **Sample query**
 
