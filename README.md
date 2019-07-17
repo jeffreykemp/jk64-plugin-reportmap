@@ -2,7 +2,7 @@
 
 **A Region plugin for Oracle Application Express**
 
-This allows you to add a Google Map region to any page, showing a number of markers (pins) based on a query you specify. 
+This allows you to add a Google Map region to any page, showing a number of markers (pins) based on a query you specify. The plugin provides a rich array of built-in features, as well as giving access to the underlying Google Maps object so you can customise it with the behaviour you need.
 
 ![plugin-reportmap-markers.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/src/plugin-reportmap-markers.png)
 
