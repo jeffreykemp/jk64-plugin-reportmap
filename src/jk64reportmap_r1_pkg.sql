@@ -1,5 +1,5 @@
 /**********************************************************
-create or replace package jk64reportmap_pkg as
+create or replace package jk64reportmap_r1_pkg as
 -- jk64 ReportMap v1.0 Jul 2019
 
 function render
@@ -13,10 +13,10 @@ function ajax
     ,p_plugin in apex_plugin.t_plugin
     ) return apex_plugin.t_region_ajax_result;
 
-end jk64reportmap_pkg;
+end jk64reportmap_r1_pkg;
 /
 
-create or replace package body jk64reportmap_pkg as
+create or replace package body jk64reportmap_r1_pkg as
 **********************************************************/
 -- jk64 ReportMap v1.0 Jul 2019
 
@@ -46,6 +46,9 @@ g_travelmode_driving       constant varchar2(10) := 'DRIVING'; -- default
 g_travelmode_walking       constant varchar2(10) := 'WALKING';
 g_travelmode_bicycling     constant varchar2(10) := 'BICYCLING';
 g_travelmode_transit       constant varchar2(10) := 'TRANSIT';
+
+g_max_rows         constant number := 100000;
+g_max_rows_heatmap constant number := 1000000;
 
 subtype plugin_attr is varchar2(32767);
 
@@ -123,7 +126,7 @@ begin
             ,p_min_columns    => 3
             ,p_max_columns    => 3
             ,p_component_name => p_region.name
-            ,p_max_rows       => p_region.fetched_rows);
+            ,p_max_rows       => g_max_rows_heatmap);
   
         for i in 1..l_column_value_list(1).count loop
       
@@ -163,7 +166,7 @@ begin
             ,p_min_columns    => 4
             ,p_max_columns    => 7
             ,p_component_name => p_region.name
-            ,p_max_rows       => p_region.fetched_rows);
+            ,p_max_rows       => g_max_rows);
     
         for i in 1..l_column_value_list(1).count loop
         
@@ -268,6 +271,8 @@ function render
     l_no_address_results_msg       plugin_attr := p_plugin.attribute_02;
     l_directions_not_found_msg     plugin_attr := p_plugin.attribute_03;
     l_directions_zero_results_msg  plugin_attr := p_plugin.attribute_04;
+    l_min_zoom                     plugin_attr := p_plugin.attribute_05;
+    l_max_zoom                     plugin_attr := p_plugin.attribute_06;
 
     -- Component attributes
     l_map_height          plugin_attr := p_region.attribute_01;
@@ -276,14 +281,28 @@ function render
     l_options             plugin_attr := p_region.attribute_04;
     l_initial_zoom_level  plugin_attr := p_region.attribute_05;
     l_initial_center      plugin_attr := p_region.attribute_06;
+--    l_                  plugin_attr := p_region.attribute_07;
+--    l_                  plugin_attr := p_region.attribute_08;
+--    l_                  plugin_attr := p_region.attribute_09;
     l_restrict_country    plugin_attr := p_region.attribute_10;
     l_mapstyle            plugin_attr := p_region.attribute_11;
+    l_heatmap_dissipating plugin_attr := p_region.attribute_12;
+    l_heatmap_opacity     plugin_attr := p_region.attribute_13;
+    l_heatmap_radius      plugin_attr := p_region.attribute_14;
     l_travel_mode         plugin_attr := p_region.attribute_15;
+--    l_                  plugin_attr := p_region.attribute_16;
+--    l_                  plugin_attr := p_region.attribute_17;
+--    l_                  plugin_attr := p_region.attribute_18;
+--    l_                  plugin_attr := p_region.attribute_19;
+--    l_                  plugin_attr := p_region.attribute_20;
     l_optimizewaypoints   plugin_attr := p_region.attribute_21;
     l_maptype             plugin_attr := p_region.attribute_22;
+--    l_                  plugin_attr := p_region.attribute_23;
+--    l_                  plugin_attr := p_region.attribute_24;
     l_gesture_handling    plugin_attr := p_region.attribute_25;
     
     l_opt varchar2(32767);
+    l_buf varchar2(32767);
     
 begin
     -- debug information will be included
@@ -310,7 +329,7 @@ begin
         ,p_skip_extension => true);
     
     apex_javascript.add_library
-        (p_name                  => 'jk64reportmap'
+        (p_name                  => 'jk64reportmap_r1'
         ,p_directory             => p_plugin.file_prefix
         ,p_check_to_add_minified => true);
 
@@ -332,33 +351,34 @@ begin
         parse_latlng(l_initial_center, p_lat=>l_lat, p_lng=>l_lng);
     end if;
 
-    if l_lat is not null then
-
-        l_lat_min := greatest(l_lat - 10, -60);
-        l_lat_max := least(l_lat + 10, 70);
-        l_lng_min := greatest(l_lng - 10, -180);
-        l_lng_max := least(l_lng + 10, 180);
-
-    end if;
+--    if l_lat is not null then
+--
+--        l_lat_min := greatest(l_lat - 10, -60);
+--        l_lat_max := least(l_lat + 10, 70);
+--        l_lng_min := greatest(l_lng - 10, -180);
+--        l_lng_max := least(l_lng + 10, 180);
+--
+--    end if;
     
     l_opt := '{'
       || apex_javascript.add_attribute('regionId', l_region_id)
       || apex_javascript.add_attribute('expectData', nullif(p_region.source is not null,true))
       || apex_javascript.add_attribute('visualisation', lower(nullif(l_visualisation,g_visualisation_pins)))
       || apex_javascript.add_attribute('mapType', lower(nullif(l_maptype,g_maptype_roadmap)))
-      || apex_javascript.add_attribute('initialZoom', nullif(l_initial_zoom_level,2))
+      || apex_javascript.add_attribute('minZoom', nullif(to_number(l_min_zoom),1))
+      || apex_javascript.add_attribute('maxZoom', to_number(l_max_zoom))
+      || apex_javascript.add_attribute('initialZoom', nullif(to_number(l_initial_zoom_level),2))
       || case when l_lat!=0 or l_lng!=0 then
          '"initialCenter":{"lat":' || round(l_lat,g_coord_precision) || ','
                        || '"lng":' || round(l_lng,g_coord_precision) || '},'
          end
-      || apex_javascript.add_attribute('clickZoomLevel', l_click_zoom_level)
+      || apex_javascript.add_attribute('clickZoomLevel', to_number(l_click_zoom_level))
       || apex_javascript.add_attribute('isDraggable', nullif(instr(':'||l_options||':',':DRAGGABLE:')>0,false))
---    if l_visualisation = g_visualisation_heatmap then --TODO: make these options plugin attributes?
---        l_opt := l_opt
---             || ',heatmapDissipating:false'
---             || ',heatmapOpacity:0.6'
---             || ',heatmapRadius:5';
---    end if;
+      || case when l_visualisation = g_visualisation_heatmap then
+            apex_javascript.add_attribute('heatmapDissipating', nullif(l_heatmap_dissipating='Y',false))
+         || apex_javascript.add_attribute('heatmapOpacity', nullif(to_number(l_heatmap_opacity),0.6))
+         || apex_javascript.add_attribute('heatmapRadius', nullif(to_number(l_heatmap_radius),5))
+         end
       || apex_javascript.add_attribute('panOnClick', nullif(instr(':'||l_options||':',':PAN_ON_CLICK:')>0,true))
       || apex_javascript.add_attribute('restrictCountry', l_restrict_country)
       || case when l_lat_min is not null and l_lng_min is not null
@@ -388,21 +408,29 @@ begin
         
     -- we don't want the init to run until after the page is loaded including all resources; the r_ function
     -- method here waits until the document is ready before running the jquery plugin initialisation
-    sys.htp.p('<script>');
-    sys.htp.p('function r_' || l_region_id || '(f){/in/.test(document.readyState)?setTimeout("r_' || l_region_id || '("+f+")",9):f()}');
-    sys.htp.p('r_' || l_region_id || '(function(){');
-    sys.htp.p('$("#map_' || l_region_id || '").reportmap(' || l_opt || ');');
+    l_buf := '<script>'
+          || 'function r_#REGION_ID#(f){/in/.test(document.readyState)?setTimeout("r_#REGION_ID#("+f+")",9):f()}'
+          || 'r_#REGION_ID#(function(){'
+          || '$("#map_#REGION_ID#").reportmap('
+          || l_opt
+          || ');';
+
     if p_region.init_javascript_code is not null then
       -- make "this" point to the reportmap object; this.map will be the google map object
-      sys.htp.p('var m=$("#map_' || l_region_id || '").reportmap("instance");');
-      sys.htp.p('function i_' || l_region_id || '(){apex.debug("running init_javascript_code...");'
-      || p_region.init_javascript_code
-      || '};m.init=i_' || l_region_id || ';m.init();');
+      l_buf := l_buf
+            || 'var m=$("#map_#REGION_ID#").reportmap("instance");'
+            || 'function i_#REGION_ID#(){apex.debug("running init_javascript_code...");'
+            || p_region.init_javascript_code
+            || '};m.init=i_#REGION_ID#;m.init();';
     end if;
-    -- map apex refresh event to the jquery plugin refresh
-    sys.htp.p('apex.jQuery("#' || l_region_id || '").bind("apexrefresh",function(){$("#map_' || l_region_id || '").reportmap("refresh");});');
-    sys.htp.p('});</script>');
-    sys.htp.p('<div id="map_' || l_region_id || '" style="min-height:' || l_map_height || 'px"></div>');
+
+    -- map apex refresh event to the jquery plugin refresh event
+    l_buf := l_buf
+          || 'apex.jQuery("##REGION_ID#").bind("apexrefresh",function(){$("#map_#REGION_ID#").reportmap("refresh");});'
+          || '});</script>'
+          || '<div id="map_#REGION_ID#" style="min-height:' || l_map_height || 'px"></div>';
+    
+    sys.htp.p(replace(l_buf,'#REGION_ID#',l_region_id));
     
     return l_result;
 end render;
@@ -423,7 +451,6 @@ function ajax
     l_lng_max      number;
 
     -- Component attributes
-    l_visualisation     plugin_attr := p_region.attribute_02;
     l_initial_center    plugin_attr := p_region.attribute_06;
 
 begin
@@ -463,18 +490,18 @@ begin
             ,p_lng_max => l_lng_max
             );
 
-    elsif l_data.count = 0 and l_lat is not null then
-        l_lat_min := greatest(l_lat - 10, -180);
-        l_lat_max := least(l_lat + 10, 80);
-        l_lng_min := greatest(l_lng - 10, -180);
-        l_lng_max := least(l_lng + 10, 180);
+--    elsif l_data.count = 0 and l_lat is not null then
+--        l_lat_min := greatest(l_lat - 10, -180);
+--        l_lat_max := least(l_lat + 10, 80);
+--        l_lng_min := greatest(l_lng - 10, -180);
+--        l_lng_max := least(l_lng + 10, 180);
 
-    -- show (most of the) entire map if no points to show
-    elsif l_data.count = 0 then
-        l_lat_min := -60;
-        l_lat_max := 70;
-        l_lng_min := -180;
-        l_lng_max := 180;
+--    -- show (most of the) entire map if no points to show
+--    elsif l_data.count = 0 then
+--        l_lat_min := -60;
+--        l_lat_max := 70;
+--        l_lng_min := -180;
+--        l_lng_max := 180;
 
     end if;
 
@@ -484,13 +511,15 @@ begin
     sys.owa_util.http_header_close;
     
     sys.htp.p('{'
-      || '"southwest":' || latlng_literal(l_lat_min,l_lng_min) || ','
-      || '"northeast":' || latlng_literal(l_lat_max,l_lng_max) || ','
+      || case when l_lat_min is not null then
+            '"southwest":' || latlng_literal(l_lat_min,l_lng_min) || ','
+         || '"northeast":' || latlng_literal(l_lat_max,l_lng_max) || ','
+         end
       || '"mapdata":[');
 
     for i in 1..l_data.count loop
         -- use prn to avoid downloading a whole lot of unnecessary \n characters
-        sys.htp.prn(case when i > 1 then ',' end || l_data(i));
+        sys.htp.prn(case when i>1 then ',' end || l_data(i));
     end loop;
 
     sys.htp.p(']}');
@@ -500,9 +529,9 @@ begin
 exception
     when others then
         apex_debug.error(sqlerrm);
-        sys.htp.p('{"error":"'||sqlerrm||'"}');
+        sys.htp.p('{"error":"' || apex_escape.js_literal(sqlerrm,'"') || '"}');
 end ajax;
 
 /**********************************************************
-end jk64reportmap_pkg;
+end jk64reportmap_r1_pkg;
 **********************************************************/

@@ -11,9 +11,11 @@ $( function() {
       pluginFilePrefix:"",
       expectData:true,
       initialCenter:{lat:0,lng:0},
+      minZoom:1,
+      maxZoom:null,
       initialZoom:2,
-      southwest:{lat:-60,lng:-180},
-      northeast:{lat:70,lng:180},
+      southwest:null,
+      northeast:null,
       visualisation:"pins",
       mapType:"roadmap",
       clickZoomLevel:null,
@@ -35,6 +37,7 @@ $( function() {
       directionsZeroResults:"No route could be found between the origin and destination.",
 
       // Callbacks
+      parseLatLng: null,      //parse a lat,lng string into a google.maps.LatLng
       click: null,            //simulate a click on a marker
       geolocate: null,        //find the user's device location
       gotoAddress: null,      //search by address and place the pin there
@@ -54,8 +57,8 @@ $( function() {
     //    -17.9609;122.2122
     //    -17,9609 122,2122
     //    -17,9609;122,2122
-    _parseLatLng : function (v) {
-      apex.debug("reportmap._parseLatLng "+v);
+    parseLatLng: function (v) {
+      apex.debug("reportmap.parseLatLng "+v);
       var pos;
       if (v !== null && v !== undefined) {
          var arr;
@@ -79,7 +82,7 @@ $( function() {
       return pos;
     },
     
-    _showMessage : function (msg) {
+    _showMessage: function (msg) {
       apex.debug("reportmap._showMessage ");
       var _this = this;
       if (_this.infoWindow) {
@@ -94,7 +97,7 @@ $( function() {
       _this.infoWindow.open(_this.map);
     },
     
-    _hideMessage : function() {
+    _hideMessage: function() {
       apex.debug("reportmap._hideMessage ");
       var _this = this;
       if (_this.infoWindow) {
@@ -103,7 +106,7 @@ $( function() {
     },
 
     //place a report pin on the map
-    _repPin : function (pData) {
+    _repPin: function (pData) {
       var _this = this;
       var pos = new google.maps.LatLng(pData.x, pData.y);
       var reppin = new google.maps.Marker({
@@ -158,7 +161,7 @@ $( function() {
     },
 
     //put all the report pins on the map, or show the "no data found" message
-    _repPins : function () {
+    _repPins: function () {
       apex.debug("reportmap._repPins");
       var _this = this;
       if (_this.mapdata) {
@@ -218,7 +221,7 @@ $( function() {
     },
 
     //place or move the user pin to the given location
-    gotoPos : function (lat,lng) {
+    gotoPos: function (lat,lng) {
       apex.debug("reportmap.gotoPos");
       var _this = this;
       if (lat!==null && lng!==null) {
@@ -243,17 +246,17 @@ $( function() {
     },
 
     //parse the given string as a lat,long pair, put a pin at that location
-    gotoPosByString : function (v) {
+    gotoPosByString: function (v) {
       apex.debug("reportmap.gotoPosByString");
       var _this = this;
-      var latlng = _this._parseLatLng(v);
+      var latlng = _this.parseLatLng(v);
       if (latlng) {
         _this.gotoPos(latlng.lat(),latlng.lng());
       }
     },
 
     //search the map for an address; if found, put a pin at that location and raise addressfound trigger
-    gotoAddress : function (addressText) {
+    gotoAddress: function (addressText) {
       apex.debug("reportmap.gotoAddress");
       var _this = this;
       var geocoder = new google.maps.Geocoder;
@@ -286,7 +289,7 @@ $( function() {
 
     //call this to simulate a mouse click on the report pin for the given id value
     //e.g. this will show the info window for the given report pin and trigger the markerclick event
-    click : function (id) {
+    click: function (id) {
       apex.debug("reportmap.click");
       var _this = this;
       var found = false;
@@ -303,7 +306,7 @@ $( function() {
     },
 
     //get the closest address to a given location by lat/long
-    getAddressByPos : function (lat,lng) {
+    getAddressByPos: function (lat,lng) {
       apex.debug("reportmap.getAddressByPos");
       var _this = this;
       var latlng = {lat: lat, lng: lng};
@@ -334,7 +337,7 @@ $( function() {
     },
 
     //search for the user device's location if possible
-    geolocate : function () {
+    geolocate: function () {
       apex.debug("reportmap.geolocate");
       var _this = this;
       if (navigator.geolocation) {
@@ -356,7 +359,7 @@ $( function() {
     },
 
     //this is called when directions are requested
-    _directionsResponse : function (response,status) {
+    _directionsResponse: function (response,status) {
       apex.debug("reportmap._directionsResponse "+status);
       var _this = this;
       if (status == google.maps.DirectionsStatus.OK) {
@@ -386,7 +389,7 @@ $( function() {
     },
     
     //show simple route between two points
-    showDirections : function (origin, destination, travelMode = "DRIVING") {
+    showDirections: function (origin, destination, travelMode = "DRIVING") {
       apex.debug("reportmap.showDirections");
       var _this = this;
       _this.origin = origin;
@@ -399,8 +402,8 @@ $( function() {
           _this.directionsDisplay.setMap(_this.map);
         }
         //simple directions between two locations
-        _this.origin = _this._parseLatLng(_this.origin)||_this.origin;
-        _this.destination = _this._parseLatLng(_this.destination)||_this.destination;
+        _this.origin = _this.parseLatLng(_this.origin)||_this.origin;
+        _this.destination = _this.parseLatLng(_this.destination)||_this.destination;
         if (_this.origin !== "" && _this.destination !== "") {
           _this.directionsService.route({
             origin:_this.origin,
@@ -416,7 +419,7 @@ $( function() {
     },
 
     //directions visualisation based on query data
-    _directions : function () {
+    _directions: function () {
       apex.debug("reportmap._directions");
       var _this = this;
       if (_this.mapdata) {
@@ -463,12 +466,15 @@ $( function() {
     _create: function() {
       var _this = this;
       apex.debug("reportmap._create "+_this.element.prop("id"));
+      apex.debug("options: "+JSON.stringify(_this.options));
       // get absolute URL for this site, including /apex/ or /ords/ (this is required by some google maps APIs)
       var filePath = window.location.origin + window.location.pathname;
       filePath = filePath.substring(0, filePath.lastIndexOf("/"));
       _this.imagePrefix = filePath + "/" + _this.options.pluginFilePrefix + "images/m";
       apex.debug('_this.imagePrefix="'+_this.imagePrefix+'"');
       var myOptions = {
+        minZoom: _this.options.minZoom,
+        maxZoom: _this.options.maxZoom,
         zoom: _this.options.initialZoom,
         center: _this.options.initialCenter,
         mapTypeId: _this.mapType,
@@ -482,7 +488,9 @@ $( function() {
         myOptions["styles"] = _this.options.mapStyle;
       }
       _this.map = new google.maps.Map(document.getElementById(_this.element.prop("id")),myOptions);
-      _this.map.fitBounds(new google.maps.LatLngBounds(_this.options.southwest,_this.options.northeast));
+      if (_this.options.southwest&&_this.options.northeast) {
+        _this.map.fitBounds(new google.maps.LatLngBounds(_this.options.southwest,_this.options.northeast));
+      }
       google.maps.event.addListener(_this.map, "click", function (event) {
         var lat = event.latLng.lat()
            ,lng = event.latLng.lng();
@@ -516,11 +524,13 @@ $( function() {
           ,{ dataType: "json"
             ,success: function( pData ) {
               apex.debug("success pData="+pData.southwest.lat+","+pData.southwest.lng+" "+pData.northeast.lat+","+pData.northeast.lng);
-              _this.map.fitBounds(
-                {south:pData.southwest.lat
-                ,west: pData.southwest.lng
-                ,north:pData.northeast.lat
-                ,east: pData.northeast.lng});
+              if (pData.southwest.lat&&pData.southwest.lng&&pData.northeast.lat&&pData.northeast.lng) {
+                _this.map.fitBounds(
+                  {south:pData.southwest.lat
+                  ,west: pData.southwest.lng
+                  ,north:pData.northeast.lat
+                  ,east: pData.northeast.lng});
+              }
               if (_this.iw) {
                 _this.iw.close();
               }

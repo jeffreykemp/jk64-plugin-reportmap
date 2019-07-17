@@ -21,14 +21,14 @@
     "url" : "https://github.com/jeffreykemp/jk64-plugin-reportmap"
   },
  "oracle" : {
-    "versions" : ["11.2.0.1", "12.1.0.1"],
+    "versions" : ["11.2.0.1", "12.1.0.1", "18.0.0.0"],
     "apex" : {
       "versions" : ["18.2"],
       "plugin" : {
-        "internalName" : "COM.JK64.REPORT_GOOGLE_MAP",
+        "internalName" : "COM.JK64.REPORT_GOOGLE_MAP_R1",
         "type" : "region",
         "demo" : "https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64",
-        "previewImage" : "https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/src/plugin-reportmap-preview.png"
+        "previewImage" : "https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-preview.png"
       }
     }
   }
