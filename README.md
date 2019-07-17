@@ -10,6 +10,18 @@ The user can click any marker to see a popup info window for it.
 
 **Warning:** if you are upgrading to v1.0 from any prior version, this is NOT a drop-in replacement; some changes may be required to your application to support it as a number of attributes have been removed. Also, the minimum requirement has changed to APEX 18.2.
 
+** Visualisation: Marker Clustering**
+
+![plugin-reportmap-clustering.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/src/plugin-reportmap-clustering.png)
+
+** Visualisation: Heatmap**
+
+![plugin-reportmap-heatmap.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/src/plugin-reportmap-heatmap.png)
+
+** Visualisation: Directions**
+
+![plugin-reportmap-route.png])https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/src/plugin-reportmap-route.png)
+
 ## DEMO ##
 
 [https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64](https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64)
