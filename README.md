@@ -8,8 +8,6 @@ This allows you to add a Google Map region to any page, showing a number of mark
 
 The user can click any marker to see a popup info window for it.
 
-**Warning:** if you are upgrading to v1.0 from any prior version, this is NOT a drop-in replacement; some changes may be required to your application to support it as a number of attributes have been removed. Also, the minimum requirement has changed to APEX 18.2.
-
 **Visualisation: Marker Clustering**
 
 ![plugin-reportmap-clustering.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/src/plugin-reportmap-clustering.png)
@@ -32,6 +30,8 @@ The user can click any marker to see a popup info window for it.
 * You need a [Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key)
 
 ## INSTALLATION INSTRUCTIONS ##
+
+**Warning:** if you are upgrading to v1.0 from any prior version, this is NOT a drop-in replacement; some changes may be required to your application to support it as a number of attributes have been removed. Also, the minimum requirement has changed to APEX 18.2.
 
 1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
 2. Install the plugin to your application - **region_type_plugin_com_jk64_report_google_map.sql**
