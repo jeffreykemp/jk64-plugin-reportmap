@@ -79,4 +79,4 @@ SELECT lat, lng, name, id FROM mydata
   * You have taken reasonable steps to mitigate against any loss - including taking a backup of your application prior to commencing any upgrade.
   * You must notify me of your issue, including as much detail as possible, before the end of the free support period (20 December 2019).
   * There will be a few times when I will be temporarily unavailable (no longer than 4 days duration, typically on a weekend).
-  * Support is provided "as is" with no warranty of suitability for any purpose. No responsibility is accepted for loss or damage to systems or data.
+  * Support is provided "as is" with no warranty of suitability for any purpose. No responsibility is accepted for loss or damage to systems or data. Refer to the [LICENSE](https://github.com/jeffreykemp/jk64-plugin-reportmap/blob/master/LICENSE) for more details.
