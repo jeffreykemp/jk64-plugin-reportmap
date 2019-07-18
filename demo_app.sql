@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   23:03 Wednesday July 17, 2019
+--   Date and Time:   21:37 Thursday July 18, 2019
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -36,20 +36,20 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 --
 
 -- Application Statistics:
---   Pages:                     15
+--   Pages:                     17
 --     Items:                   25
 --     Computations:             1
 --     Processes:                4
---     Regions:                 38
+--     Regions:                 46
 --     Buttons:                  4
 --     Dynamic Actions:         21
 --   Shared Components:
 --     Logic:
 --       Processes:              2
 --     Navigation:
---       Lists:                  2
+--       Lists:                  3
 --       Breadcrumbs:            1
---         Entries:              1
+--         Entries:              2
 --     Security:
 --       Authentication:         2
 --     User Interface:
@@ -110,10 +110,153 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717230250'
+,p_last_upd_yyyymmddhh24miss=>'20190718213723'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
-,p_files_version=>2
+,p_files_version=>13
 ,p_ui_type_name => null
+);
+end;
+/
+prompt --application/shared_components/navigation/lists/home_menu
+begin
+wwv_flow_api.create_list(
+ p_id=>wwv_flow_api.id(33313102857679622)
+,p_name=>'Home Menu'
+,p_list_status=>'PUBLIC'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33315320628679624)
+,p_list_item_display_sequence=>60
+,p_list_item_link_text=>'Pin Labels'
+,p_list_item_link_target=>'f?p=&APP_ID.:10:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-adn'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'10'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33315735448679624)
+,p_list_item_display_sequence=>70
+,p_list_item_link_text=>'Pin Icons'
+,p_list_item_link_target=>'f?p=&APP_ID.:8:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-plane'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'8'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33316179167679625)
+,p_list_item_display_sequence=>80
+,p_list_item_link_text=>'Static Icons'
+,p_list_item_link_target=>'f?p=&APP_ID.:16:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-file-image-o'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'16'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33316544762679625)
+,p_list_item_display_sequence=>90
+,p_list_item_link_text=>'Search Map'
+,p_list_item_link_target=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-search'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'5'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33316954704679625)
+,p_list_item_display_sequence=>100
+,p_list_item_link_text=>'Geolocate'
+,p_list_item_link_target=>'f?p=&APP_ID.:12:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-bolt'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'12'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33317303234679625)
+,p_list_item_display_sequence=>110
+,p_list_item_link_text=>'Directions'
+,p_list_item_link_target=>'f?p=&APP_ID.:7:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-map-signs'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'7'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33317727701679625)
+,p_list_item_display_sequence=>120
+,p_list_item_link_text=>'Report Pins'
+,p_list_item_link_target=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-map-marker'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'1'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33318197632679626)
+,p_list_item_display_sequence=>130
+,p_list_item_link_text=>'Route Map'
+,p_list_item_link_target=>'f?p=&APP_ID.:11:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-car'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'11'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33318579089679626)
+,p_list_item_display_sequence=>140
+,p_list_item_link_text=>'Marker Clustering'
+,p_list_item_link_target=>'f?p=&APP_ID.:4:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-plus-circle'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'4'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33318917524679626)
+,p_list_item_display_sequence=>150
+,p_list_item_link_text=>'Geo Heatmap'
+,p_list_item_link_target=>'f?p=&APP_ID.:6:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-globe'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'6'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33319340798679626)
+,p_list_item_display_sequence=>160
+,p_list_item_link_text=>'Sync with Report'
+,p_list_item_link_target=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-refresh'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'3'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33319768039679627)
+,p_list_item_display_sequence=>170
+,p_list_item_link_text=>'Draggable Pins'
+,p_list_item_link_target=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-arrows-alt'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'2'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33320106676679627)
+,p_list_item_display_sequence=>180
+,p_list_item_link_text=>'Disabled Pan / Zoom'
+,p_list_item_link_target=>'f?p=&APP_ID.:14:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-ban'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'14'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33320521084679627)
+,p_list_item_display_sequence=>190
+,p_list_item_link_text=>'Javascript Initialization'
+,p_list_item_link_target=>'f?p=&APP_ID.:13:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-code'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'13'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33333579395703125)
+,p_list_item_display_sequence=>200
+,p_list_item_link_text=>'Multiple Map Regions'
+,p_list_item_link_target=>'f?p=&APP_ID.:15:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-clone'
+,p_list_item_current_type=>'TARGET_PAGE'
 );
 end;
 /
@@ -125,125 +268,185 @@ wwv_flow_api.create_list(
 ,p_list_status=>'PUBLIC'
 );
 wwv_flow_api.create_list_item(
- p_id=>wwv_flow_api.id(25186305489555505552)
-,p_list_item_display_sequence=>10
-,p_list_item_link_text=>'Report Map'
-,p_list_item_link_target=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.::::'
-,p_list_item_icon=>'fa-map-marker'
-,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
-,p_list_item_current_for_pages=>'1'
-);
-wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(108544596526040817)
-,p_list_item_display_sequence=>20
-,p_list_item_link_text=>'Minimal Test'
+,p_list_item_display_sequence=>10
+,p_list_item_link_text=>'Demo Home'
 ,p_list_item_link_target=>'f?p=&APP_ID.:9:&SESSION.::&DEBUG.::::'
-,p_list_item_icon=>'fa-map-marker'
+,p_list_item_icon=>'fa-home'
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'9'
 );
 wwv_flow_api.create_list_item(
- p_id=>wwv_flow_api.id(75088489437959564)
-,p_list_item_display_sequence=>40
-,p_list_item_link_text=>'Sync with Report'
-,p_list_item_link_target=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.::::'
-,p_list_item_icon=>'fa-refresh'
-,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
-,p_list_item_current_for_pages=>'3'
+ p_id=>wwv_flow_api.id(33281403869456829)
+,p_list_item_display_sequence=>20
+,p_list_item_link_text=>'Visualisations'
+,p_list_item_icon=>'fa-eye'
+,p_list_item_current_type=>'TARGET_PAGE'
 );
 wwv_flow_api.create_list_item(
- p_id=>wwv_flow_api.id(75545709693123640)
-,p_list_item_display_sequence=>60
-,p_list_item_link_text=>'Search Map'
-,p_list_item_link_target=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.::::'
-,p_list_item_icon=>'fa-search'
+ p_id=>wwv_flow_api.id(25186305489555505552)
+,p_list_item_display_sequence=>120
+,p_list_item_link_text=>'Report Pins'
+,p_list_item_link_target=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-map-marker'
+,p_parent_list_item_id=>wwv_flow_api.id(33281403869456829)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
-,p_list_item_current_for_pages=>'5'
-);
-wwv_flow_api.create_list_item(
- p_id=>wwv_flow_api.id(109890937937436544)
-,p_list_item_display_sequence=>80
-,p_list_item_link_text=>'Pin Labels'
-,p_list_item_link_target=>'f?p=&APP_ID.:10:&SESSION.::&DEBUG.::::'
-,p_list_item_icon=>'fa-adn'
-,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
-,p_list_item_current_for_pages=>'10'
-);
-wwv_flow_api.create_list_item(
- p_id=>wwv_flow_api.id(82100728880548355)
-,p_list_item_display_sequence=>90
-,p_list_item_link_text=>'Directions'
-,p_list_item_link_target=>'f?p=&APP_ID.:7:&SESSION.::&DEBUG.::::'
-,p_list_item_icon=>'fa-arrows-h'
-,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
-,p_list_item_current_for_pages=>'7'
+,p_list_item_current_for_pages=>'1'
 );
 wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(110569494406744322)
-,p_list_item_display_sequence=>100
+,p_list_item_display_sequence=>130
 ,p_list_item_link_text=>'Route Map'
 ,p_list_item_link_target=>'f?p=&APP_ID.:11:&SESSION.::&DEBUG.::::'
-,p_list_item_icon=>'fa-arrows'
+,p_list_item_icon=>'fa-car'
+,p_parent_list_item_id=>wwv_flow_api.id(33281403869456829)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'11'
 );
 wwv_flow_api.create_list_item(
- p_id=>wwv_flow_api.id(137056019713145863)
-,p_list_item_display_sequence=>110
-,p_list_item_link_text=>'Geolocate'
-,p_list_item_link_target=>'f?p=&APP_ID.:12:&SESSION.::&DEBUG.::::'
-,p_list_item_icon=>'fa-bolt'
-,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
-,p_list_item_current_for_pages=>'12'
-);
-wwv_flow_api.create_list_item(
- p_id=>wwv_flow_api.id(32239493111468704)
-,p_list_item_display_sequence=>120
-,p_list_item_link_text=>'Draggable Pins'
-,p_list_item_link_target=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.::::'
-,p_list_item_icon=>'fa-arrows-alt'
-,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
-,p_list_item_current_for_pages=>'2'
-);
-wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(32259407852619167)
-,p_list_item_display_sequence=>130
+,p_list_item_display_sequence=>140
 ,p_list_item_link_text=>'Marker Clustering'
 ,p_list_item_link_target=>'f?p=&APP_ID.:4:&SESSION.::&DEBUG.::::'
 ,p_list_item_icon=>'fa-plus-circle'
+,p_parent_list_item_id=>wwv_flow_api.id(33281403869456829)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'4'
 );
 wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(32277839462935717)
-,p_list_item_display_sequence=>140
+,p_list_item_display_sequence=>150
 ,p_list_item_link_text=>'Geo Heatmap'
 ,p_list_item_link_target=>'f?p=&APP_ID.:6:&SESSION.::&DEBUG.::::'
 ,p_list_item_icon=>'fa-globe'
+,p_parent_list_item_id=>wwv_flow_api.id(33281403869456829)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'6'
 );
 wwv_flow_api.create_list_item(
- p_id=>wwv_flow_api.id(32700598309779864)
-,p_list_item_display_sequence=>150
-,p_list_item_link_text=>'Javascript Initialization'
-,p_list_item_link_target=>'f?p=&APP_ID.:13:&SESSION.::&DEBUG.::::'
-,p_list_item_icon=>'fa-code'
+ p_id=>wwv_flow_api.id(33274013504426442)
+,p_list_item_display_sequence=>30
+,p_list_item_link_text=>'Marker Styling'
+,p_list_item_icon=>'fa-map-marker'
+,p_list_item_current_type=>'TARGET_PAGE'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(109890937937436544)
+,p_list_item_display_sequence=>60
+,p_list_item_link_text=>'Pin Labels'
+,p_list_item_link_target=>'f?p=&APP_ID.:10:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-adn'
+,p_parent_list_item_id=>wwv_flow_api.id(33274013504426442)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
-,p_list_item_current_for_pages=>'13'
+,p_list_item_current_for_pages=>'10'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33244910302972029)
+,p_list_item_display_sequence=>70
+,p_list_item_link_text=>'Pin Icons'
+,p_list_item_link_target=>'f?p=&APP_ID.:8:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-plane'
+,p_parent_list_item_id=>wwv_flow_api.id(33274013504426442)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'8'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33265093806320112)
+,p_list_item_display_sequence=>80
+,p_list_item_link_text=>'Static Icons'
+,p_list_item_link_target=>'f?p=&APP_ID.:16:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-file-image-o'
+,p_parent_list_item_id=>wwv_flow_api.id(33274013504426442)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'16'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33280578924449447)
+,p_list_item_display_sequence=>40
+,p_list_item_link_text=>'Geocoding'
+,p_list_item_icon=>'fa-compass'
+,p_list_item_current_type=>'TARGET_PAGE'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(75545709693123640)
+,p_list_item_display_sequence=>90
+,p_list_item_link_text=>'Search Map'
+,p_list_item_link_target=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-search'
+,p_parent_list_item_id=>wwv_flow_api.id(33280578924449447)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'5'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(137056019713145863)
+,p_list_item_display_sequence=>100
+,p_list_item_link_text=>'Geolocate'
+,p_list_item_link_target=>'f?p=&APP_ID.:12:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-bolt'
+,p_parent_list_item_id=>wwv_flow_api.id(33280578924449447)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'12'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(82100728880548355)
+,p_list_item_display_sequence=>110
+,p_list_item_link_text=>'Directions'
+,p_list_item_link_target=>'f?p=&APP_ID.:7:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-map-signs'
+,p_parent_list_item_id=>wwv_flow_api.id(33280578924449447)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'7'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(33282510915468298)
+,p_list_item_display_sequence=>50
+,p_list_item_link_text=>'Custom Behaviour'
+,p_list_item_icon=>'fa-gears'
+,p_list_item_current_type=>'TARGET_PAGE'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(75088489437959564)
+,p_list_item_display_sequence=>160
+,p_list_item_link_text=>'Sync with Report'
+,p_list_item_link_target=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-refresh'
+,p_parent_list_item_id=>wwv_flow_api.id(33282510915468298)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'3'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(32239493111468704)
+,p_list_item_display_sequence=>170
+,p_list_item_link_text=>'Draggable Pins'
+,p_list_item_link_target=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-arrows-alt'
+,p_parent_list_item_id=>wwv_flow_api.id(33282510915468298)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'2'
 );
 wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(32918794694333288)
-,p_list_item_display_sequence=>160
-,p_list_item_link_text=>'Fixed in Place - no Pan or Zoom'
+,p_list_item_display_sequence=>180
+,p_list_item_link_text=>'Disabled Pan / Zoom'
 ,p_list_item_link_target=>'f?p=&APP_ID.:14:&SESSION.::&DEBUG.::::'
 ,p_list_item_icon=>'fa-ban'
+,p_parent_list_item_id=>wwv_flow_api.id(33282510915468298)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'14'
 );
 wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(32700598309779864)
+,p_list_item_display_sequence=>190
+,p_list_item_link_text=>'Javascript Initialization'
+,p_list_item_link_target=>'f?p=&APP_ID.:13:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-code'
+,p_parent_list_item_id=>wwv_flow_api.id(33282510915468298)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'13'
+);
+wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(32930148968395655)
-,p_list_item_display_sequence=>170
+,p_list_item_display_sequence=>200
 ,p_list_item_link_text=>'A Tale of Two Cities'
 ,p_list_item_link_target=>'f?p=&APP_ID.:15:&SESSION.::&DEBUG.::::'
 ,p_list_item_icon=>'fa-clone'
@@ -262,7 +465,7 @@ wwv_flow_api.create_list(
 wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(32163712040708032)
 ,p_list_item_display_sequence=>10
-,p_list_item_link_text=>'Source (GitHub)'
+,p_list_item_link_text=>'Download the source from GitHub'
 ,p_list_item_link_target=>'&REPOSITORY.'
 ,p_list_item_icon=>'fa-github'
 ,p_list_item_current_type=>'TARGET_PAGE'
@@ -329,6 +532,240 @@ wwv_flow_api.create_app_static_file(
 );
 end;
 /
+prompt --application/shared_components/files/icon_workshop_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C1800000277494441545885EDD4CD4B146100C7F1EFB38EA1E23B8B4846694845748A4AC44A0233F5DC41C408AA4B1D';
+wwv_flow_api.g_varchar2_table(2) := '44AD90E84F2853EB58467611F4D625B4A24307F1E62B887928355D4434F065D79D99FD7570152573735B0B62BF97393CCFCCF361E67906E2C58B172F5EBC78F1FE71E677274A2A041E02CBC0216008E834C68CED93ED27C01977FA9BFC8F9A15E8782DF7';
+wwv_flow_api.g_varchar2_table(3) := 'EBA4247D9294FFB70085F6C0C0E052798596CA2BB4D27057EEECAC244D494ADDAF450F4A3A15BE564B52B0A7471B88E59A5A85565725E9DE7E01DADDF979396363A35AAF5B9282BDEF36116B5DDD92F436DA353C11C69783AF3AF0D7D59F0C7675035C05';
+wwv_flow_api.g_varchar2_table(4) := '96ADA222484A02C01D1E06F0460BB0228C1F365E2F5816C1F697E0F19058712575B5B1110201004C6626802329C91813D82B20D21B18B14A4B4309E7CE02107CD1CE4A750D9A9ADE9C90585686020107988AE64444027426E41F7993D4D080C9CB03096C';
+wwv_flow_api.g_varchar2_table(5) := '7B73F0C0AD9B9090C0CAB5EBE7433E9F17E8DB2B22E28F485236D027DB3EE6F4F4E28E8C605253B1CA2F83EBE26F7A006B6B98AC2C925B9FE0C9CD9D014A8C315F620208230E0037804B402E10906D87566FDFA9D8FA394C7636C92DCD1B886263CC644C';
+wwv_flow_api.g_varchar2_table(6) := '003B802C6038B4F8FD84BFB111CDCC6E47B4B5E0C9C9F10145911091F6C08E19631CA0D493953991D2D6B6BE3F36700B0BF8EBEA09CDCDE5021F25D5C61C1046CC0145263D6D3CA5B5653B627111FFFD26ECF71F8E02C5FB020823168062939E369ED2D2';
+wwv_flow_api.g_varchar2_table(7) := 'BC1DE1F3E18E8E3AC0EC2F1FF0A7802D88129391319EDCFC184F410100D6C50B2456555A40DEAE0F88559272240DDAFDFDF23F7D663B13130A394EB7A4D3BBDD17D529D805510554029F81E3C07360C818138AE53AFF573F0098893A438243B61B000000';
+wwv_flow_api.g_varchar2_table(8) := '0049454E44AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33261012816250007)
+,p_file_name=>'icon/workshop.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
+prompt --application/shared_components/files/icon_dance_class_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C1800000359494441545885ED965F685B6518C67FDF49CF129250746D41975E88529D157B3D4711EAC5DA3AEF567553';
+wwv_flow_api.g_varchar2_table(2) := 'D4321DB85D394551A4EA4411AF04459830867F66150A56DCDCE88DA3D35D4C0BDD6CC6448B3AD8D66DB19D5DD2B32CC9398F17C9491A9B7627D80B2FF2DC24E77D9FEF7D7FDF77BEF39D030D35D450430D35D4D0FF4D9206251DF47F03F86F93342BC995';
+wwv_flow_api.g_varchar2_table(3) := '94969497B4F13F41E4C6C6E40CBD265F8B9AED92F49CA40549C725A5248DBB33334A6F1950BAEF411592A725E9F9A0BDAC1A331AB4376D3AE49EF8914C6FBF1FF3413ECC7D73F0BDDC57A3D1CCC38F6ECCBEFF412B70BF3B3909E90C781EEE993300BF07';
+wwv_flow_api.g_varchar2_table(4) := '0530B582FEAC7D0080F8D8110A9327C9BEFC4A95373E76C4F32E5FB69C279E02203A7C00ABA5E567E03E638C23E926A01D3807B41B63922BAE008031C6F84D7D657AFB712726AA8DB11880A5D45FE5506EEF47289BED02164A13B9A24C66CAFDE3CF2BC0';
+wwv_flow_api.g_varchar2_table(5) := '48A015F8F74AB8C924D75E787149DE1ED84278C7332C6C7B1CCDCD2D2D1089602261F4F73C269120B67FDF5BC698A1C00025886EE07BA8BE2500C46298781C5DBAB47291A626C23B9FC57E68F32FC698BBEB02580422EFFC059CED4FAFE833ADADC43EFF';
+wwv_flow_api.g_varchar2_table(6) := 'AC32CEF33096059005761B63F656B10505003AACC4BADF1607425D5D98F60485C395BD22C7F1FFB601735628E449B28C315EADA23537612D1963A60188462BB196B5D83D3D60DB15A3E3A0F97980C7FCA6CB35AF0BA0A48275C7ED958BF163B8D3D384EE';
+wwv_flow_api.g_varchar2_table(7) := 'E9AC32E5BF3B0AB074D7AE0AC02DB756AE3C8FDCF030EEAF557786FCE8D700510228F01E90D40744DCA9A9EA443AB3D45C3C46024DAE9E1578B5F0D304BA78B16632B46143797FD89BFB010AAB0DD09AFBE2CB65AA58445E1F22B47E3D00E6E6B5008757';
+wwv_flow_api.g_varchar2_table(8) := '1B601DAE5B3361DADA3096557E044D3C067075B5019AB19BCA0DB12A43EDFE3E00343B5B0C14411D02281080A47701BCA92484C3C40E7C4AA8EBDE727ECDB6AD455F2A5577ED1B9A2475022F5DDFB71F80F0AE9DE86A1AF7E4A962818E8EE586067AC282';
+wwv_flow_api.g_varchar2_table(9) := '50BEED9D3D4B7E6404934860F7F572ED8D3DE5E49AAD8F0054BDA7E57A00CB9E7EF5021CBDFEF12700D80FF40064439DA593AFB999A6EE6E807700ACBBEE04A0F439712A08C00D256934FFC371E50E7D3BE3B9AE4ADF8272F6BCE9669E1C94A454C977C2';
+wwv_flow_api.g_varchar2_table(10) := '2B14941F3F36E3398E240D04A9FF0F7BDE8CFD2745FFB10000000049454E44AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33261207727250020)
+,p_file_name=>'icon/dance_class.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
+prompt --application/shared_components/files/icon_highschool_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C18000001C3494441545885ED94B16FD34014C6BFE7842A4354A4B274A85406FE0B981BB549C85221B155452CDD9AFF';
+wwv_flow_api.g_varchar2_table(2) := 'A052591B310053872E911841AA82D9928D910A2686766BD6C4511262DF7D1D92488E6DEAB35328837FD2E97CCFF7BEF7F9DDC940464646464646C63D236913493600AC03E8025817919777E6CAD0C068FCEE831A1DBF5124476975F2298BEF0218BAE7E7';
+wwv_flow_api.g_varchar2_table(3) := '8559A84FF24044DE27D5FAE31190B4668FC1390FA0E7B63B96DB6C5AB2FA10B9674FF54AEDB906F008C01880F649690010117FEC7638432BB5383C6F3A26133A3B15FEFEF4996EBB4367A7423D1C4EDF0573949ACBD1B8032439286D1B1B36A168B72022';
+wwv_flow_api.g_varchar2_table(4) := 'A17A56D4E67F49EC252CDAAD502CD89DF99E793CB85ECA8089D0A0B41D326A7A84B14710251E245FDA5A588F4F1AA1586A0326260AF5C3852FF6ECAF28D40FEFCE40D16E19B73429B106FE6671C0F012C65DB0652E61AC0153A1B45DBAF71F51240CE094';
+wwv_flow_api.g_varchar2_table(5) := 'ABD49E170CDF8A53AE866251B5223B20330074D5F70B4FD6D6B4E47213000FC4000013EBF1A676BFD81A40DF174FDC89B7CEEE0BE5FDF87946F25782BC6FDEE5D547A75A53244F1317F6095D0F5EBD3E22794DF24982BC0D92BDC1DE7E9D646F190307FE';
+wwv_flow_api.g_varchar2_table(6) := '3961EE9E7FFE6FB901DFE15C499FD84DAD0000000049454E44AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33261500650250021)
+,p_file_name=>'icon/highschool.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
+prompt --application/shared_components/files/icon_nursery_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C18000003B8494441545885ED965B681C551CC6BF736676F6AA2DA17D7129D4EC26422A5AE293E8834D681E5244A42A';
+wwv_flow_api.g_varchar2_table(2) := '6A2B2ADE42E8B6619314AC37442DA579F402B5F192B66ABB156A8B5BA505495F156328B66C349BC8B6EBA334C49DD99973E6FC7DD834E9DEC6DD363EB91F0CB3F33FFFFDBE1FE730730ED0524B2DB5D4524BFF77B1CA0211E94B3FF5CAB15B940400C698';
+wwv_flow_api.g_varchar2_table(3) := 'BCB15833A4F8EE7E5DEBDE5C1740EFEBFB198C75961589E6E4B973F7D6FB8F3B358DC0EBFB6465BD5688AE756FD6F9C63B03B58C7867C70530D6690E0C82723900008B46113A7CA85DEFEBFB45FDF6FBFD75188A4BF732085E8FB8A6027E1D8C7559BB87';
+wwv_flow_api.g_varchar2_table(4) := '96C30180F279980383006371160E19CD583605C0348DC375A16667ABC62897038400386FCAB3A966725D05A53C1A08505E0DB708C0348DC3E7035BBBA67A3014020CE33F9E8182E980E8AFD0975F80AD5FBF02D6D686F0D72980E0D0E2DF450F8B2A35F5';
+wwv_flow_api.g_varchar2_table(5) := 'AEF3782C01C6DA20048207F643FEF853C9E4BEEED2FAFB7C068FC746D56C766CD501783C9680A6BD294E9F8173E8E3B23167E96E3CB313BEA79EDCCBE33143CD66DF6BC8B7C1F0D17AE16520478FC199380268DA10EF88BFB32A003C1E7B0D9AB6577C75';
+wwv_flow_api.g_varchar2_table(6) := 'DC33FCBAC489149CC3E300E703BC23FEAF4BE109C063ED2F42D3869C8923708E1E2B15758F55BB2D528238F50DEC0F3F02387F8EC76383370D004D7F4B7EF73DC4895429BBB707A1F1FAB310FE641CC60BCF030064FA2CC4E93380A6BD71F300AE7CDBFE';
+wwv_flow_api.g_varchar2_table(7) := 'F4B352F8B67EF8879360E108D8DA35352FF8FDF06DDF0EBDB70700E07C3E01B8EE01CF8C4A1151C049A723F2D2E5754A884565592433195749494A884525C48292926A5E42149494424949323343CAB24849E9CA4B97D739E9748488AA3638CF19A07CFE';
+wwv_flow_api.g_varchar2_table(8) := '2E48D9CB02810D2032C158C4DAB5FB7695CD961A2C6B2B8AC56D00A032333077EC0C01D0417058C01F85945BE9EAD50D5E19DE0005D351B92B1759347A1E8C85CCA77740CDCFC34AEC81CA668160F03C0281B4CACCC04A0E83AE2DA0F0D8130083C1A2D1';
+wwv_flow_api.g_varchar2_table(9) := '0B2A77659A0AA6E395D1D8A7F8FA167C6D61B96425F600B6FD286CE7712B39BCD26B9ACB5B7323D68D0110CD556EC1E19329C0EF3F05BF71329C3A5EDE9ECB01447FAE1E0063EDC1B1832B8FD128100E01441741F42B2291526D49C1B183006377AC1E80';
+wwv_flow_api.g_varchar2_table(10) := '6D3FCC3775C1BFEF5500A51390951C0118BB078CDD6D254740F93C00C03F3A02BEA90BB0ED471AB1AEF55993EED434B0728683FA637E52DFD2F3ACFEE0031348EC82FDFE0750990CC4B7E93948C95526B311008C575E86BEE521408897E4E4E40F379ABA';
+wwv_flow_api.g_varchar2_table(11) := '53D3D2D7DF5F7528FD0716DA9C6D56F4111D0000000049454E44AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33261886892250021)
+,p_file_name=>'icon/nursery.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
+prompt --application/shared_components/files/icon_daycare_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C180000052E494441545885ED965B6C544518C77F33E79CEEAD918BDD56AAA095DD824AD5F0A0BC481468D5CAEDC5A8';
+wwv_flow_api.g_varchar2_table(2) := '600C0F608CD0A0451F04EAA51041017D30A228DA4AE20D4468ADA890C0831A0193C6A85C76DB52AC051190D442B767CF9E33E3C3F6DE6D318637FB7F9A9DF9E6FFFFCFEC37DF7760042318C108463082FF3BC4C009ADB5D9353407AE754102D3802F81B3';
+wwv_flow_api.g_varchar2_table(3) := '402E70129807B40CA3E5020821DCCB1AB0D7BE6C1A536F1F64C09C3EFD0EFCFE1D683D561D3B4EE7EA0A445E1E81CA1711B9B9A0752B425C8352D548B988546AB9BB7FFF3600AFFE27D7BF7AA5FB6F0CF8537BF698F286023F007E9F29F3F3E762595B00';
+wwv_flow_api.g_varchar2_table(4) := 'D4F118766525BAEDEFFED7525080AF6C19EAFC79921B36E25BB61473E68CBDAAA17121803AD96C5BA5A5AE10C2EE77A861AE0C7963C16C4C6B0BCACB72BFFB9EE4AB1BC0ED3A806591F5D8A3A8D653B8DFEC453537D359BE02A404A5707F3888593C6B86';
+wwv_flow_api.g_varchar2_table(5) := '2C282855CDCD7B86D2C87403D9DA71CA318C9700BC8387B0376E8244A2CB95246BC962ACD90F8061A4E73A1224ABAB71BFFA1A944ACF8542F85794634CBB13B44E60DB734476F6412144E272063CED3832B57B374ED507BD843E1FBEC797609614A7853D';
+wwv_flow_api.g_varchar2_table(6) := 'AF52B5B6BE2582A1A0B87A6C05522EC2F370DEAF22B5BB06B4EE31125853892C8C222CAB510811BD9C815F2EDDFFC0941E61D3C4F7F45398F7DC0DA070DD55EAD4A96AEC64BF64C2EF33E5F8F12F20E513380EA99D9FE37CFC49CF5F26F2F30955BD5727';
+wwv_flow_api.g_varchar2_table(7) := '8498D3779B1C6800B8595E7F7D7A311221B46B675ADC75CB542C9EA79A4E6C1D240E60275DD5D058A14F9F1E8F61BC6A3DF2B00A7DFC51978A444E98003079E0B64C497834F0FAA6295E7D3DEEA1C32065BBFAEDB749194507404EBCF131D574629BC8CD';
+wwv_flow_api.g_varchar2_table(8) := 'FD43B7B5158960F00840E8B3EDDDF972FCDF18B80BB84FFF7561A98AC7155AB7CA091362087155BF28ADEB55BCE15E00198D5421E56C00D5D2B2494E2A448C1A6D9372D2B18681FAFDF73C231AB519808C75407776CEC734E7E079FB308C62A45C9058B0';
+wwv_flow_api.g_varchar2_table(9) := 'B0E7EDCBC99309BCB611158B8701E4A4C23FED75EBA5F7ED77699260307D6A409F3B3F5184739AD4AF47AE366EBB3531B00E64CA01DC0307EA8076A48C02ED40BFC2A36231BA4EFEA18C463600D23BFC632F41F793D5FAA8BE70A11DAD7F55A75A9D4C5A';
+wwv_flow_api.g_varchar2_table(10) := '190DA4EF464C75DEAF5A99DABEE3D174646FA818330680E45B6F97D86B5F5E0420F2F2FAEEED1EE527DFDC7C0EC81E4A66E84AA875BD77ECF8ED2A16CBD6172F12AAABC55EB90AFC01FCCFAFC6AE5C8B77E810684D67F93304DFDE8CBD6E3DBAAD8DC02B';
+wwv_flow_api.g_varchar2_table(11) := 'EB49D5D4E2BCBB75B408875D203194CC90BDC02C29D98710D33A573CEBAA63C74C317A14321201C08BC5E0E225CC9933103939A4B6EF80AC2C8C9B26833F806A6A429F3B87C8C951C16DD512AD5BDCBD7B6FC9D40B866D46B230FA05424C03E8983DB7B7';
+wwv_flow_api.g_varchar2_table(12) := '2AF649B26E743CF8107474F4FC0EEDA9EB263CA3E20D454335A3A1730050F1863900A99ADA5E7100BB97A3E7258C1B37787F2C1E56F186A2E134863520A3913500CE967706302B3AE6CE07706564E293681C3C6F38AAFF664035345638EF6E059FAF2BBA';
+wwv_flow_api.g_varchar2_table(13) := '4FB86190AAA9355563D366441F1ECBBA72066434B2266BF16227B46B674F1B96455310E130A15D3BB1E6CD553232B1AC3B5E84C3F8962DBD7206544363858AC7AF057ADB6B9FB18AC5F35463D31B685CEDBAE86412B378D69533D00F96658B6010E10FB8';
+wwv_flow_api.g_varchar2_table(14) := '04FC09B43EDBC7518B1835CA9563C67457BB41357F28642A44AE57FF533F1259186D0FEDF8F4392CEB0D73D6CC3368FD33709D3AD96C77AD9F09BCB2CE06DA80E9BEE56561347F75AF43FAA3D42A2D1DD451FF01C3D848B6B666BA180000000049454E44';
+wwv_flow_api.g_varchar2_table(15) := 'AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33262116037250022)
+,p_file_name=>'icon/daycare.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
+prompt --application/shared_components/files/icon_nanny_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C18000003FC494441545885ED965B6C54551486BFBDE7D0B9B51D23510B8916DA99F112230D48243E68A2496B6A0950';
+wwv_flow_api.g_varchar2_table(2) := '458841090123A9A831B1246D448345304A527A79D000312626253E884D3B15AD52BC853E191342AD80486D0AA9BD582B6766CECC9EB37D98E9D0CBD00B9627FB272759F9CF5A7B7D7B9D4966C18216B4A0052D6841FF7789C986D6DA4885C6E477FF510A';
+wwv_flow_api.g_varchar2_table(3) := '4008A1C69B199B44F7ED371C2B8BE61520F1D3CFB8DEA85693FD4C4D0CC7CA22432E5BEE1A33E45D77DE8FDBDD31214BA9D7ECDF2E7E320786E858E57853CEAAD4EDEEB02F5DC22C2DC32C2D43B57F0D86513B87E6D7D5EC008048C5AE746CD51E9A8FDE';
+wwv_flow_api.g_varchar2_table(4) := '7303B8599A1140E4DD9107E0AAD99BF69CD555F30630ED2F5DF8723DC2E73BA3878789EE790B00CFD1C388254B201E7F713E00A69D80C8CBEB211A25BCE5F9B4A72D0BB4EEB22FFEFED94D059085059B01CCF2A727F8567D2308719F5C96FF703A3718EC';
+wwv_flow_api.g_varchar2_table(5) := '95C1609F0C067A6430D83B2F00184683EA3835C5B6BBBBB1CF7681D3D92C83813332E0AF45E0329FD994656EDCE441E092017F9DC8C9768D879C138063F5EAA500D6FB0727F8EE863A108248E56EC25BB7A14E7C9987945BD40F3F826942384CBCE91828';
+wwv_flow_api.g_varchar2_table(6) := 'F5ACFE6BA417A7B3F9860084CFB7550F0D4D4D2E2CC41B6A41FAFDE88101AC8646CCD232444E4E3A277EB203737D3991CADD6059EB6E08002937ABAFDA3357687DD95D7F086F5B2BDE4F8F0110ADAAC6DBD68AB8C587EEEB03A7136F5BEBD8673A2D03FE';
+wwv_flow_api.g_varchar2_table(7) := '9AB901085110FFF6BB29B6FAE20408B1D4FEF5DC6D7A6828407636DE96E494A307DE458FFC9D2CCFCDC53EDB45786705B12347FD48B9D32829F92763ABA917D42EAD54BFF9E4DADC4C05DE50CB053D3854A287874771390D999F7F2576F808F1E39F8310';
+wwv_flow_api.g_varchar2_table(8) := 'A075C63B79DB5A110E875B08111DEF5F6F02B94649318E356B9287263D1C0FAE8270C4AF87874793D7B614B6FD41D60B3BC6E841A68E340C5C357B7114AD187F72F9EC26108F7F08DC8E944F44DFDE47A2B313A3A418E7ABAF80D6A7F4E0D0F6340420EF';
+wwv_flow_api.g_varchar2_table(9) := '0E0E904860AE5D071E0FEE83EF61D537627777A7CF755657B1E8D14710424CE8997102AABDFD25FBFC85E7D07A94682409D6DF0F5A8FD8E7CE6F9CD4BC7F6C42AE37F740384CA46217767737C6E38FE17C39F92F6AED3F00D77682B466D87A44964E2492';
+wwv_flow_api.g_varchar2_table(10) := '00510B109E0C49D2DCF014581678BD785B9A51A73B71DC7B0FE16DDB51DF9C4C66793C00AE29C5D303E83057CD541406F4941B000ACB4A46A6090E07C68A075689C58B415D5B7E3C0D750057E708C09FB26039008E801F6030438EE1AC7C3D1994140360';
+wwv_flow_api.g_varchar2_table(11) := '5FBEF207C0A20DEBD3BEC8F5013C3443BFE4561CA979C7150B85B2ED58ACC9564ADBF1788FAD94B663B1A65828943DFEB123911DA99CEF53391FC742A16CDBB21A52FE2F29FF23ADF5AD93FBFD0B6D8EA5115BDA163A0000000049454E44AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33262420035250023)
+,p_file_name=>'icon/nanny.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
+prompt --application/shared_components/files/icon_cramschool_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C18000001F8494441545885ED563F4FC2401C7D57AB4208CA20BB0EB62BF13398985498DC7432CEC6C0681C8D23C638';
+wwv_flow_api.g_varchar2_table(2) := '133E81934862E26730AC9018DCEB809A0A4ADB73906BE0B86B7BC0665F428EFEE8DD7BBFBF1C90204182040912FC7710DE4029D5475F75FEB739E1020021C41D370A49069757FAD24E61A102BCE7165217E72E6F1791E84B3B055DDBDC4A8D1B35D3B0C7';
+wwv_flow_api.g_varchar2_table(3) := '9FFD7627AFA861305A2744682A273856118E550C7D8709E5054BDF571110799869D8A0F4A35FAED8A0B4174744689E3563FB0584ACB1E74CB31149EEEC97D6486E1DCE7E299779B8EF69A66187A54B2A80917F1D1E81F6DE037BA6D998CA3FF394910340';
+wwv_flow_api.g_varchar2_table(4) := '20A2D980661AB6FFDACD0A79A42E09C865F0DB9D3CAB0DDA7B0F3EC05FDD284740DFDDADB0C3E240330D3B2C3D00D42330BCBB0300AC9C1C63E5E4788A902F30C72ABE85AD32280F1B16EAF475950FEB46C4AA2660F9E0003FB53A7E6AF5C0C68539B4BA';
+wwv_flow_api.g_varchar2_table(5) := 'E3429802F7E9A92A200CE0B73BF945904B053012DE163105DF225635013C64D160C598693636C2567D6FEF53B47FEE7F3CBFDDC9F7CB95C891BB7A769A5DB6ACC508E05B306206307C0248CF24802710792D68CBC93DAFDDC1DC11604224936FA6B68C2D';
+wwv_flow_api.g_varchar2_table(6) := '80EF80288FE34274274C51CFEBC7D9ACE2F128052E2164306E1746C07D7CCC7EDFDC4EB4CDA23CE621BC1553CF1BCA84CD4AE43DB7DCD4C5B9CBDF8A7F012264EB06438B4AD30000000049454E44AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33262774003250023)
+,p_file_name=>'icon/cramschool.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
+prompt --application/shared_components/files/icon_summercamp_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C180000031E494441545885ED56CF6F124114FEDEB24D108412524E8D5153A057D2BFA017DD04F1E051967F428FDAF4';
+wwv_flow_api.g_varchar2_table(2) := '8731DE8DFF82509B1E3C5849A889E1A227835CA134EDC5531B4221508CCB3E0FECE032CC02C6A37CC9E4EDCEBC79EF9B37EFBD0CB0C0020B2CB0C002FF3B489E6066DDF9D4E5B57F8405004464B927954EFA2F5FE9BE8D942701FDDEFDF7D6A7E347422A';
+wwv_flow_api.g_varchar2_table(3) := '750CA363954A212107952AFC5BCFAC093DD55EDF464AD7EEDCF57B9E85A05B5FBE7674C3806E181D30B7ECFA49422C6BEBC90B00F8F9FACD1F1D20E42C8F91D03C9D48C684749002806E3A835ED6048822B25E379D815B3A2426EDCFE3FCFAC953150900';
+wwv_flow_api.g_varchar2_table(4) := '00B7AED04D6760D7EA31D979B078344602C0F5DC04BC4E2293A0C83282C52368EBC90BBB568FB99C8DC199BF21CFABAAC0CF96F50380DE7DF0302CAF073F7E688128D2DFDE81FFC59ED8D406D184EE84339F0F4434E6531D01A268CFCC8529B20C79F4CC';
+wwv_flow_api.g_varchar2_table(5) := '5C040006DFAB9FC1DCB66BF59870EE3EBD5DABC7DCC32A9542AA08785E01B7AE1028E49572CCC09C57E585694978D9CB9A4A39D2904E2E27DD3C24A611580914F24A39D2602E4F4B3ABB568FCD22A04EC2C1E0BA9BCE5C0258A1C8F2C4A640213F5676D3';
+wwv_flow_api.g_varchar2_table(6) := '2048D8E767FDA574DA22A2BE7B5D1D01E626809560F108DCBA9A18606E8F8C3397C1DCEE3FDFB27A5913CE7F0BCC6D3097B564E2444B260EFF3A02B34E68D7EA312D99380580FECE6ED86E34A0C5E3B01B0D3857855ED684168FC3BFB7DB026093AEAFCA';
+wwv_flow_api.g_varchar2_table(7) := '115012F8552CEABA617404091146F1ADAD272F9C28547A666ED38B24DB0CD2086C3382FBF926E9FA372232DC3ACA2B107DDBDD82E5B60CA270CFCC6D6AF1F8D09042924623D9DFDE8902D8907D290958A552C85DD7A2998CD53A73535B5B833BF453E5E9';
+wwv_flow_api.g_varchar2_table(8) := '29004C744BCF1C108E446D0BC8734E6F9809B619370F0F2E8968AC343DFB8070E4AE73B9DB81B9C9360F0D4DB90A0008EEE79B2A3F33DF03B310DCCF37675D4120FFB6ECA8DF92F7CF2CC369E5E894E2018054F7B11915193FCAFC7785615F0036ACE3E3';
+wwv_flow_api.g_varchar2_table(9) := '555523F22CC3A94F32095A32511B5AA3A8CBD0B059D54FD600EF4EA87A135A834A1500FA8A3525ECF3B3DBB3740695AAB5944E4F3C4A7F030202EFB325B049980000000049454E44AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33263061722250024)
+,p_file_name=>'icon/summercamp.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
+prompt --application/shared_components/files/icon_university_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C18000002FB494441545885ED964B6814591486BF53551DCBEE4E425A5A8D8C12C524326E54100575E14A0C2EC7072E';
+wwv_flow_api.g_varchar2_table(2) := '1414F1313321882B99DD8C2E74A36EC4173E1641DDA8E8084E44F1B9500C1137262A9204359A49FB4877A7D25D55D745C724DD569B32B60FB0BF4DD5BDF7D4F9FF3A5575EA429122458A1429F2B323B9134A2963E0D4C85DFB426C0011B1874F7A8A58FF';
+wwv_flow_api.g_varchar2_table(3) := 'EC34F439B30A6AC0696EC1FC6BBB9D3BEF2562E87366195AD554B39006006BE09865422BB0C867F3DD0D8CFA396B35D54D400999D296B86D8F167F13035AF5F4BFD1B44D007D5BB7816D3376DF1EB4DA9A6E1C678FFBF8C98E821B90D2B0299595F71019';
+wwv_flow_api.g_varchar2_table(4) := '0F903A7498F499B383EB89BA650456AEA064ED9A06ADB6A601A5BAD48B1773556FDCCA9BD48F01292F0BCA84090F1029239522B96123AABBDB33367DEA34E953A7916894E0A1031365D2A44E512AAE5EBE9CA9DEBE4BE6D5C89D504A99EEAB57BF482472';
+wwv_flow_api.g_varchar2_table(5) := '1F9120964572DD7AD49BB723DD4C36A56142C78F8199F99A552C56AB45A31D229255152F033794E32C54B118C9CD5BA0379E1D1008A0CF9F87595F0FCA1DC8A2916A6C24FD5F132412D9F18641F0E81164DC3844D76F8AC8A2112B90AC6F78EDB6B60E35';
+wwv_flow_api.g_varchar2_table(6) := 'A2D230C1830790F2F2CC389144597D904A65C6BA8E0483100E67C6AE4B72CB1FA88E8E21A18A8A87A1938DB37D57A0EFF73F719F3E052074F10276D365FAF7EE03D7CDBD241B4D23B0FC374AD6AE2151B70C80B1BB77A1CDFCD57F05946DB7DBB76E8F37';
+wwv_flow_api.g_varchar2_table(7) := '162E00CB02D31C4CE697D0C50B108F0F55C5B2964828743DB702F93AA199DABF7F274AC5552C36F9B39487E13E7B1E553D3DD56E6B5BD4BE76EDB6578CB7019132D51BDF443A1D968A8A19A33500A0FEEF79F3A9F5FC7DC0B6236E67275A55D55280D0F9';
+wwv_flow_api.g_varchar2_table(8) := '73A0EBFE541DC7B7412F031307F3DCB98B366DDA6AB7BDBD12ABDFC61C6360F57FF44FCFE2438C39C65797F57A045D2A1603207DE52AB8EE8941D191C487C7F889254F05241221F4EFF90E44A6A0D42A60B79F64A3C1CB40977DE952E957D81179F2436E';
+wwv_flow_api.g_varchar2_table(9) := '486CA7B90586F67005C1696EB10375751FBD17EF01149A22206D1CAD360000000049454E44AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33263372921250025)
+,p_file_name=>'icon/university.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
+prompt --application/shared_components/files/icon_school_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C1800000224494441545885ED96314FDB4014C7FF777183C1454C511142820C382B02BE0392950F003312A2421D0803';
+wwv_flow_api.g_varchar2_table(2) := '6AC5525455EA524618DA0DBE406B4562832F1032960C04445970072408498C73D721B9F4E2B8708EDDA9FE2F67BD7B7EEFE777EFEE0C244A942851A244FFBB88DFC039D73A8F9A7F2EA23C00208478B2313049E3C3472D3537AB698B8B77B1643E3A1A6D';
+wwv_flow_api.g_varchar2_table(3) := '95CAD0B7DF79FEB920002D3537ABD1E9AC0E00352B1F29B951B4D189D5103CCF01040619442AF0344A507656C988B166E551B3F25D9BAA9401441259F58D82030034673A46D18651B4BBB6D8014412210123C620C05801FCA5153062AC6F14BA55F82700';
+wwv_flow_api.g_varchar2_table(4) := '411ADEFDDC0335481F843E6C3A499DBF55A423E53E0805C0CE2A199A33BB8D27ECF2DA1B45BBC72F5600012177BABCEE8334616800FF6E90A1C4F2848A1716403E74C4170BA8B06700105305A2DC17CA004F35951F48B5019501A2DE889100E4AFABAFBF';
+wwv_flow_api.g_varchar2_table(5) := '01BBBC84617F0BF4AD5979A416E6A1EFBC8F07401C3664F4A54E2626AE58B58AD4C27CCF9C10CD990ECD66D12A9DB6E7CFCF5FE1D163CF0128ED02323EFE09AE0B0018DA2C009C1FF73971FE437FBB05300630063A35B5A6125B6D1B52BAD4DCDB6FC38C';
+wwv_flow_api.g_varchar2_table(6) := '8D81DFDEBEEEF37978582193930080C7EF3640E9567C0000F58E4F4032EDAAF31BE797DF81FDBCAE00000C03EEC12140C8884AE0A01EF05AA532F0E71F0ED4345D349BE9A1B5550F9CDFB08B6A23E03D5073E63EBDBC9476BF7C4D83F37BD9AF552A7B2F';
+wwv_flow_api.g_varchar2_table(7) := '2CABEFA7F437B633F43CBB7E2BB00000000049454E44AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33263638878250026)
+,p_file_name=>'icon/school.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
+prompt --application/shared_components/files/icon_fsb_marker_png
+begin
+wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
+wwv_flow_api.g_varchar2_table(1) := '89504E470D0A1A0A0000000D494844520000002000000025080600000023B7EB47000000097048597300000B1300000B1301009A9C1800000351494441545885ED934D6C546514869F73E79B76327546A7962142A18494C41FD888A53F4A821AAB6002A6';
+wwv_flow_api.g_varchar2_table(2) := '5AE3C650D485351117A662D2853F750112638C46D168542021344A8D2C0C6D744A0804B5849F6AA874578190A64E23ED0C7766EEBDC7056342E1DED24E4CDCCCB3F99273DEEFBCEF3DB91F942953A64C993265CAFCCF885F5155BF0452C023C000D02B22';
+wwv_flow_api.g_varchar2_table(3) := 'F66C8354B5156802EE022CE01C7052440ECC3B95AAFE7C65E77B9A3FD4EF7AB99CAAEADFAAFA85AA6EF0D156AB6A4A55B53034A4B93D7BD5FEEA6B2D1C39A2458655F5CE20AFA00DA4B25B5F59E7FD710EB9ED56428D8D9807EEC7AC5903300E7C03EC07';
+wwv_flow_api.g_varchar2_table(4) := '8E03BFEBE5A97ABBE71DDC336766CCB196D511E9EEC65ABA641AA81391F45C039C708E1EBBD77EBB67A678C1024C731366ED5AAC7BEE4642A103EA796DD92DCFA3972E41388CB57E3D123678A941349D86CA4AAAF6EE41E2B15D22D239D7004FA86DF765';
+wwv_flow_api.g_varchar2_table(5) := '9E6C07C7F19350F15227159B368EE7FBBE4BE6777D8A2E5C48D507EF6325121E606BA110CD766D43CF9EC53CBE81C8D697B3225275FD1CCB773AF44B24E28556AD0C6803391BA0C6E91F00A0B2F345AC44620CB8034848387C2CD2F52A00CE8F3F0144FD';
+wwv_flow_api.g_varchar2_table(6) := 'C6F80610912C703CD4DC1CE82FB11800DEC4040066C50A80DD22322E2279E08DD0E2C557C576F0030ADA00C03ED3DC14D8D4F4248065D5D400E08C8E0274A86A52552B801EF7FC85ABE248A4A400DF5BC924B2A4D6B7E9FCF22B00E14D1B01C87DFC09DE';
+wwv_flow_api.g_varchar2_table(7) := 'E4642D700198D442A1E9CABB3B01300F3F0490F59B6382DC45644C55C74C63E3D2C29FE76FE87B232378E934E1C71E25BFBF172E5E24BB790BA1D6568331C63B7C188AAFA0B2A30360B79FCF6C1B00E8352D2D814DFBCDB700887EFE19D6AA9590CBE11E';
+wwv_flow_api.g_varchar2_table(8) := '3C88DBD787A6D358CBEA887EF421128F4D03DDBE1F3A9BBBAAB60047A7DB9E824CC657631E5C47E4F56D00B8A3A3B8A74E83E360D5D7631AEE03F80D6817919179072886C8D8DB77449DD460A0C65ABE9C8A179EC3AC5EFD6FC901BCE2390D8C006322F2';
+wwv_flow_api.g_varchar2_table(9) := '6C2901BE2DA406DB72DB77DC4C0AF138D6A245109EF96B59C92491D7BA10911BFCE612E019BD3CB52FD3FEF4CD03CCC22D877E488BC8EDD7D7035FC1350C493C46A8A1017778B82473ABB616A0BAA4CB00EEC45F03AA3AA5AAAECE1FB778F74449E6AA5A';
+wwv_flow_api.g_varchar2_table(10) := '7DED59E6BFE61F53498CA370DE15070000000049454E44AE426082';
+wwv_flow_api.create_app_static_file(
+ p_id=>wwv_flow_api.id(33263980892250027)
+,p_file_name=>'icon/fsb_marker.png'
+,p_mime_type=>'image/png'
+,p_file_charset=>'utf-8'
+,p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table)
+);
+end;
+/
 prompt --application/plugin_settings
 begin
 wwv_flow_api.create_plugin_setting(
@@ -358,7 +795,8 @@ wwv_flow_api.create_plugin_setting(
  p_id=>wwv_flow_api.id(33066680771994995)
 ,p_plugin_type=>'REGION TYPE'
 ,p_plugin=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
-,p_attribute_01=>'...put your Google Maps API key here...'
+,p_attribute_01=>'...put your Google Maps API Key here...'
+,p_attribute_07=>'10000'
 );
 wwv_flow_api.create_plugin_setting(
  p_id=>wwv_flow_api.id(25186261240727505399)
@@ -428,37 +866,66 @@ wwv_flow_api.create_flow_process(
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'INITDATA'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'  id NUMBER := 0;',
-'  PROCEDURE m (name IN VARCHAR2, lat IN NUMBER, lng IN NUMBER, pop IN NUMBER) IS',
-'  BEGIN',
+'declare',
+'  id number := 0;',
+'  icon_arr apex_t_varchar2;',
+'',
+'  procedure m (name in varchar2, lat in number, lng in number, pop in number) is',
+'    i number;',
+'    arr_index number;',
+'  begin',
 '    id := id + 1;',
-'    APEX_COLLECTION.add_member',
+'    arr_index := ((id-1) mod icon_arr.count)+1;',
+'    if arr_index not between 1 and icon_arr.count then',
+'        raise_application_error(-20000, ''i=''||i||'' count=''||icon_arr.count||'' idx=''||arr_index);',
+'    end if;',
+'    select ora_hash(name,2) into i from dual;',
+'    apex_collection.add_member',
 '      (''MAP''',
-'      ,TO_CHAR(id)',
-'      ,name',
-'      ,TO_CHAR(lat,''fm999.9999999999999999'')',
-'      ,TO_CHAR(lng,''fm999.9999999999999999'')',
-'      ,TO_CHAR(pop,''fm999999999999.9999999999999999'')',
-'      ,dbms_random.string(''a'',10));',
-'  END m;',
-'BEGIN',
-'APEX_COLLECTION.create_or_truncate_collection(''MAP'');',
-'m(''home'',-32.11620272297015,116.06547117233276,null);',
-'m(''Stratton'',-31.86972210984067,116.03485107421875,40);',
-'m(''Wyalkatchem'',-31.181378229061053,117.38033294677734,20);',
-'m(''boss''''s office'',-31.958206638801293,115.86434841156006,120);',
-'m(''Wattle Grove'',-32.01384376242402,116.00114107131958,32);',
-'m(''Rottnest Island'',-31.998759371947305,115.5380630493164,5);',
-'m(''Busselton'',-33.645277933867895,115.3425407409668,19);',
-'m(''Esperance'',-33.852597383121406,121.89708709716797,21);',
-'m(''Carnarvon'',-24.884879265673792,113.65665435791016,14);',
-'m(''Cable Beach'',-17.96093474972286,122.2122573852539,9);',
-'m(''Hillarys Boat Harbour'',-31.82475514059112,115.73980808258057,33);',
-'m(''Wave Rock'',-32.441371888673494,118.89739036560059,8.5);',
-'m(''Araluen Botanical Park'',-32.12347204914411,116.10103726387024,2.4);',
-'m(''Center Point'',0.01,0.01,2000);',
-'END;'))
+'      ,p_c001 => to_char(id)',
+'      ,p_c002 => name',
+'      ,p_c003 => to_char(lat,''fm990.099999'')',
+'      ,p_c004 => to_char(lng,''fm990.099999'')',
+'      ,p_c005 => to_char(pop,''fm9990.099999'')',
+'      ,p_c006 => dbms_random.string(''a'',10)',
+'      ,p_c007 => case i',
+'                 when 0 then ''parking_lot_maps.png''',
+'                 when 1 then ''library_maps.png''',
+'                 when 2 then ''info-i_maps.png''',
+'                 end',
+'      ,p_c008 => icon_arr(arr_index)',
+'      );',
+'  end m;',
+'',
+'begin',
+'',
+'    select file_name',
+'    bulk collect into icon_arr',
+'    from apex_application_static_files',
+'    where file_name like ''icon/%'';',
+'    ',
+'    if icon_arr.count = 0 then',
+'        raise_application_error(-20000,''no icons found'');',
+'    end if;',
+'',
+'    apex_collection.create_or_truncate_collection(''MAP'');',
+'',
+'    m(''home'',-32.116202,116.065471,null);',
+'    m(''Stratton'',-31.869722,116.034851,40);',
+'    m(''Wyalkatchem'',-31.181378,117.380332,20);',
+'    m(''boss''''s office'',-31.958206,115.864348,120);',
+'    m(''Wattle Grove'',-32.013843,116.001141,32);',
+'    m(''Rottnest Island'',-31.998759,115.538063,5);',
+'    m(''Busselton'',-33.645277,115.342540,19);',
+'    m(''Esperance'',-33.852597,121.897087,21);',
+'    m(''Carnarvon'',-24.884879,113.656654,14);',
+'    m(''Cable Beach'',-17.960934,122.212257,9);',
+'    m(''Hillarys Boat Harbour'',-31.824755,115.739808,33);',
+'    m(''Wave Rock'',-32.441371,118.897390,8.5);',
+'    m(''Araluen Botanical Park'',-32.123472,116.101037,2.4);',
+'    m(''Center Point'',0,0,2000);',
+'',
+'end;'))
 ,p_process_when=>'NOT APEX_COLLECTION.collection_exists(''MAP'')'
 ,p_process_when_type=>'PLSQL_EXPRESSION'
 );
@@ -504,6 +971,13 @@ begin
 wwv_flow_api.create_menu(
  p_id=>wwv_flow_api.id(25186305310574505552)
 ,p_name=>' Breadcrumb'
+);
+wwv_flow_api.create_menu_option(
+ p_id=>wwv_flow_api.id(33312241296670216)
+,p_parent_id=>0
+,p_short_name=>'JK64 Report Map Plugin'
+,p_link=>'f?p=&APP_ID.:9:&SESSION.::&DEBUG.:::'
+,p_page_id=>9
 );
 wwv_flow_api.create_menu_option(
  p_id=>wwv_flow_api.id(25186305765383505553)
@@ -8100,9 +8574,6 @@ wwv_flow_api.create_plugin(
 'g_travelmode_bicycling     constant varchar2(10) := ''BICYCLING'';',
 'g_travelmode_transit       constant varchar2(10) := ''TRANSIT'';',
 '',
-'g_max_rows         constant number := 100000;',
-'g_max_rows_heatmap constant number := 1000000;',
-'',
 'subtype plugin_attr is varchar2(32767);',
 '',
 'procedure get_map_bounds',
@@ -8132,7 +8603,8 @@ wwv_flow_api.create_plugin(
 'end latlng_literal;',
 '',
 'function get_markers',
-'    (p_region  in apex_plugin.t_region',
+'    (p_plugin  in apex_plugin.t_plugin',
+'    ,p_region  in apex_plugin.t_region',
 '    ,p_lat_min in out number',
 '    ,p_lat_max in out number',
 '    ,p_lng_min in out number',
@@ -8150,11 +8622,13 @@ wwv_flow_api.create_plugin(
 '    l_weight         number;',
 '     ',
 '    l_column_value_list apex_plugin_util.t_column_value_list;',
+'    l_max_rows          plugin_attr := p_plugin.attribute_07;',
 '    l_visualisation     plugin_attr := p_region.attribute_02;',
 '',
 'begin',
 '',
-'/* For most cases, column list is as follows:',
+'/*',
+'   For most cases, column list is as follows:',
 '',
 '   lat,   - required',
 '   lng,   - required',
@@ -8179,7 +8653,7 @@ wwv_flow_api.create_plugin(
 '            ,p_min_columns    => 3',
 '            ,p_max_columns    => 3',
 '            ,p_component_name => p_region.name',
-'            ,p_max_rows       => g_max_rows_heatmap);',
+'            ,p_max_rows       => to_number(l_max_rows));',
 '  ',
 '        for i in 1..l_column_value_list(1).count loop',
 '      ',
@@ -8219,7 +8693,7 @@ wwv_flow_api.create_plugin(
 '            ,p_min_columns    => 4',
 '            ,p_max_columns    => 7',
 '            ,p_component_name => p_region.name',
-'            ,p_max_rows       => g_max_rows);',
+'            ,p_max_rows       => to_number(l_max_rows));',
 '    ',
 '        for i in 1..l_column_value_list(1).count loop',
 '        ',
@@ -8334,24 +8808,14 @@ wwv_flow_api.create_plugin(
 '    l_options             plugin_attr := p_region.attribute_04;',
 '    l_initial_zoom_level  plugin_attr := p_region.attribute_05;',
 '    l_initial_center      plugin_attr := p_region.attribute_06;',
-'--    l_                  plugin_attr := p_region.attribute_07;',
-'--    l_                  plugin_attr := p_region.attribute_08;',
-'--    l_                  plugin_attr := p_region.attribute_09;',
 '    l_restrict_country    plugin_attr := p_region.attribute_10;',
 '    l_mapstyle            plugin_attr := p_region.attribute_11;',
 '    l_heatmap_dissipating plugin_attr := p_region.attribute_12;',
 '    l_heatmap_opacity     plugin_attr := p_region.attribute_13;',
 '    l_heatmap_radius      plugin_attr := p_region.attribute_14;',
 '    l_travel_mode         plugin_attr := p_region.attribute_15;',
-'--    l_                  plugin_attr := p_region.attribute_16;',
-'--    l_                  plugin_attr := p_region.attribute_17;',
-'--    l_                  plugin_attr := p_region.attribute_18;',
-'--    l_                  plugin_attr := p_region.attribute_19;',
-'--    l_                  plugin_attr := p_region.attribute_20;',
 '    l_optimizewaypoints   plugin_attr := p_region.attribute_21;',
 '    l_maptype             plugin_attr := p_region.attribute_22;',
-'--    l_                  plugin_attr := p_region.attribute_23;',
-'--    l_                  plugin_attr := p_region.attribute_24;',
 '    l_gesture_handling    plugin_attr := p_region.attribute_25;',
 '    ',
 '    l_opt varchar2(32767);',
@@ -8403,15 +8867,6 @@ wwv_flow_api.create_plugin(
 '    if l_initial_center is not null then',
 '        parse_latlng(l_initial_center, p_lat=>l_lat, p_lng=>l_lng);',
 '    end if;',
-'',
-'--    if l_lat is not null then',
-'--',
-'--        l_lat_min := greatest(l_lat - 10, -60);',
-'--        l_lat_max := least(l_lat + 10, 70);',
-'--        l_lng_min := greatest(l_lng - 10, -180);',
-'--        l_lng_max := least(l_lng + 10, 180);',
-'--',
-'--    end if;',
 '    ',
 '    l_opt := ''{''',
 '      || apex_javascript.add_attribute(''regionId'', l_region_id)',
@@ -8518,7 +8973,8 @@ wwv_flow_api.create_plugin(
 '    if p_region.source is not null then',
 '',
 '        l_data := get_markers',
-'            (p_region  => p_region',
+'            (p_plugin  => p_plugin',
+'            ,p_region  => p_region',
 '            ,p_lat_min => l_lat_min',
 '            ,p_lat_max => l_lat_max',
 '            ,p_lng_min => l_lng_min',
@@ -8542,19 +8998,6 @@ wwv_flow_api.create_plugin(
 '            ,p_lng_min => l_lng_min',
 '            ,p_lng_max => l_lng_max',
 '            );',
-'',
-'--    elsif l_data.count = 0 and l_lat is not null then',
-'--        l_lat_min := greatest(l_lat - 10, -180);',
-'--        l_lat_max := least(l_lat + 10, 80);',
-'--        l_lng_min := greatest(l_lng - 10, -180);',
-'--        l_lng_max := least(l_lng + 10, 180);',
-'',
-'--    -- show (most of the) entire map if no points to show',
-'--    elsif l_data.count = 0 then',
-'--        l_lat_min := -60;',
-'--        l_lat_max := 70;',
-'--        l_lng_min := -180;',
-'--        l_lng_max := 180;',
 '',
 '    end if;',
 '',
@@ -8587,7 +9030,8 @@ wwv_flow_api.create_plugin(
 '',
 '/**********************************************************',
 'end jk64reportmap_r1_pkg;',
-'**********************************************************/'))
+'**********************************************************/',
+''))
 ,p_api_version=>1
 ,p_render_function=>'render'
 ,p_ajax_function=>'ajax'
@@ -8595,9 +9039,7 @@ wwv_flow_api.create_plugin(
 ,p_substitute_attributes=>true
 ,p_subscribe_plugin_settings=>true
 ,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'This plugin renders a Google Map, showing a number of pins based on a query you supply with Latitude, Longitude, Name (pin hovertext), id (returned to an item you specify, if required), and Info.',
-'<p>',
-'<strong>Don''t forget to set <em>Number of Rows</em> to a larger number than the default, this is the maximum number of records the report will fetch from your query.</strong>',
+'This plugin renders a Google Map, showing a number of pins based on a query you supply with Latitude, Longitude, Name (pin hovertext), id, and Info.',
 '<p>',
 'Refer to the wiki for documentation and examples:',
 '<p>',
@@ -8681,6 +9123,20 @@ wwv_flow_api.create_plugin_attribute(
 ,p_unit=>'0 .. 23'
 ,p_is_translatable=>false
 ,p_help_text=>'Maximum Zoom Level - 0 to 23. Set to blank to allow zooming in to show maximum detail.'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(33225460614730815)
+,p_plugin_id=>wwv_flow_api.id(33032154349766695)
+,p_attribute_scope=>'APPLICATION'
+,p_attribute_sequence=>7
+,p_display_sequence=>70
+,p_prompt=>'Maximum Records'
+,p_attribute_type=>'INTEGER'
+,p_is_required=>true
+,p_default_value=>'10000'
+,p_unit=>'rows'
+,p_is_translatable=>false
+,p_help_text=>'Maximum number of records to fetch from the SQL Query. Note that datasets that are very large (e.g. 10,000+) may perform poorly on the client''s machine. The Heatmap option is leaner and can support larger datasets.'
 );
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(33033918212766732)
@@ -8793,9 +9249,6 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_return_value=>'PAN_ALLOWED'
 ,p_help_text=>'Allow user to pan the map. If unset, the map will be fixed at one location.'
 );
-end;
-/
-begin
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(33038059451766736)
 ,p_plugin_attribute_id=>wwv_flow_api.id(33037151641766735)
@@ -8831,6 +9284,9 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Set the latitude and longitude as a pair of numbers to be used to position the map on page load, if no data is loaded. Default is 0,0. If data is loaded, this attribute has no effect. NOTE: the numeric values must use the dot (.) as the decimal separ'
 ||'ator, and comma (,) as the delimiter between the lat and lng values.'
 );
+end;
+/
+begin
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(33040367046766737)
 ,p_plugin_id=>wwv_flow_api.id(33032154349766695)
@@ -10549,7 +11005,7 @@ wwv_flow_api.create_user_interface(
 ,p_use_auto_detect=>false
 ,p_is_default=>true
 ,p_theme_id=>42
-,p_home_url=>'f?p=&APP_ID.:1:&SESSION.'
+,p_home_url=>'f?p=&APP_ID.:HOME:&SESSION.'
 ,p_login_url=>'f?p=&APP_ID.:LOGIN_DESKTOP:&SESSION.'
 ,p_theme_style_by_user_pref=>false
 ,p_navigation_list_id=>wwv_flow_api.id(25186261540139505399)
@@ -10575,7 +11031,7 @@ begin
 wwv_flow_api.create_page(
  p_id=>1
 ,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
-,p_name=>'Report Map'
+,p_name=>'Report Map Pins'
 ,p_step_title=>'Demo Report Map Plugin'
 ,p_reload_on_submit=>'A'
 ,p_warn_on_unsaved_changes=>'N'
@@ -10600,12 +11056,12 @@ wwv_flow_api.create_page(
 '<p>',
 'This page only uses declarative APEX features (no added javascript).'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717222932'
+,p_last_upd_yyyymmddhh24miss=>'20190718211602'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(73507635119238450)
-,p_plug_name=>'Notes'
-,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader:t-Region--scrollBody'
+,p_plug_name=>'Report Map Pins'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>wwv_flow_api.id(25186277719855505424)
 ,p_plug_display_sequence=>20
 ,p_plug_display_point=>'BODY'
@@ -10614,9 +11070,9 @@ wwv_flow_api.create_page_plug(
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(3214474053693807630)
-,p_plug_name=>'JK64 Report Google Map R1 region plugin'
+,p_plug_name=>'Report Map'
 ,p_region_name=>'mymap'
-,p_region_template_options=>'#DEFAULT#:t-Region--noPadding:t-Region--scrollBody'
+,p_region_template_options=>'#DEFAULT#:t-Region--noPadding:t-Region--hideHeader:t-Region--scrollBody'
 ,p_plug_template=>wwv_flow_api.id(25186277719855505424)
 ,p_plug_display_sequence=>10
 ,p_include_in_reg_disp_sel_yn=>'Y'
@@ -10632,6 +11088,8 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_01=>'350'
 ,p_attribute_02=>'PINS'
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -10777,7 +11235,7 @@ wwv_flow_api.create_page(
 '<p>',
 'Dynamic action on plugin event <strong>markerDrag</strong> sets P2_DRAGGED.'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717222501'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939239851408724)
@@ -10800,6 +11258,8 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_02=>'PINS'
 ,p_attribute_03=>'13'
 ,p_attribute_04=>'DRAGGABLE:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -10900,7 +11360,7 @@ wwv_flow_api.create_page(
 '<p>',
 'Map Style: <a href="https://snazzymaps.com/style/55352/bojangles">"Bojangles"</a>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717220630'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32940867019408740)
@@ -10945,6 +11405,8 @@ wwv_flow_api.create_page_plug(
 ||'ylers":[{"visibility":"off"}]},{"featureType":"road.local","elementType":"all","stylers":[{"color":"#d5d5d5"}]},{"featureType":"transit","elementType":"all","stylers":[{"visibility":"off"}]},{"featureType":"transit","elementType":"geometry.fill","sty'
 ||'lers":[{"color":"#ed5929"}]},{"featureType":"water","elementType":"all","stylers":[{"color":"#46bcec"},{"visibility":"on"}]},{"featureType":"water","elementType":"geometry.fill","stylers":[{"color":"#d6d6d6"}]},{"featureType":"water","elementType":"l'
 ||'abels.text.fill","stylers":[{"color":"#ffffff"}]},{"featureType":"water","elementType":"labels.text.stroke","stylers":[{"color":"#ed5929"}]}]'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -11066,7 +11528,7 @@ wwv_flow_api.create_page(
 '<p>',
 'Dynamic action on plugin event <strong>markerClick</strong> sets P1_CLICKED.'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717223517'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939470180408726)
@@ -11086,6 +11548,8 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_02=>'CLUSTER'
 ,p_attribute_03=>'13'
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -11250,7 +11714,7 @@ wwv_flow_api.create_page(
 'This demonstrates how to modify one of the plugin options at runtime, how to convert a string to a Google Maps LatLng object, and how to execute arbitrary Google Maps API calls.',
 '</p>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717224200'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(22167236053368435)
@@ -11281,6 +11745,8 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
 ,p_attribute_06=>'&P5_LATLNG.'
 ,p_attribute_10=>'&P5_COUNTRY.'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -11491,7 +11957,7 @@ wwv_flow_api.create_page(
 '    select lat, lng, sum(mag) from earthquakes where mag>0 group by lat, lng',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717223936'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(86703429402923302)
@@ -11648,7 +12114,7 @@ wwv_flow_api.create_page(
 '    }',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717224536'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32938840967408720)
@@ -11665,6 +12131,8 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_02=>'PINS'
 ,p_attribute_03=>'13'
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -11893,13 +12361,176 @@ wwv_flow_api.create_page_da_action(
 );
 end;
 /
+prompt --application/pages/page_00008
+begin
+wwv_flow_api.create_page(
+ p_id=>8
+,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
+,p_name=>'Pin Icons'
+,p_step_title=>'Pin Icons'
+,p_reload_on_submit=>'A'
+,p_warn_on_unsaved_changes=>'N'
+,p_step_sub_title=>'Pin Icons'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_autocomplete_on_off=>'ON'
+,p_page_template_options=>'#DEFAULT#'
+,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'The column <strong>Icon</strong> in the report must be an absolute URL to a image accessible by the client.',
+'<p>',
+'Query for map plugin:',
+'<code>',
+'    select c003 as lat, c004 as lng, c002 as name, c001 as id,',
+'           c002 || '' (id='' || c001 || '')'' as info ,',
+'           ''https://maps.google.com/mapfiles/kml/shapes/'' || c007 AS icon',
+'    from apex_collections',
+'    where collection_name = ''MAP''',
+'</code>'))
+,p_last_updated_by=>'JEFF'
+,p_last_upd_yyyymmddhh24miss=>'20190718203355'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(66183243515380734)
+,p_plug_name=>'Report Google Map Plugin with Icons'
+,p_region_name=>'mymap'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>wwv_flow_api.id(25186269690704505415)
+,p_plug_display_sequence=>10
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_item_display_point=>'BELOW'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info',
+'      ,''https://maps.google.com/mapfiles/kml/shapes/'' || c007 as icon',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'and (c003!=0 or c004!=0)'))
+,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_attribute_01=>'350'
+,p_attribute_02=>'PINS'
+,p_attribute_03=>'13'
+,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
+,p_attribute_22=>'ROADMAP'
+,p_attribute_25=>'auto'
+);
+wwv_flow_api.create_report_region(
+ p_id=>wwv_flow_api.id(143136712478408572)
+,p_name=>'Source data'
+,p_template=>wwv_flow_api.id(25186277719855505424)
+,p_display_sequence=>30
+,p_region_template_options=>'#DEFAULT#:t-Region--noPadding:t-Region--hideHeader:t-Region--scrollBody'
+,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
+,p_new_grid_row=>false
+,p_display_point=>'BODY'
+,p_source_type=>'NATIVE_SQL_REPORT'
+,p_query_type=>'SQL'
+,p_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info',
+'      ,c007 as icon',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'and (c003!=0 or c004!=0)'))
+,p_ajax_enabled=>'Y'
+,p_query_row_template=>wwv_flow_api.id(25186286576607505432)
+,p_query_num_rows=>15
+,p_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_query_show_nulls_as=>'-'
+,p_query_num_rows_type=>'ROW_RANGES_IN_SELECT_LIST'
+,p_pagination_display_position=>'BOTTOM_RIGHT'
+,p_csv_output=>'N'
+,p_prn_output=>'N'
+,p_sort_null=>'L'
+,p_plug_query_strip_html=>'N'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33245998681972046)
+,p_query_column_id=>1
+,p_column_alias=>'LAT'
+,p_column_display_sequence=>1
+,p_column_heading=>'Lat'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33246329574972047)
+,p_query_column_id=>2
+,p_column_alias=>'LNG'
+,p_column_display_sequence=>2
+,p_column_heading=>'Lng'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33246700507972048)
+,p_query_column_id=>3
+,p_column_alias=>'NAME'
+,p_column_display_sequence=>3
+,p_column_heading=>'Name'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33247167992972048)
+,p_query_column_id=>4
+,p_column_alias=>'ID'
+,p_column_display_sequence=>4
+,p_column_heading=>'Id'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33247575286972048)
+,p_query_column_id=>5
+,p_column_alias=>'INFO'
+,p_column_display_sequence=>5
+,p_column_heading=>'Info'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(32940961402408741)
+,p_query_column_id=>6
+,p_column_alias=>'ICON'
+,p_column_display_sequence=>6
+,p_column_heading=>'Icon'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(143143126796408584)
+,p_plug_name=>'Notes'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>20
+,p_plug_display_point=>'BODY'
+,p_plug_source_type=>'NATIVE_HELP_TEXT'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+);
+end;
+/
 prompt --application/pages/page_00009
 begin
 wwv_flow_api.create_page(
  p_id=>9
 ,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
-,p_name=>'Minimal Test'
-,p_step_title=>'Minimal Test'
+,p_name=>'Demo Home Page'
+,p_alias=>'HOME'
+,p_step_title=>'Demo Report Map Plugin'
 ,p_reload_on_submit=>'A'
 ,p_warn_on_unsaved_changes=>'N'
 ,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
@@ -11907,15 +12538,15 @@ wwv_flow_api.create_page(
 ,p_page_template_options=>'#DEFAULT#'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717200348'
+,p_last_upd_yyyymmddhh24miss=>'20190718212532'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32937906099408711)
-,p_plug_name=>'Minimal Test'
+,p_plug_name=>'JK64 Report Google Map R1 [Plug-In]'
 ,p_region_name=>'mymap'
-,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_region_template_options=>'#DEFAULT#:t-Region--noPadding:t-Region--hideHeader:t-Region--scrollBody'
 ,p_plug_template=>wwv_flow_api.id(25186277719855505424)
-,p_plug_display_sequence=>10
+,p_plug_display_sequence=>20
 ,p_include_in_reg_disp_sel_yn=>'Y'
 ,p_plug_display_point=>'BODY'
 ,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
@@ -11928,6 +12559,35 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(32941035244408742)
+,p_plug_name=>'Menu'
+,p_region_template_options=>'#DEFAULT#'
+,p_component_template_options=>'#DEFAULT#:t-MediaList--cols t-MediaList--2cols'
+,p_plug_template=>wwv_flow_api.id(25186269690704505415)
+,p_plug_display_sequence=>30
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_new_grid_row=>false
+,p_plug_display_point=>'BODY'
+,p_list_id=>wwv_flow_api.id(33313102857679622)
+,p_plug_source_type=>'NATIVE_LIST'
+,p_list_template_id=>wwv_flow_api.id(25186294516176505439)
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(32941184508408743)
+,p_plug_name=>'Title'
+,p_region_template_options=>'#DEFAULT#:t-BreadcrumbRegion--useBreadcrumbTitle'
+,p_component_template_options=>'#DEFAULT#'
+,p_plug_template=>wwv_flow_api.id(25186281048793505426)
+,p_plug_display_sequence=>10
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'REGION_POSITION_01'
+,p_menu_id=>wwv_flow_api.id(25186305310574505552)
+,p_plug_source_type=>'NATIVE_BREADCRUMB'
+,p_menu_template_id=>wwv_flow_api.id(25186299214327505447)
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 );
 end;
 /
@@ -11952,13 +12612,14 @@ wwv_flow_api.create_page(
 'Query for map plugin:',
 '<code>',
 '    select c003 as lat, c004 as lng, c002 as name, c001 as id,',
-'           c002 || '' (id='' || c001 || '')'' as info,',
+'           c002 || '' (id='' || c001 || '')'' as info ,',
+'           '''' AS icon,',
 '           c006 as label',
 '    from apex_collections',
 '    where collection_name = ''MAP''',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717222302'
+,p_last_upd_yyyymmddhh24miss=>'20190718192507'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32938674169408718)
@@ -11981,6 +12642,8 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_02=>'PINS'
 ,p_attribute_03=>'13'
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -12131,7 +12794,7 @@ wwv_flow_api.create_page(
 '    $s("P11_LEGS",this.data.legs);',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717223123'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(22167390620368436)
@@ -12257,6 +12920,7 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_02=>'DIRECTIONS'
 ,p_attribute_03=>'13'
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
 ,p_attribute_15=>'DRIVING'
 ,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
@@ -12422,7 +13086,7 @@ wwv_flow_api.create_page(
 '<p>',
 '<a href="https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/Tip:-Zoom-to-user''s-current-location">Tip: Zoom to user''s current location</a>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717225135'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939196388408723)
@@ -12438,6 +13102,8 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_02=>'PINS'
 ,p_attribute_03=>'13'
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -12515,7 +13181,7 @@ wwv_flow_api.create_page(
 '</code>',
 'It will run once on page load, after the google maps object has been created but before the data is loaded into the map.'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717214017'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939684191408728)
@@ -12544,6 +13210,8 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_02=>'PINS'
 ,p_attribute_03=>'13'
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -12578,7 +13246,7 @@ wwv_flow_api.create_page(
 'The query does not include the "info" column, which means the pins don''t show any info window on click. If an "info" column had been provided, clicking a pin would show the info window; if the info window is too close to the edge, the map would pan a'
 ||' bit to move it into range.'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717214407'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939858902408730)
@@ -12600,6 +13268,8 @@ wwv_flow_api.create_page_plug(
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 ,p_attribute_01=>'350'
 ,p_attribute_02=>'PINS'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -12645,7 +13315,7 @@ wwv_flow_api.create_page(
 '    pano.setVisible(true);',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190717215252'
+,p_last_upd_yyyymmddhh24miss=>'20190718155846'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32940304653408735)
@@ -12668,6 +13338,8 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_02=>'PINS'
 ,p_attribute_03=>'13'
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -12700,6 +13372,8 @@ wwv_flow_api.create_page_plug(
 ||'reType:"road.highway",elementType:"geometry",stylers:[{color:"#EBF4A4"}]},{featureType:"transit",stylers:[{visibility:"off"}]},{featureType:"administrative",elementType:"geometry.stroke",stylers:[{visibility:"on"},{color:"#87ae79"}]},{featureType:"ad'
 ||'ministrative",elementType:"geometry.fill",stylers:[{color:"#7f2200"},{visibility:"off"}]},{featureType:"administrative",elementType:"labels.text.stroke",stylers:[{color:"#ffffff"},{visibility:"on"},{weight:4.1}]},{featureType:"administrative",element'
 ||'Type:"labels.text.fill",stylers:[{color:"#495421"}]},{featureType:"administrative.neighborhood",elementType:"labels",stylers:[{visibility:"off"}]}]'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
 ,p_attribute_25=>'auto'
 );
@@ -12831,6 +13505,169 @@ wwv_flow_api.create_page_da_action(
 'var pano = $("#map_esperance").reportmap("instance").map.getStreetView();',
 'pano.setPosition({"lat":-33.89532,"lng":121.82223});',
 'pano.setVisible(true);'))
+);
+end;
+/
+prompt --application/pages/page_00016
+begin
+wwv_flow_api.create_page(
+ p_id=>16
+,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
+,p_name=>'Application Static Icons'
+,p_step_title=>'Application Static Icons'
+,p_reload_on_submit=>'A'
+,p_warn_on_unsaved_changes=>'N'
+,p_step_sub_title=>'Application Static Icons'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_autocomplete_on_off=>'ON'
+,p_page_template_options=>'#DEFAULT#'
+,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'The column <strong>Icon</strong> in the report can refer to <code>&#35;APP_IMAGES#</code> to load icons from application static files.',
+'<p>',
+'Query for map plugin:',
+'<code>',
+'    select c003 as lat, c004 as lng, c002 as name,',
+'           c001 as id, c002 || '' (id='' || c001 || '')'' as info ,',
+'           ''&#35;APP_IMAGES#'' || c008 AS icon',
+'    from apex_collections',
+'    where collection_name = ''MAP''',
+'</code>'))
+,p_last_updated_by=>'JEFF'
+,p_last_upd_yyyymmddhh24miss=>'20190718203510'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(99447872302700825)
+,p_plug_name=>'Report Google Map Plugin with Static Icons'
+,p_region_name=>'mymap'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>wwv_flow_api.id(25186269690704505415)
+,p_plug_display_sequence=>10
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_item_display_point=>'BELOW'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info',
+'      ,''#APP_IMAGES#'' || c008 as icon',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'and (c003!=0 or c004!=0)'))
+,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_attribute_01=>'350'
+,p_attribute_02=>'PINS'
+,p_attribute_03=>'13'
+,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
+,p_attribute_22=>'ROADMAP'
+,p_attribute_25=>'auto'
+);
+wwv_flow_api.create_report_region(
+ p_id=>wwv_flow_api.id(176401341265728663)
+,p_name=>'Source data'
+,p_template=>wwv_flow_api.id(25186277719855505424)
+,p_display_sequence=>30
+,p_region_template_options=>'#DEFAULT#:t-Region--noPadding:t-Region--hideHeader:t-Region--scrollBody'
+,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
+,p_new_grid_row=>false
+,p_display_point=>'BODY'
+,p_source_type=>'NATIVE_SQL_REPORT'
+,p_query_type=>'SQL'
+,p_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info',
+'      ,c008 as icon',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'and (c003!=0 or c004!=0)'))
+,p_ajax_enabled=>'Y'
+,p_query_row_template=>wwv_flow_api.id(25186286576607505432)
+,p_query_num_rows=>15
+,p_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_query_show_nulls_as=>'-'
+,p_query_num_rows_type=>'ROW_RANGES_IN_SELECT_LIST'
+,p_pagination_display_position=>'BOTTOM_RIGHT'
+,p_csv_output=>'N'
+,p_prn_output=>'N'
+,p_sort_null=>'L'
+,p_plug_query_strip_html=>'N'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33266358400320140)
+,p_query_column_id=>1
+,p_column_alias=>'LAT'
+,p_column_display_sequence=>1
+,p_column_heading=>'Lat'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33266742426320143)
+,p_query_column_id=>2
+,p_column_alias=>'LNG'
+,p_column_display_sequence=>2
+,p_column_heading=>'Lng'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33267162591320143)
+,p_query_column_id=>3
+,p_column_alias=>'NAME'
+,p_column_display_sequence=>3
+,p_column_heading=>'Name'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33267580122320143)
+,p_query_column_id=>4
+,p_column_alias=>'ID'
+,p_column_display_sequence=>4
+,p_column_heading=>'Id'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33267923298320143)
+,p_query_column_id=>5
+,p_column_alias=>'INFO'
+,p_column_display_sequence=>5
+,p_column_heading=>'Info'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_report_columns(
+ p_id=>wwv_flow_api.id(33268320308320144)
+,p_query_column_id=>6
+,p_column_alias=>'ICON'
+,p_column_display_sequence=>6
+,p_column_heading=>'Icon'
+,p_use_as_row_header=>'N'
+,p_disable_sort_column=>'N'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(176407755583728675)
+,p_plug_name=>'Notes'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>20
+,p_plug_grid_column_span=>5
+,p_plug_display_point=>'BODY'
+,p_plug_source_type=>'NATIVE_HELP_TEXT'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 );
 end;
 /

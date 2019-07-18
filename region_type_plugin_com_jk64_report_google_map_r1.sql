@@ -79,9 +79,6 @@ wwv_flow_api.create_plugin(
 'g_travelmode_bicycling     constant varchar2(10) := ''BICYCLING'';',
 'g_travelmode_transit       constant varchar2(10) := ''TRANSIT'';',
 '',
-'g_max_rows         constant number := 100000;',
-'g_max_rows_heatmap constant number := 1000000;',
-'',
 'subtype plugin_attr is varchar2(32767);',
 '',
 'procedure get_map_bounds',
@@ -111,7 +108,8 @@ wwv_flow_api.create_plugin(
 'end latlng_literal;',
 '',
 'function get_markers',
-'    (p_region  in apex_plugin.t_region',
+'    (p_plugin  in apex_plugin.t_plugin',
+'    ,p_region  in apex_plugin.t_region',
 '    ,p_lat_min in out number',
 '    ,p_lat_max in out number',
 '    ,p_lng_min in out number',
@@ -129,11 +127,13 @@ wwv_flow_api.create_plugin(
 '    l_weight         number;',
 '     ',
 '    l_column_value_list apex_plugin_util.t_column_value_list;',
+'    l_max_rows          plugin_attr := p_plugin.attribute_07;',
 '    l_visualisation     plugin_attr := p_region.attribute_02;',
 '',
 'begin',
 '',
-'/* For most cases, column list is as follows:',
+'/*',
+'   For most cases, column list is as follows:',
 '',
 '   lat,   - required',
 '   lng,   - required',
@@ -158,7 +158,7 @@ wwv_flow_api.create_plugin(
 '            ,p_min_columns    => 3',
 '            ,p_max_columns    => 3',
 '            ,p_component_name => p_region.name',
-'            ,p_max_rows       => g_max_rows_heatmap);',
+'            ,p_max_rows       => to_number(l_max_rows));',
 '  ',
 '        for i in 1..l_column_value_list(1).count loop',
 '      ',
@@ -198,7 +198,7 @@ wwv_flow_api.create_plugin(
 '            ,p_min_columns    => 4',
 '            ,p_max_columns    => 7',
 '            ,p_component_name => p_region.name',
-'            ,p_max_rows       => g_max_rows);',
+'            ,p_max_rows       => to_number(l_max_rows));',
 '    ',
 '        for i in 1..l_column_value_list(1).count loop',
 '        ',
@@ -313,24 +313,14 @@ wwv_flow_api.create_plugin(
 '    l_options             plugin_attr := p_region.attribute_04;',
 '    l_initial_zoom_level  plugin_attr := p_region.attribute_05;',
 '    l_initial_center      plugin_attr := p_region.attribute_06;',
-'--    l_                  plugin_attr := p_region.attribute_07;',
-'--    l_                  plugin_attr := p_region.attribute_08;',
-'--    l_                  plugin_attr := p_region.attribute_09;',
 '    l_restrict_country    plugin_attr := p_region.attribute_10;',
 '    l_mapstyle            plugin_attr := p_region.attribute_11;',
 '    l_heatmap_dissipating plugin_attr := p_region.attribute_12;',
 '    l_heatmap_opacity     plugin_attr := p_region.attribute_13;',
 '    l_heatmap_radius      plugin_attr := p_region.attribute_14;',
 '    l_travel_mode         plugin_attr := p_region.attribute_15;',
-'--    l_                  plugin_attr := p_region.attribute_16;',
-'--    l_                  plugin_attr := p_region.attribute_17;',
-'--    l_                  plugin_attr := p_region.attribute_18;',
-'--    l_                  plugin_attr := p_region.attribute_19;',
-'--    l_                  plugin_attr := p_region.attribute_20;',
 '    l_optimizewaypoints   plugin_attr := p_region.attribute_21;',
 '    l_maptype             plugin_attr := p_region.attribute_22;',
-'--    l_                  plugin_attr := p_region.attribute_23;',
-'--    l_                  plugin_attr := p_region.attribute_24;',
 '    l_gesture_handling    plugin_attr := p_region.attribute_25;',
 '    ',
 '    l_opt varchar2(32767);',
@@ -382,15 +372,6 @@ wwv_flow_api.create_plugin(
 '    if l_initial_center is not null then',
 '        parse_latlng(l_initial_center, p_lat=>l_lat, p_lng=>l_lng);',
 '    end if;',
-'',
-'--    if l_lat is not null then',
-'--',
-'--        l_lat_min := greatest(l_lat - 10, -60);',
-'--        l_lat_max := least(l_lat + 10, 70);',
-'--        l_lng_min := greatest(l_lng - 10, -180);',
-'--        l_lng_max := least(l_lng + 10, 180);',
-'--',
-'--    end if;',
 '    ',
 '    l_opt := ''{''',
 '      || apex_javascript.add_attribute(''regionId'', l_region_id)',
@@ -497,7 +478,8 @@ wwv_flow_api.create_plugin(
 '    if p_region.source is not null then',
 '',
 '        l_data := get_markers',
-'            (p_region  => p_region',
+'            (p_plugin  => p_plugin',
+'            ,p_region  => p_region',
 '            ,p_lat_min => l_lat_min',
 '            ,p_lat_max => l_lat_max',
 '            ,p_lng_min => l_lng_min',
@@ -521,19 +503,6 @@ wwv_flow_api.create_plugin(
 '            ,p_lng_min => l_lng_min',
 '            ,p_lng_max => l_lng_max',
 '            );',
-'',
-'--    elsif l_data.count = 0 and l_lat is not null then',
-'--        l_lat_min := greatest(l_lat - 10, -180);',
-'--        l_lat_max := least(l_lat + 10, 80);',
-'--        l_lng_min := greatest(l_lng - 10, -180);',
-'--        l_lng_max := least(l_lng + 10, 180);',
-'',
-'--    -- show (most of the) entire map if no points to show',
-'--    elsif l_data.count = 0 then',
-'--        l_lat_min := -60;',
-'--        l_lat_max := 70;',
-'--        l_lng_min := -180;',
-'--        l_lng_max := 180;',
 '',
 '    end if;',
 '',
@@ -566,7 +535,8 @@ wwv_flow_api.create_plugin(
 '',
 '/**********************************************************',
 'end jk64reportmap_r1_pkg;',
-'**********************************************************/'))
+'**********************************************************/',
+''))
 ,p_api_version=>1
 ,p_render_function=>'render'
 ,p_ajax_function=>'ajax'
@@ -574,9 +544,7 @@ wwv_flow_api.create_plugin(
 ,p_substitute_attributes=>true
 ,p_subscribe_plugin_settings=>true
 ,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'This plugin renders a Google Map, showing a number of pins based on a query you supply with Latitude, Longitude, Name (pin hovertext), id (returned to an item you specify, if required), and Info.',
-'<p>',
-'<strong>Don''t forget to set <em>Number of Rows</em> to a larger number than the default, this is the maximum number of records the report will fetch from your query.</strong>',
+'This plugin renders a Google Map, showing a number of pins based on a query you supply with Latitude, Longitude, Name (pin hovertext), id, and Info.',
 '<p>',
 'Refer to the wiki for documentation and examples:',
 '<p>',
@@ -660,6 +628,20 @@ wwv_flow_api.create_plugin_attribute(
 ,p_unit=>'0 .. 23'
 ,p_is_translatable=>false
 ,p_help_text=>'Maximum Zoom Level - 0 to 23. Set to blank to allow zooming in to show maximum detail.'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(33225460614730815)
+,p_plugin_id=>wwv_flow_api.id(33032154349766695)
+,p_attribute_scope=>'APPLICATION'
+,p_attribute_sequence=>7
+,p_display_sequence=>70
+,p_prompt=>'Maximum Records'
+,p_attribute_type=>'INTEGER'
+,p_is_required=>true
+,p_default_value=>'10000'
+,p_unit=>'rows'
+,p_is_translatable=>false
+,p_help_text=>'Maximum number of records to fetch from the SQL Query. Note that datasets that are very large (e.g. 10,000+) may perform poorly on the client''s machine. The Heatmap option is leaner and can support larger datasets.'
 );
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(33033918212766732)
@@ -780,9 +762,6 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_return_value=>'ZOOM_ALLOWED'
 ,p_help_text=>'Allow user to zoom in or out. If unset, the map scale will remain constant.'
 );
-end;
-/
-begin
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(33039568715766737)
 ,p_plugin_id=>wwv_flow_api.id(33032154349766695)
@@ -810,6 +789,9 @@ wwv_flow_api.create_plugin_attribute(
 ,p_help_text=>'Set the latitude and longitude as a pair of numbers to be used to position the map on page load, if no data is loaded. Default is 0,0. If data is loaded, this attribute has no effect. NOTE: the numeric values must use the dot (.) as the decimal separ'
 ||'ator, and comma (,) as the delimiter between the lat and lng values.'
 );
+end;
+/
+begin
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(33040367046766737)
 ,p_plugin_id=>wwv_flow_api.id(33032154349766695)

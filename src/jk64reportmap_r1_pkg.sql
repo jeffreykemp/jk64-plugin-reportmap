@@ -1,4 +1,3 @@
-/**********************************************************
 create or replace package jk64reportmap_r1_pkg as
 -- jk64 ReportMap v1.0 Jul 2019
 
@@ -17,7 +16,6 @@ end jk64reportmap_r1_pkg;
 /
 
 create or replace package body jk64reportmap_r1_pkg as
-**********************************************************/
 -- jk64 ReportMap v1.0 Jul 2019
 
 -- format to use to convert a string to a number
@@ -100,7 +98,8 @@ function get_markers
 
 begin
 
-/* For most cases, column list is as follows:
+/*
+   For most cases, column list is as follows:
 
    lat,   - required
    lng,   - required
@@ -280,24 +279,14 @@ function render
     l_options             plugin_attr := p_region.attribute_04;
     l_initial_zoom_level  plugin_attr := p_region.attribute_05;
     l_initial_center      plugin_attr := p_region.attribute_06;
---    l_                  plugin_attr := p_region.attribute_07;
---    l_                  plugin_attr := p_region.attribute_08;
---    l_                  plugin_attr := p_region.attribute_09;
     l_restrict_country    plugin_attr := p_region.attribute_10;
     l_mapstyle            plugin_attr := p_region.attribute_11;
     l_heatmap_dissipating plugin_attr := p_region.attribute_12;
     l_heatmap_opacity     plugin_attr := p_region.attribute_13;
     l_heatmap_radius      plugin_attr := p_region.attribute_14;
     l_travel_mode         plugin_attr := p_region.attribute_15;
---    l_                  plugin_attr := p_region.attribute_16;
---    l_                  plugin_attr := p_region.attribute_17;
---    l_                  plugin_attr := p_region.attribute_18;
---    l_                  plugin_attr := p_region.attribute_19;
---    l_                  plugin_attr := p_region.attribute_20;
     l_optimizewaypoints   plugin_attr := p_region.attribute_21;
     l_maptype             plugin_attr := p_region.attribute_22;
---    l_                  plugin_attr := p_region.attribute_23;
---    l_                  plugin_attr := p_region.attribute_24;
     l_gesture_handling    plugin_attr := p_region.attribute_25;
     
     l_opt varchar2(32767);
@@ -349,15 +338,6 @@ begin
     if l_initial_center is not null then
         parse_latlng(l_initial_center, p_lat=>l_lat, p_lng=>l_lng);
     end if;
-
---    if l_lat is not null then
---
---        l_lat_min := greatest(l_lat - 10, -60);
---        l_lat_max := least(l_lat + 10, 70);
---        l_lng_min := greatest(l_lng - 10, -180);
---        l_lng_max := least(l_lng + 10, 180);
---
---    end if;
     
     l_opt := '{'
       || apex_javascript.add_attribute('regionId', l_region_id)
@@ -490,19 +470,6 @@ begin
             ,p_lng_max => l_lng_max
             );
 
---    elsif l_data.count = 0 and l_lat is not null then
---        l_lat_min := greatest(l_lat - 10, -180);
---        l_lat_max := least(l_lat + 10, 80);
---        l_lng_min := greatest(l_lng - 10, -180);
---        l_lng_max := least(l_lng + 10, 180);
-
---    -- show (most of the) entire map if no points to show
---    elsif l_data.count = 0 then
---        l_lat_min := -60;
---        l_lat_max := 70;
---        l_lng_min := -180;
---        l_lng_max := 180;
-
     end if;
 
     sys.owa_util.mime_header('text/plain', false);
@@ -532,6 +499,5 @@ exception
         sys.htp.p('{"error":"' || apex_escape.js_literal(sqlerrm,'"') || '"}');
 end ajax;
 
-/**********************************************************
 end jk64reportmap_r1_pkg;
-**********************************************************/
+/
