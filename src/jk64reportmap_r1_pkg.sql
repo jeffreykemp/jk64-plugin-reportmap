@@ -47,9 +47,6 @@ g_travelmode_walking       constant varchar2(10) := 'WALKING';
 g_travelmode_bicycling     constant varchar2(10) := 'BICYCLING';
 g_travelmode_transit       constant varchar2(10) := 'TRANSIT';
 
-g_max_rows         constant number := 100000;
-g_max_rows_heatmap constant number := 1000000;
-
 subtype plugin_attr is varchar2(32767);
 
 procedure get_map_bounds
@@ -97,6 +94,7 @@ function get_markers
     l_weight         number;
      
     l_column_value_list apex_plugin_util.t_column_value_list;
+    l_max_rows          plugin_attr := p_plugin.attribute_07;
     l_visualisation     plugin_attr := p_region.attribute_02;
 
 begin
@@ -126,7 +124,7 @@ begin
             ,p_min_columns    => 3
             ,p_max_columns    => 3
             ,p_component_name => p_region.name
-            ,p_max_rows       => g_max_rows_heatmap);
+            ,p_max_rows       => to_number(l_max_rows));
   
         for i in 1..l_column_value_list(1).count loop
       
@@ -166,7 +164,7 @@ begin
             ,p_min_columns    => 4
             ,p_max_columns    => 7
             ,p_component_name => p_region.name
-            ,p_max_rows       => g_max_rows);
+            ,p_max_rows       => to_number(l_max_rows));
     
         for i in 1..l_column_value_list(1).count loop
         
