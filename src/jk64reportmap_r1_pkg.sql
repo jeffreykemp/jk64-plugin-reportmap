@@ -76,7 +76,8 @@ begin
 end latlng_literal;
 
 function get_markers
-    (p_region  in apex_plugin.t_region
+    (p_plugin  in apex_plugin.t_plugin
+    ,p_region  in apex_plugin.t_region
     ,p_lat_min in out number
     ,p_lat_max in out number
     ,p_lng_min in out number
@@ -463,7 +464,8 @@ begin
     if p_region.source is not null then
 
         l_data := get_markers
-            (p_region  => p_region
+            (p_plugin  => p_plugin
+            ,p_region  => p_region
             ,p_lat_min => l_lat_min
             ,p_lat_max => l_lat_max
             ,p_lng_min => l_lng_min
