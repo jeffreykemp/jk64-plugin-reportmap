@@ -1,6 +1,6 @@
 # Report Map (Google Maps) ![APEX Plugin](https://cdn.rawgit.com/Dani3lSun/apex-github-badges/b7e95341/badges/apex-plugin-badge.svg) ![APEX 18.2](https://github.com/Dani3lSun/apex-github-badges/blob/master/badges/apex-18_2-badge.svg)
 
-### A Region plugin for Oracle Application Express
+### A region plugin for Oracle Application Express
 
 **Leverage the power of Google Maps in your APEX application.** This plugin allows you to add one or more Google Map regions to any page, showing a number of markers (pins) retrieved from a query or other data source you specify.
 
