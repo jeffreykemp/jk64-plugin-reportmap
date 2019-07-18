@@ -36,8 +36,8 @@ Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to
 
 ## PRE-REQUISITES
 
-* Oracle Application Express 18.2 or later
-* You need a [Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key)
+* Oracle Application Express **18.2** or later
+* Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key)**
 
 ## INSTALLATION INSTRUCTIONS
 
