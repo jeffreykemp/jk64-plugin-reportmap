@@ -1,8 +1,12 @@
 # Report Map (Google Maps) ![APEX Plugin](https://cdn.rawgit.com/Dani3lSun/apex-github-badges/b7e95341/badges/apex-plugin-badge.svg) ![APEX 18.2](https://github.com/Dani3lSun/apex-github-badges/blob/master/badges/apex-18_2-badge.svg)
 
-**A Region plugin for Oracle Application Express**
+### A Region plugin for Oracle Application Express
 
-This allows you to add a Google Map region to any page, showing a number of markers (pins) based on a query you specify. The plugin provides a rich array of built-in features, as well as giving access to the underlying Google Maps object so you can customise it with the behaviour you need.
+**Leverage the power of Google Maps in your APEX application.** This plugin allows you to add one or more Google Map regions to any page, showing a number of markers (pins) retrieved from a query or other data source you specify.
+
+The plugin provides a rich array of built-in declarative features, dynamic actions and associated API routines, and it also giving you access to the underlying Google Maps object so you can customise it with any other behaviour you need.
+
+Full documentation is provided in the [WIKI](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki).
 
 ![plugin-reportmap-markers.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/images/plugin-reportmap-markers.png)
 
