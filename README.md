@@ -2,7 +2,7 @@
 
 **A Region plugin for Oracle Application Express**
 
-**NOTE:** version 1.0 is currently in development. It will include a number of new features, and it will require a minimum of Oracle APEX 18.2. Stay tuned!
+> ### NOTE: version 1.0 is currently in development. It will include a number of new features, and it will require a minimum of Oracle APEX 18.2. Stay tuned!
 
 This allows you to add a Google Map region to any page, showing a number of markers (pins) based on a query you specify. 
 
