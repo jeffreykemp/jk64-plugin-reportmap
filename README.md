@@ -8,34 +8,34 @@ This allows you to add a Google Map region to any page, showing a number of mark
 
 The user can click any marker to see a popup info window for it.
 
-**Visualisation: Marker Clustering**
+### Visualisation: Marker Clustering
 
 ![plugin-reportmap-clustering.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/images/plugin-reportmap-clustering.png)
 
 If many pins are too close together, Marker Clustering merges them into a single cluster; the number indicates how many pins are at that location. As the user zooms in or out, the clusters will split up or merge as needed.
 
-**Visualisation: Heatmap**
+### Visualisation: Heatmap
 
 ![plugin-reportmap-heatmap.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/images/plugin-reportmap-heatmap.png)
 
 This is suitable for a large volume of data points. Each data point can have a "weight" which indicates the magnitude of some measure.
 
-**Visualisation: Directions**
+### Visualisation: Directions
 
 ![plugin-reportmap-route.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/images/plugin-reportmap-route.png)
 
 Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to derive a route. Google Maps can generate a route for Driving, Walking, Bicycling, or Transit (public transport). The plugin can also get the calculated total Distance and Time for the route.
 
-## DEMO ##
+## DEMO
 
 [https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64](https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64)
 
-## PRE-REQUISITES ##
+## PRE-REQUISITES
 
 * Oracle Application Express 18.2 or later
 * You need a [Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key)
 
-## INSTALLATION INSTRUCTIONS ##
+## INSTALLATION INSTRUCTIONS
 
 **Warning:** if you are upgrading to v1.0 from any prior version, this is NOT a drop-in replacement; some changes may be required to your application to support it as a number of attributes have been removed. Also, the minimum requirement has changed to APEX 18.2.
 
