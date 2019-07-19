@@ -8,25 +8,25 @@ The plugin provides a rich array of built-in declarative features, dynamic actio
 
 Full documentation is provided in the [WIKI](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki).
 
-![plugin-reportmap-markers.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/images/plugin-reportmap-markers.png)
+![plugin-reportmap-markers.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-markers.png)
 
 The user can click any marker to see a popup info window for it.
 
 ### Visualisation: Marker Clustering
 
-![plugin-reportmap-clustering.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/images/plugin-reportmap-clustering.png)
+![plugin-reportmap-clustering.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-clustering.png)
 
 If many pins are too close together, Marker Clustering merges them into a single cluster; the number indicates how many pins are at that location. As the user zooms in or out, the clusters will split up or merge as needed.
 
 ### Visualisation: Heatmap
 
-![plugin-reportmap-heatmap.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/images/plugin-reportmap-heatmap.png)
+![plugin-reportmap-heatmap.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-heatmap.png)
 
 This is suitable for a large volume of data points. Each data point can have a "weight" which indicates the magnitude of some measure.
 
 ### Visualisation: Directions
 
-![plugin-reportmap-route.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/release-1-0/images/plugin-reportmap-route.png)
+![plugin-reportmap-route.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-route.png)
 
 Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to derive a route. Google Maps can generate a route for Driving, Walking, Bicycling, or Transit (public transport). The plugin can also get the calculated total Distance and Time for the route.
 
