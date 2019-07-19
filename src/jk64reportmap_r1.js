@@ -104,6 +104,29 @@ $( function() {
         _this.infoWindow.close();
       }
     },
+    
+    _pinData: function (pData, pos) {
+      var d = {
+        map:this.map,
+        id:pData.d,
+        name:pData.n,
+        lat:pos.lat(),
+        lng:pos.lng()
+      };
+      if (pData.f) {
+        if (pData.f.a1) { d["attr01"] = pData.f.a1; }
+        if (pData.f.a2) { d["attr02"] = pData.f.a2; }
+        if (pData.f.a3) { d["attr03"] = pData.f.a3; }
+        if (pData.f.a4) { d["attr04"] = pData.f.a4; }
+        if (pData.f.a5) { d["attr05"] = pData.f.a5; }
+        if (pData.f.a6) { d["attr06"] = pData.f.a6; }
+        if (pData.f.a7) { d["attr07"] = pData.f.a7; }
+        if (pData.f.a8) { d["attr08"] = pData.f.a8; }
+        if (pData.f.a9) { d["attr09"] = pData.f.a9; }
+        if (pData.f.a10) { d["attr10"] = pData.f.a10; }
+      }
+      return d;
+    },
 
     //place a report pin on the map
     _repPin: function (pData) {
@@ -119,41 +142,29 @@ $( function() {
           });
       google.maps.event.addListener(reppin, "click", function () {
         apex.debug("repPin "+pData.d+" clicked");
+        var pos = this.getPosition();
         if (pData.i) {
+          //show info window for this pin
           if (_this.iw) {
             _this.iw.close();
           } else {
             _this.iw = new google.maps.InfoWindow();
           }
-          _this.iw.setOptions({
-             content: pData.i
-            });
+          _this.iw.setOptions({ content: pData.i });
           _this.iw.open(_this.map, this);
         }
         if (_this.options.panOnClick) {
-          _this.map.panTo(this.getPosition());
+          _this.map.panTo(pos);
         }
         if (_this.options.clickZoomLevel) {
           _this.map.setZoom(_this.options.clickZoomLevel);
         }
-        apex.jQuery("#"+_this.options.regionId).trigger("markerclick", {
-          map:_this.map,
-          id:pData.d,
-          name:pData.n,
-          lat:pData.x,
-          lng:pData.y
-        });	
+        apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._pinData(pData, pos));	
       });
       google.maps.event.addListener(reppin, "dragend", function () {
         var pos = this.getPosition();
         apex.debug("repPin "+pData.d+" moved to position ("+pos.lat()+","+pos.lng()+")");
-        apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", {
-          map:_this.map,
-          id:pData.d,
-          name:pData.n,
-          lat:pos.lat(),
-          lng:pos.lng()
-        });	
+        apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", _this._pinData(pData, pos));
       });
       if (!_this.reppin) { _this.reppin=[]; }
       _this.reppin.push({"id":pData.d,"marker":reppin});

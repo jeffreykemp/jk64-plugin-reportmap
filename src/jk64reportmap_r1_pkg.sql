@@ -19,16 +19,16 @@ create or replace package body jk64reportmap_r1_pkg as
 -- jk64 ReportMap v1.0 Jul 2019
 
 -- format to use to convert a string to a number
-g_num_format constant varchar2(100) := '99999999999999.999999999999999999999999999999';
+g_num_format               constant varchar2(100) := '99999999999999.999999999999999999999999999999';
 
 -- format to use to convert a lat/lng number to string for passing via javascript
 -- 0.0000001 is enough precision for the practical limit of commercial surveying, error up to +/- 11.132 mm at the equator
-g_tochar_format   constant varchar2(100) := 'fm990.0999999';
-g_coord_precision constant number := 6;
+g_tochar_format            constant varchar2(100) := 'fm990.0999999';
+g_coord_precision          constant number := 6;
 
 -- if only one row is returned by the query, add this +/- to the latitude extents so it
 -- shows the neighbourhood instead of zooming to the max
-g_single_row_lat_margin constant number := 0.005;
+g_single_row_lat_margin    constant number := 0.005;
 
 g_visualisation_pins       constant varchar2(10) := 'PINS'; -- default
 g_visualisation_cluster    constant varchar2(10) := 'CLUSTER';
@@ -73,6 +73,24 @@ begin
         end;
 end latlng_literal;
 
+procedure val_integer (p_val in varchar2, p_min in number, p_max in number, p_label in varchar2) is
+    n number;
+begin
+    n := to_number(p_val);
+    if not p_val between p_min and p_max then
+        raise_application_error(-20000, p_label || ': must be in range 0..23 ("' || p_val || '")');
+    end if;
+exception
+    when value_error then
+        raise_application_error(-20000, p_label || ': invalid number ("' || p_val || '")');
+end val_integer;
+
+procedure parse_latlng (p_val in varchar2, p_lat out number, p_lng out number) is
+begin
+    p_lat := to_number(substr(p_val,1,instr(p_val,',')-1),g_num_format);
+    p_lng := to_number(substr(p_val,instr(p_val,',')+1),g_num_format);
+end parse_latlng;
+
 function get_markers
     (p_plugin  in apex_plugin.t_plugin
     ,p_region  in apex_plugin.t_region
@@ -82,19 +100,16 @@ function get_markers
     ,p_lng_max in out number
     ) return apex_application_global.vc_arr2 is
     
-    l_data           apex_application_global.vc_arr2;
-    l_lat            number;
-    l_lng            number;
-    l_name           varchar2(4000);
-    l_id             varchar2(4000);
-    l_info           varchar2(4000);
-    l_icon           varchar2(4000);
-    l_marker_label   varchar2(1);
-    l_weight         number;
+    l_data    apex_application_global.vc_arr2;
+    l_flex    varchar2(32767);
+    l_buf     varchar2(32767);
+    l_lat     number;
+    l_lng     number;
+    l_weight  number;
      
-    l_column_value_list apex_plugin_util.t_column_value_list;
-    l_max_rows          plugin_attr := p_plugin.attribute_07;
-    l_visualisation     plugin_attr := p_region.attribute_02;
+    l_column_value_list  apex_plugin_util.t_column_value_list;
+    l_max_rows           plugin_attr := p_plugin.attribute_07;
+    l_visualisation      plugin_attr := p_region.attribute_02;
 
 begin
 
@@ -108,6 +123,7 @@ begin
    info,  - optional
    icon,  - optional
    label  - optional
+   col01..col10 - optional flex fields
    
    If the "Heatmap" option is chosen, the column list is as follows:
    
@@ -142,7 +158,7 @@ begin
             l_data(nvl(l_data.last,0)+1) := '{'
                 || apex_javascript.add_attribute('x',round(l_lat,g_coord_precision))
                 || apex_javascript.add_attribute('y',round(l_lng,g_coord_precision))
-                || apex_javascript.add_attribute('d',least(round(l_weight),1) -- should be an integer
+                || apex_javascript.add_attribute('d',least(nvl(round(l_weight),1),1) -- should be an integer
                    ,false,false)
                 || '}';
 
@@ -162,49 +178,44 @@ begin
         l_column_value_list := apex_plugin_util.get_data
             (p_sql_statement  => p_region.source
             ,p_min_columns    => 4
-            ,p_max_columns    => 7
+            ,p_max_columns    => 17
             ,p_component_name => p_region.name
             ,p_max_rows       => to_number(l_max_rows));
     
         for i in 1..l_column_value_list(1).count loop
-        
-            if not l_column_value_list.exists(1)
-            or not l_column_value_list.exists(2)
-            or not l_column_value_list.exists(3)
-            or not l_column_value_list.exists(4) then
-                raise_application_error(-20000, 'Report Map Query must have at least 4 columns (lat, lng, name, id)');
-            end if;
       
             l_lat  := to_number(l_column_value_list(1)(i),g_num_format);
             l_lng  := to_number(l_column_value_list(2)(i),g_num_format);
-            l_name := l_column_value_list(3)(i);
-            l_id   := l_column_value_list(4)(i);
-            
-            -- default values if not supplied in query
-            l_info         := null;
-            l_icon         := null;
-            l_marker_label := null;
-            
-            if l_column_value_list.exists(5) then
-              l_info := l_column_value_list(5)(i);
-              if l_column_value_list.exists(6) then
-                l_icon := l_column_value_list(6)(i);
-                if l_column_value_list.exists(7) then
-                  l_marker_label := substr(l_column_value_list(7)(i),1,1);
-                end if;
-              end if;
-            end if;
         
-            l_data(nvl(l_data.last,0)+1) :='{'
-                || apex_javascript.add_attribute('d',sys.htf.escape_sc(l_id))
-                || apex_javascript.add_attribute('n',sys.htf.escape_sc(l_name))
-                || apex_javascript.add_attribute('x',round(l_lat,g_coord_precision))
-                || apex_javascript.add_attribute('y',round(l_lng,g_coord_precision))
-                || apex_javascript.add_attribute('i',sys.htf.escape_sc(l_info))
-                || apex_javascript.add_attribute('c',sys.htf.escape_sc(l_icon))
-                || apex_javascript.add_attribute('l',sys.htf.escape_sc(l_marker_label)
-                   ,false,false)
-                || '}';
+            -- get flex fields, if any
+            l_flex := case when l_column_value_list.exists(8) then apex_javascript.add_attribute('a1',sys.htf.escape_sc(l_column_value_list(8)(i))) end
+                   || case when l_column_value_list.exists(9) then apex_javascript.add_attribute('a2',sys.htf.escape_sc(l_column_value_list(9)(i))) end
+                   || case when l_column_value_list.exists(10) then apex_javascript.add_attribute('a3',sys.htf.escape_sc(l_column_value_list(10)(i))) end
+                   || case when l_column_value_list.exists(11) then apex_javascript.add_attribute('a4',sys.htf.escape_sc(l_column_value_list(11)(i))) end
+                   || case when l_column_value_list.exists(12) then apex_javascript.add_attribute('a5',sys.htf.escape_sc(l_column_value_list(12)(i))) end
+                   || case when l_column_value_list.exists(13) then apex_javascript.add_attribute('a6',sys.htf.escape_sc(l_column_value_list(13)(i))) end
+                   || case when l_column_value_list.exists(14) then apex_javascript.add_attribute('a7',sys.htf.escape_sc(l_column_value_list(14)(i))) end
+                   || case when l_column_value_list.exists(15) then apex_javascript.add_attribute('a8',sys.htf.escape_sc(l_column_value_list(15)(i))) end
+                   || case when l_column_value_list.exists(16) then apex_javascript.add_attribute('a9',sys.htf.escape_sc(l_column_value_list(16)(i))) end
+                   || case when l_column_value_list.exists(17) then apex_javascript.add_attribute('a10',sys.htf.escape_sc(l_column_value_list(17)(i))) end
+                   ;
+
+            l_buf := apex_javascript.add_attribute('x',round(l_lat,g_coord_precision))
+                  || apex_javascript.add_attribute('y',round(l_lng,g_coord_precision))
+                  || case when l_column_value_list.exists(3) then apex_javascript.add_attribute('d',sys.htf.escape_sc(l_column_value_list(3)(i))) end
+                  || case when l_column_value_list.exists(4) then apex_javascript.add_attribute('n',sys.htf.escape_sc(l_column_value_list(4)(i))) end
+                  || case when l_column_value_list.exists(5) then apex_javascript.add_attribute('i',sys.htf.escape_sc(l_column_value_list(5)(i))) end
+                  || case when l_column_value_list.exists(6) then apex_javascript.add_attribute('c',sys.htf.escape_sc(l_column_value_list(6)(i))) end
+                  || case when l_column_value_list.exists(7) then apex_javascript.add_attribute('l',sys.htf.escape_sc(l_column_value_list(7)(i))) end
+                  || case when l_flex is not null then
+                       '"f":{' || rtrim(l_flex,',') || '}'
+                     end
+                  ;
+            
+            if i < 8 then
+              apex_debug.message('#'||i||': ' || l_buf);
+            end if;
+            l_data(nvl(l_data.last,0)+1) := '{' || rtrim(l_buf,',') || '}';
 
             get_map_bounds
                 (p_lat     => l_lat
@@ -219,33 +230,17 @@ begin
 
     end if;
     
+    apex_debug.message('data.count='||l_data.count);
+
     -- handle edge case when there is exactly one row from query
     -- (otherwise the map zooms to maximum)
     if l_data.count = 1 then
         p_lat_min := p_lat_min - g_single_row_lat_margin;
         p_lat_max := p_lat_max + g_single_row_lat_margin;
     end if;
-    
+        
     return l_data;
 end get_markers;
-
-procedure val_integer (p_val in varchar2, p_min in number, p_max in number, p_label in varchar2) is
-    n number;
-begin
-    n := to_number(p_val);
-    if not p_val between p_min and p_max then
-        raise_application_error(-20000, p_label || ': must be in range 0..23 ("' || p_val || '")');
-    end if;
-exception
-    when value_error then
-        raise_application_error(-20000, p_label || ': invalid number ("' || p_val || '")');
-end val_integer;
-
-procedure parse_latlng (p_val in varchar2, p_lat out number, p_lng out number) is
-begin
-    p_lat := to_number(substr(p_val,1,instr(p_val,',')-1),g_num_format);
-    p_lng := to_number(substr(p_val,instr(p_val,',')+1),g_num_format);
-end parse_latlng;
 
 function render
     (p_region in apex_plugin.t_region
@@ -253,16 +248,14 @@ function render
     ,p_is_printer_friendly in boolean
     ) return apex_plugin.t_region_render_result is
     
-    l_result       apex_plugin.t_region_render_result;
-
-    l_lat          number;
-    l_lng          number;
-    l_region_id    varchar2(100);
-    l_data         apex_application_global.vc_arr2;
-    l_lat_min      number;
-    l_lat_max      number;
-    l_lng_min      number;
-    l_lng_max      number;
+    l_result     apex_plugin.t_region_render_result;
+    l_lat        number;
+    l_lng        number;
+    l_region_id  varchar2(100);
+    l_lat_min    number;
+    l_lat_max    number;
+    l_lng_min    number;
+    l_lng_max    number;
 
     -- Plugin attributes (application level)
     l_api_key                      plugin_attr := p_plugin.attribute_01;
@@ -273,24 +266,24 @@ function render
     l_max_zoom                     plugin_attr := p_plugin.attribute_06;
 
     -- Component attributes
-    l_map_height          plugin_attr := p_region.attribute_01;
-    l_visualisation       plugin_attr := p_region.attribute_02;
-    l_click_zoom_level    plugin_attr := p_region.attribute_03;
-    l_options             plugin_attr := p_region.attribute_04;
-    l_initial_zoom_level  plugin_attr := p_region.attribute_05;
-    l_initial_center      plugin_attr := p_region.attribute_06;
-    l_restrict_country    plugin_attr := p_region.attribute_10;
-    l_mapstyle            plugin_attr := p_region.attribute_11;
-    l_heatmap_dissipating plugin_attr := p_region.attribute_12;
-    l_heatmap_opacity     plugin_attr := p_region.attribute_13;
-    l_heatmap_radius      plugin_attr := p_region.attribute_14;
-    l_travel_mode         plugin_attr := p_region.attribute_15;
-    l_optimizewaypoints   plugin_attr := p_region.attribute_21;
-    l_maptype             plugin_attr := p_region.attribute_22;
-    l_gesture_handling    plugin_attr := p_region.attribute_25;
+    l_map_height           plugin_attr := p_region.attribute_01;
+    l_visualisation        plugin_attr := p_region.attribute_02;
+    l_click_zoom_level     plugin_attr := p_region.attribute_03;
+    l_options              plugin_attr := p_region.attribute_04;
+    l_initial_zoom_level   plugin_attr := p_region.attribute_05;
+    l_initial_center       plugin_attr := p_region.attribute_06;
+    l_restrict_country     plugin_attr := p_region.attribute_10;
+    l_mapstyle             plugin_attr := p_region.attribute_11;
+    l_heatmap_dissipating  plugin_attr := p_region.attribute_12;
+    l_heatmap_opacity      plugin_attr := p_region.attribute_13;
+    l_heatmap_radius       plugin_attr := p_region.attribute_14;
+    l_travel_mode          plugin_attr := p_region.attribute_15;
+    l_optimizewaypoints    plugin_attr := p_region.attribute_21;
+    l_maptype              plugin_attr := p_region.attribute_22;
+    l_gesture_handling     plugin_attr := p_region.attribute_25;
     
-    l_opt varchar2(32767);
-    l_buf varchar2(32767);
+    l_opt  varchar2(32767);
+    l_buf  varchar2(32767);
     
 begin
     -- debug information will be included
@@ -348,8 +341,7 @@ begin
       || apex_javascript.add_attribute('maxZoom', to_number(l_max_zoom))
       || apex_javascript.add_attribute('initialZoom', nullif(to_number(l_initial_zoom_level),2))
       || case when l_lat!=0 or l_lng!=0 then
-         '"initialCenter":{"lat":' || round(l_lat,g_coord_precision) || ','
-                       || '"lng":' || round(l_lng,g_coord_precision) || '},'
+            '"initialCenter":' || latlng_literal(l_lat,l_lng) || ','
          end
       || apex_javascript.add_attribute('clickZoomLevel', to_number(l_click_zoom_level))
       || apex_javascript.add_attribute('isDraggable', nullif(instr(':'||l_options||':',':DRAGGABLE:')>0,false))
@@ -412,6 +404,12 @@ begin
     sys.htp.p(replace(l_buf,'#REGION_ID#',l_region_id));
     
     return l_result;
+exception
+    when others then
+        apex_debug.error(sqlerrm);
+        apex_debug.message(dbms_utility.format_error_stack);
+        apex_debug.message(dbms_utility.format_call_stack);
+        raise;
 end render;
 
 function ajax
@@ -419,15 +417,14 @@ function ajax
     ,p_plugin in apex_plugin.t_plugin
     ) return apex_plugin.t_region_ajax_result is
 
-    l_result apex_plugin.t_region_ajax_result;
-
-    l_lat          number;
-    l_lng          number;
-    l_data         apex_application_global.vc_arr2;
-    l_lat_min      number;
-    l_lat_max      number;
-    l_lng_min      number;
-    l_lng_max      number;
+    l_result   apex_plugin.t_region_ajax_result;
+    l_lat      number;
+    l_lng      number;
+    l_data     apex_application_global.vc_arr2;
+    l_lat_min  number;
+    l_lat_max  number;
+    l_lng_min  number;
+    l_lng_max  number;
 
     -- Component attributes
     l_initial_center    plugin_attr := p_region.attribute_06;
@@ -451,8 +448,6 @@ begin
             ,p_lng_min => l_lng_min
             ,p_lng_max => l_lng_max
             );
-        
-        apex_debug.message('data.count='||l_data.count);
 
     end if;
         
@@ -496,7 +491,10 @@ begin
 exception
     when others then
         apex_debug.error(sqlerrm);
-        sys.htp.p('{"error":"' || apex_escape.js_literal(sqlerrm,'"') || '"}');
+        apex_debug.message(dbms_utility.format_error_stack);
+        apex_debug.message(dbms_utility.format_call_stack);
+        sys.htp.p('{"error":' || apex_escape.js_literal(sqlerrm,'"') || '}');
+        return l_result;
 end ajax;
 
 end jk64reportmap_r1_pkg;
