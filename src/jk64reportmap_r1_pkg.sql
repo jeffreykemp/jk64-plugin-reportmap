@@ -107,9 +107,22 @@ function get_markers
     l_lng     number;
     l_weight  number;
      
-    l_column_value_list  apex_plugin_util.t_column_value_list;
-    l_max_rows           plugin_attr := p_plugin.attribute_07;
-    l_visualisation      plugin_attr := p_region.attribute_02;
+    l_column_value_list     apex_plugin_util.t_column_value_list;
+    l_max_rows              plugin_attr := p_plugin.attribute_07;
+    l_visualisation         plugin_attr := p_region.attribute_02;
+    l_escape_special_chars  plugin_attr := p_region.attribute_24;
+    
+    function flex_field (attr_no in number, i in number) return varchar2 is
+      d varchar2(32767);
+    begin
+      if l_column_value_list.exists(attr_no+7) then
+        d := l_column_value_list(attr_no+7)(i);
+        if l_escape_special_chars='Y' then
+          d := sys.htf.escape_sc(d);
+        end if;
+      end if;
+      return apex_javascript.add_attribute('a'||attr_no,d);
+    end flex_field;
 
 begin
 
@@ -188,29 +201,21 @@ begin
             l_lng  := to_number(l_column_value_list(2)(i),g_num_format);
         
             -- get flex fields, if any
-            l_flex := case when l_column_value_list.exists(8) then apex_javascript.add_attribute('a1',sys.htf.escape_sc(l_column_value_list(8)(i))) end
-                   || case when l_column_value_list.exists(9) then apex_javascript.add_attribute('a2',sys.htf.escape_sc(l_column_value_list(9)(i))) end
-                   || case when l_column_value_list.exists(10) then apex_javascript.add_attribute('a3',sys.htf.escape_sc(l_column_value_list(10)(i))) end
-                   || case when l_column_value_list.exists(11) then apex_javascript.add_attribute('a4',sys.htf.escape_sc(l_column_value_list(11)(i))) end
-                   || case when l_column_value_list.exists(12) then apex_javascript.add_attribute('a5',sys.htf.escape_sc(l_column_value_list(12)(i))) end
-                   || case when l_column_value_list.exists(13) then apex_javascript.add_attribute('a6',sys.htf.escape_sc(l_column_value_list(13)(i))) end
-                   || case when l_column_value_list.exists(14) then apex_javascript.add_attribute('a7',sys.htf.escape_sc(l_column_value_list(14)(i))) end
-                   || case when l_column_value_list.exists(15) then apex_javascript.add_attribute('a8',sys.htf.escape_sc(l_column_value_list(15)(i))) end
-                   || case when l_column_value_list.exists(16) then apex_javascript.add_attribute('a9',sys.htf.escape_sc(l_column_value_list(16)(i))) end
-                   || case when l_column_value_list.exists(17) then apex_javascript.add_attribute('a10',sys.htf.escape_sc(l_column_value_list(17)(i))) end
-                   ;
+            l_flex := null;
+            for attr_no in 1..10 loop
+              l_flex := l_flex || flex_field(attr_no,i);
+            end loop;
 
             l_buf := apex_javascript.add_attribute('x',round(l_lat,g_coord_precision))
                   || apex_javascript.add_attribute('y',round(l_lng,g_coord_precision))
-                  || case when l_column_value_list.exists(3) then apex_javascript.add_attribute('d',sys.htf.escape_sc(l_column_value_list(3)(i))) end
-                  || case when l_column_value_list.exists(4) then apex_javascript.add_attribute('n',sys.htf.escape_sc(l_column_value_list(4)(i))) end
+                  || case when l_column_value_list.exists(3) then apex_javascript.add_attribute('n',sys.htf.escape_sc(l_column_value_list(3)(i))) end
+                  || case when l_column_value_list.exists(4) then apex_javascript.add_attribute('d',sys.htf.escape_sc(l_column_value_list(4)(i))) end
                   || case when l_column_value_list.exists(5) then apex_javascript.add_attribute('i',sys.htf.escape_sc(l_column_value_list(5)(i))) end
                   || case when l_column_value_list.exists(6) then apex_javascript.add_attribute('c',sys.htf.escape_sc(l_column_value_list(6)(i))) end
-                  || case when l_column_value_list.exists(7) then apex_javascript.add_attribute('l',sys.htf.escape_sc(l_column_value_list(7)(i))) end
+                  || case when l_column_value_list.exists(7) then apex_javascript.add_attribute('l',sys.htf.escape_sc(substr(l_column_value_list(7)(i),1,1))) end
                   || case when l_flex is not null then
                        '"f":{' || rtrim(l_flex,',') || '}'
-                     end
-                  ;
+                     end;
             
             if i < 8 then
               apex_debug.message('#'||i||': ' || l_buf);

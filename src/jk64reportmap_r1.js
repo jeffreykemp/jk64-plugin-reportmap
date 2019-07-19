@@ -150,7 +150,9 @@ $( function() {
           } else {
             _this.iw = new google.maps.InfoWindow();
           }
-          _this.iw.setOptions({ content: pData.i });
+          //unescape the html for the info window contents
+          var ht = new DOMParser().parseFromString(pData.i, "text/html");
+          _this.iw.setOptions({ content: ht.documentElement.textContent });
           _this.iw.open(_this.map, this);
         }
         if (_this.options.panOnClick) {
@@ -488,7 +490,7 @@ $( function() {
         maxZoom: _this.options.maxZoom,
         zoom: _this.options.initialZoom,
         center: _this.options.initialCenter,
-        mapTypeId: _this.mapType,
+        mapTypeId: _this.options.mapType,
         draggable: _this.options.allowPan,
         zoomControl: _this.options.allowZoom,
         scrollwheel: _this.options.allowZoom,
