@@ -63,20 +63,4 @@ SELECT lat, lng, name, id FROM mydata
 
 * Refer to the **[WIKI](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki)** for sample queries, plugin attributes, triggers, API references, and other tips & tricks.
 
-* If you encounter a bug or have a great idea for enhancement, please raise an **[Issue](https://github.com/jeffreykemp/jk64-plugin-reportmap/issues)**. I will endeavour to respond to each issue as quickly as possible. When reporting an issue, make sure to provide as much detail as possible:
-    
-    - Steps to reproduce the issue
-    - A concise description of the Expected, and Actual behaviour
-    - Version numbers for Oracle APEX and Oracle database
-    - Version number of the Report Map plugin
-    - The plugin SQL query, region static ID, and attribute values (you can get these by running the page in Debug mode, the attributes will be written to the browser console log)
-    - Any other information you feel may be relevant (e.g. sample data)
-
-* **FREE UPGRADE SUPPORT** *(terms & conditions apply)* - if you are upgrading to Release 1.0 from an earlier (beta) version of the plugin, at any time from now until Friday 20 December 2019  I will personally provide issue resolution support at no cost. If you encounter a problem, email me at jeff@jk64.com. My aim whenever possible is to provide 24-hour turnaround time for any bug fixes required. This free offer is subject to the following conditions:
-
-  * You must be upgrading from a prior Release of this plugin (0.1 to 0.10) in an environment where the plugin was previously working correctly.
-  * You must be on a supported environment, including (but not limited to) Oracle Database, and Oracle Application Express.
-  * You have taken reasonable steps to mitigate against any loss - including taking a backup of your application prior to commencing any upgrade.
-  * You must notify me of your issue, including as much detail as possible, before the end of the free support period (20 December 2019).
-  * There will be a few times when I will be temporarily unavailable (no longer than 4 days duration, typically on a weekend).
-  * Support is provided "as is" with no warranty of suitability for any purpose. No responsibility is accepted for loss or damage to systems or data. Refer to the [LICENSE](https://github.com/jeffreykemp/jk64-plugin-reportmap/blob/master/LICENSE) for more details.
+* If you encounter a bug or have a great idea for enhancement, please raise an **[Issue](https://github.com/jeffreykemp/jk64-plugin-reportmap/issues)**. I will endeavour to respond to each issue as quickly as possible.
