@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   15:03 Saturday July 20, 2019
+--   Date and Time:   19:59 Saturday July 20, 2019
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -36,13 +36,13 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 --
 
 -- Application Statistics:
---   Pages:                     18
---     Items:                   27
+--   Pages:                     19
+--     Items:                   28
 --     Computations:             1
 --     Processes:                4
---     Regions:                 49
+--     Regions:                 51
 --     Buttons:                  4
---     Dynamic Actions:         23
+--     Dynamic Actions:         24
 --   Shared Components:
 --     Logic:
 --       Processes:              2
@@ -97,6 +97,7 @@ wwv_flow_api.create_flow(
 ,p_populate_roles=>'A'
 ,p_application_tab_set=>0
 ,p_logo_image=>'TEXT:Report Map Demo'
+,p_public_user=>'APEX_PUBLIC_USER'
 ,p_proxy_server=>nvl(wwv_flow_application_install.get_proxy,'')
 ,p_no_proxy_domains=>nvl(wwv_flow_application_install.get_no_proxy_domains,'')
 ,p_flow_version=>'release 1.0 Jul 2019'
@@ -105,12 +106,13 @@ wwv_flow_api.create_flow(
 ,p_exact_substitutions_only=>'Y'
 ,p_browser_cache=>'N'
 ,p_browser_frame=>'D'
+,p_deep_linking=>'Y'
 ,p_rejoin_existing_sessions=>'N'
 ,p_csv_encoding=>'Y'
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190720150249'
+,p_last_upd_yyyymmddhh24miss=>'20190720195741'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>13
 ,p_ui_type_name => null
@@ -280,6 +282,15 @@ wwv_flow_api.create_list_item(
 ,p_list_item_link_target=>'f?p=&APP_ID.:17:&SESSION.::&DEBUG.::::'
 ,p_list_item_icon=>'fa-database'
 ,p_list_text_01=>'Associate "flex fields" with extra data with each pin on the map.'
+,p_list_item_current_type=>'TARGET_PAGE'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(34089085421399527)
+,p_list_item_display_sequence=>220
+,p_list_item_link_text=>'Map Layers'
+,p_list_item_link_target=>'f?p=&APP_ID.:18:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-layers'
+,p_list_text_01=>'Show a Google Maps Layer (Traffic, Transit, or Bicycling)'
 ,p_list_item_current_type=>'TARGET_PAGE'
 );
 end;
@@ -477,6 +488,16 @@ wwv_flow_api.create_list_item(
 ,p_parent_list_item_id=>wwv_flow_api.id(33282510915468298)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'17'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(34001707422955107)
+,p_list_item_display_sequence=>220
+,p_list_item_link_text=>'Map Layers'
+,p_list_item_link_target=>'f?p=&APP_ID.:18:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-layers'
+,p_parent_list_item_id=>wwv_flow_api.id(33282510915468298)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'18'
 );
 wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(32930148968395655)
@@ -10960,6 +10981,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_prompt=>'Min. Map Height'
 ,p_attribute_type=>'NUMBER'
 ,p_is_required=>true
+,p_show_in_wizard=>false
 ,p_default_value=>'400'
 ,p_unit=>'pixels'
 ,p_is_translatable=>false
@@ -11020,6 +11042,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_prompt=>'Zoom Level on Click'
 ,p_attribute_type=>'INTEGER'
 ,p_is_required=>false
+,p_show_in_wizard=>false
 ,p_default_value=>'13'
 ,p_unit=>'0 .. 23'
 ,p_is_translatable=>false
@@ -11079,6 +11102,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_prompt=>'Initial Zoom Level'
 ,p_attribute_type=>'INTEGER'
 ,p_is_required=>false
+,p_show_in_wizard=>false
 ,p_unit=>'0 .. 23'
 ,p_is_translatable=>false
 ,p_help_text=>'Initial zoom level (0..23) if no data is loaded. Default is 2. If data is loaded, this attribute has no effect.'
@@ -11095,6 +11119,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_prompt=>'Initial Map Center'
 ,p_attribute_type=>'TEXT'
 ,p_is_required=>false
+,p_show_in_wizard=>false
 ,p_unit=>'lat,long'
 ,p_is_translatable=>false
 ,p_help_text=>'Set the latitude and longitude as a pair of numbers to be used to position the map on page load, if no data is loaded. Default is 0,0. If data is loaded, this attribute has no effect. NOTE: the numeric values must use the dot (.) as the decimal separ'
@@ -11109,6 +11134,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_prompt=>'Restrict to Country code'
 ,p_attribute_type=>'TEXT'
 ,p_is_required=>false
+,p_show_in_wizard=>false
 ,p_display_length=>10
 ,p_max_length=>40
 ,p_is_translatable=>false
@@ -11126,6 +11152,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_prompt=>'Map Style'
 ,p_attribute_type=>'TEXTAREA'
 ,p_is_required=>false
+,p_show_in_wizard=>false
 ,p_is_translatable=>false
 ,p_examples=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'Here is an example, a light greyscale style map:',
@@ -11148,6 +11175,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_prompt=>'Dissipating'
 ,p_attribute_type=>'CHECKBOX'
 ,p_is_required=>false
+,p_show_in_wizard=>false
 ,p_default_value=>'N'
 ,p_is_translatable=>false
 ,p_depending_on_attribute_id=>wwv_flow_api.id(33034309319766732)
@@ -11165,6 +11193,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_prompt=>'Opacity'
 ,p_attribute_type=>'NUMBER'
 ,p_is_required=>false
+,p_show_in_wizard=>false
 ,p_default_value=>'0.6'
 ,p_display_length=>5
 ,p_unit=>'0 .. 1'
@@ -11184,6 +11213,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_prompt=>'Radius'
 ,p_attribute_type=>'INTEGER'
 ,p_is_required=>false
+,p_show_in_wizard=>false
 ,p_default_value=>'5'
 ,p_display_length=>5
 ,p_is_translatable=>false
@@ -11202,6 +11232,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_prompt=>'Travel Mode'
 ,p_attribute_type=>'SELECT LIST'
 ,p_is_required=>false
+,p_show_in_wizard=>false
 ,p_default_value=>'DRIVING'
 ,p_is_translatable=>false
 ,p_depending_on_attribute_id=>wwv_flow_api.id(33034309319766732)
@@ -11318,6 +11349,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_attribute_type=>'CHECKBOX'
 ,p_is_required=>false
 ,p_is_common=>false
+,p_show_in_wizard=>false
 ,p_default_value=>'Y'
 ,p_is_translatable=>false
 ,p_help_text=>'This is relevant only to the "flex fields", if supplied in the SQL Query. By default any special characters (such as < and >) will be escaped prior to sending to the client, in order to protect against XSS attacks and to allow the original data to be'
@@ -12851,7 +12883,6 @@ wwv_flow_api.create_user_interface(
 ,p_navigation_list_template_id=>wwv_flow_api.id(25186296185919505441)
 ,p_nav_list_template_options=>'#DEFAULT#'
 ,p_include_legacy_javascript=>'18'
-,p_include_jquery_migrate=>true
 ,p_nav_bar_type=>'LIST'
 ,p_nav_bar_list_id=>wwv_flow_api.id(25186303809636505463)
 ,p_nav_bar_list_template_id=>wwv_flow_api.id(25186296021391505441)
@@ -12901,7 +12932,7 @@ wwv_flow_api.create_page(
 '<p>',
 'This page only uses declarative APEX features (no added javascript).'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190720144524'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(73507635119238450)
@@ -13114,7 +13145,7 @@ wwv_flow_api.create_page(
 '<p>',
 'Dynamic action on plugin event <strong>markerDrag</strong> sets P2_DRAGGED.'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190720150028'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939239851408724)
@@ -13250,7 +13281,7 @@ wwv_flow_api.create_page(
 '<p>',
 'Map Style: <a href="https://snazzymaps.com/style/55352/bojangles">"Bojangles"</a>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32940867019408740)
@@ -13419,7 +13450,7 @@ wwv_flow_api.create_page(
 '<p>',
 'Dynamic action on plugin event <strong>markerClick</strong> sets P1_CLICKED.'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939470180408726)
@@ -13562,6 +13593,7 @@ wwv_flow_api.create_page(
  p_id=>5
 ,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
 ,p_name=>'Search Map'
+,p_alias=>'SEARCH'
 ,p_step_title=>'Search Map'
 ,p_reload_on_submit=>'A'
 ,p_warn_on_unsaved_changes=>'N'
@@ -13613,7 +13645,7 @@ wwv_flow_api.create_page(
 'This demonstrates how to modify one of the plugin options at runtime, how to convert a string to a Google Maps LatLng object, and how to execute arbitrary Google Maps API calls.',
 '</p>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190720145345'
+,p_last_upd_yyyymmddhh24miss=>'20190720195416'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(22167236053368435)
@@ -13886,7 +13918,7 @@ wwv_flow_api.create_page(
 '    select lat, lng, sum(mag) from earthquakes where mag>0 group by lat, lng',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(86703429402923302)
@@ -14044,7 +14076,7 @@ wwv_flow_api.create_page(
 '    }',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32938840967408720)
@@ -14324,7 +14356,7 @@ wwv_flow_api.create_page(
 '    where collection_name = ''MAP''',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(66183243515380734)
@@ -14477,7 +14509,7 @@ wwv_flow_api.create_page(
 ,p_page_template_options=>'#DEFAULT#'
 ,p_help_text=>'No help is available for this page.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32937906099408711)
@@ -14558,7 +14590,7 @@ wwv_flow_api.create_page(
 '    where collection_name = ''MAP''',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190720144640'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32938674169408718)
@@ -14721,7 +14753,7 @@ wwv_flow_api.create_page(
 '    $s("P11_LEGS",this.data.legs);',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190720111803'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(22167390620368436)
@@ -14847,6 +14879,7 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_02=>'DIRECTIONS'
 ,p_attribute_03=>'13'
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_12=>'N'
 ,p_attribute_15=>'DRIVING'
 ,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
@@ -15029,7 +15062,7 @@ wwv_flow_api.create_page(
 '<p>',
 '<a href="https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/Tip:-Zoom-to-user''s-current-location">Tip: Zoom to user''s current location</a>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190720143936'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939196388408723)
@@ -15170,7 +15203,7 @@ wwv_flow_api.create_page(
 '</code>',
 'It will run once on page load, after the google maps object has been created but before the data is loaded into the map.'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939684191408728)
@@ -15236,7 +15269,7 @@ wwv_flow_api.create_page(
 'The query does not include the "info" column, which means the pins don''t show any info window on click. If an "info" column had been provided, clicking a pin would show the info window; if the info window is too close to the edge, the map would pan a'
 ||' bit to move it into range.'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939858902408730)
@@ -15306,7 +15339,7 @@ wwv_flow_api.create_page(
 '    pano.setVisible(true);',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32940304653408735)
@@ -15525,7 +15558,7 @@ wwv_flow_api.create_page(
 '    where collection_name = ''MAP''',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(99447872302700825)
@@ -15698,7 +15731,7 @@ wwv_flow_api.create_page(
 '    + " this.data.attr03=" + this.data.attr03',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190720150249'
+,p_last_upd_yyyymmddhh24miss=>'20190720190800'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(106892920984447966)
@@ -15896,6 +15929,118 @@ wwv_flow_api.create_page_da_action(
 ,p_attribute_09=>'N'
 ,p_stop_execution_on_error=>'Y'
 ,p_wait_for_result=>'Y'
+);
+end;
+/
+prompt --application/pages/page_00018
+begin
+wwv_flow_api.create_page(
+ p_id=>18
+,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
+,p_name=>'Map Layers'
+,p_alias=>'LAYERS'
+,p_step_title=>'Map Layers'
+,p_warn_on_unsaved_changes=>'N'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_autocomplete_on_off=>'OFF'
+,p_page_template_options=>'#DEFAULT#'
+,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'This page demonstrates how to add a Layer to the map. Google Maps provides three layers: Traffic, Transit, and Bicycling.',
+'<p>',
+'On change of the select list item, the following JavaScript is run:',
+'<code>',
+'    // remove the previous layer, if it exists',
+'    if (typeof lyr===''object'') { lyr.setMap(null); }',
+'    delete lyr;',
+'    // get the layer',
+'    switch ($v("P18_LAYER")) {',
+'      case ''traffic'': lyr = new google.maps.TrafficLayer(); break;',
+'      case ''transit'': lyr = new google.maps.TransitLayer(); break;',
+'      case ''bicycling'': lyr = new google.maps.BicyclingLayer(); break;',
+'    }',
+'    // put the layer on the map',
+'    lyr.setMap( $("#map_mymap").reportmap("instance").map );',
+'</code>'))
+,p_last_updated_by=>'JEFF'
+,p_last_upd_yyyymmddhh24miss=>'20190720195429'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(33391994028218419)
+,p_plug_name=>'May Layers'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_component_template_options=>'#DEFAULT#'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>20
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_source_type=>'NATIVE_HELP_TEXT'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(34002150270955113)
+,p_plug_name=>'Map'
+,p_region_name=>'mymap'
+,p_region_template_options=>'#DEFAULT#:t-Region--noPadding:t-Region--hideHeader:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>10
+,p_plug_display_point=>'BODY'
+,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_attribute_01=>'350'
+,p_attribute_02=>'PINS'
+,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
+,p_attribute_05=>'11'
+,p_attribute_06=>'40.710,-73.984'
+,p_attribute_22=>'ROADMAP'
+,p_attribute_24=>'Y'
+,p_attribute_25=>'auto'
+);
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(33392026858218420)
+,p_name=>'P18_LAYER'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_api.id(33391994028218419)
+,p_prompt=>'Layer'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC2:Traffic;traffic,Transit;transit,Bicycling;bicycling'
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'(select a layer)'
+,p_cHeight=>1
+,p_colspan=>4
+,p_grid_column=>3
+,p_field_template=>wwv_flow_api.id(33868269191697067)
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attribute_01=>'NONE'
+,p_attribute_02=>'N'
+);
+wwv_flow_api.create_page_da_event(
+ p_id=>wwv_flow_api.id(33392302536218423)
+,p_name=>'on change'
+,p_event_sequence=>10
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P18_LAYER'
+,p_condition_element=>'P18_LAYER'
+,p_triggering_condition_type=>'NOT_NULL'
+,p_bind_type=>'bind'
+,p_bind_event_type=>'change'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(33392404864218424)
+,p_event_id=>wwv_flow_api.id(33392302536218423)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if (typeof lyr===''object'') { lyr.setMap(null); }',
+'delete lyr;',
+'switch ($v("P18_LAYER")) {',
+'  case ''traffic'': lyr = new google.maps.TrafficLayer(); break;',
+'  case ''transit'': lyr = new google.maps.TransitLayer(); break;',
+'  case ''bicycling'': lyr = new google.maps.BicyclingLayer(); break;',
+'}',
+'lyr.setMap( $("#map_mymap").reportmap("instance").map );'))
 );
 end;
 /
