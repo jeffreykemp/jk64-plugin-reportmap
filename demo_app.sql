@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   23:16 Friday July 19, 2019
+--   Date and Time:   15:03 Saturday July 20, 2019
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -37,12 +37,12 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 
 -- Application Statistics:
 --   Pages:                     18
---     Items:                   26
+--     Items:                   27
 --     Computations:             1
 --     Processes:                4
 --     Regions:                 49
 --     Buttons:                  4
---     Dynamic Actions:         22
+--     Dynamic Actions:         23
 --   Shared Components:
 --     Logic:
 --       Processes:              2
@@ -110,7 +110,7 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719231635'
+,p_last_upd_yyyymmddhh24miss=>'20190720150249'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>13
 ,p_ui_type_name => null
@@ -12890,11 +12890,18 @@ wwv_flow_api.create_page(
 '    where collection_name = ''MAP''',
 '</code>',
 '<p>',
-'Dynamic action on plugin event <strong>markerClick</strong> sets P1_CLICKED.',
+'Dynamic action on plugin event <strong>markerClick</strong> with actions Set Value on P1_CLICKED, to JavaScript Expressions:',
+'<code>',
+'    "this.data.id=" + this.data.id + " this.data.name=" + this.data.name',
+'</code>',
+'and for P1_POSITION:',
+'<code>',
+'    this.data.lat + "," + this.data.lng',
+'</code>',
 '<p>',
 'This page only uses declarative APEX features (no added javascript).'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720144524'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(73507635119238450)
@@ -13015,11 +13022,24 @@ wwv_flow_api.create_report_columns(
 ,p_include_in_export=>'Y'
 );
 wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(33391359332218413)
+,p_name=>'P1_POSITION'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_api.id(73507635119238450)
+,p_prompt=>'Position'
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
+,p_field_template=>wwv_flow_api.id(33868269191697067)
+,p_item_template_options=>'#DEFAULT#'
+,p_attribute_01=>'N'
+,p_attribute_02=>'VALUE'
+,p_attribute_04=>'Y'
+);
+wwv_flow_api.create_page_item(
  p_id=>wwv_flow_api.id(3214474856975807638)
 ,p_name=>'P1_CLICKED'
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_api.id(73507635119238450)
-,p_prompt=>'P1_CLICKED'
+,p_prompt=>'Pin data'
 ,p_placeholder=>'(click a map marker to show data here)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>4000
@@ -13045,10 +13065,30 @@ wwv_flow_api.create_page_da_action(
 ,p_event_id=>wwv_flow_api.id(3214474913618807639)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'$s("P1_CLICKED", "this.data.id="+this.data.id+" this.data.name="+this.data.name+" this.data.lat="+this.data.lat+" this.data.lng="+this.data.lng);'
+,p_execute_on_page_init=>'Y'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P1_CLICKED'
+,p_attribute_01=>'JAVASCRIPT_EXPRESSION'
+,p_attribute_05=>'"this.data.id=" + this.data.id + " this.data.name=" + this.data.name'
+,p_attribute_09=>'N'
 ,p_stop_execution_on_error=>'Y'
+,p_wait_for_result=>'Y'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(33391446464218414)
+,p_event_id=>wwv_flow_api.id(3214474913618807639)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'Y'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P1_POSITION'
+,p_attribute_01=>'JAVASCRIPT_EXPRESSION'
+,p_attribute_05=>'this.data.lat + "," + this.data.lng'
+,p_attribute_09=>'N'
+,p_stop_execution_on_error=>'Y'
+,p_wait_for_result=>'Y'
 );
 end;
 /
@@ -13074,7 +13114,7 @@ wwv_flow_api.create_page(
 '<p>',
 'Dynamic action on plugin event <strong>markerDrag</strong> sets P2_DRAGGED.'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720150028'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939239851408724)
@@ -13149,14 +13189,19 @@ wwv_flow_api.create_page_da_event(
 ,p_bind_event_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1|REGION TYPE|markerclick'
 );
 wwv_flow_api.create_page_da_action(
- p_id=>wwv_flow_api.id(32244357570468759)
+ p_id=>wwv_flow_api.id(33391766523218417)
 ,p_event_id=>wwv_flow_api.id(32243815993468757)
 ,p_event_result=>'TRUE'
-,p_action_sequence=>10
+,p_action_sequence=>20
 ,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'$s("P2_CLICKED", "this.data.id="+this.data.id+" this.data.name="+this.data.name+" this.data.lat="+this.data.lat+" this.data.lng="+this.data.lng);'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P2_CLICKED'
+,p_attribute_01=>'JAVASCRIPT_EXPRESSION'
+,p_attribute_05=>'"this.data.id="+this.data.id+" this.data.name="+this.data.name+" this.data.lat="+this.data.lat+" this.data.lng="+this.data.lng'
+,p_attribute_09=>'N'
 ,p_stop_execution_on_error=>'Y'
+,p_wait_for_result=>'Y'
 );
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(22167954866368442)
@@ -13168,13 +13213,19 @@ wwv_flow_api.create_page_da_event(
 ,p_bind_event_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1|REGION TYPE|markerdrag'
 );
 wwv_flow_api.create_page_da_action(
- p_id=>wwv_flow_api.id(22168060462368443)
+ p_id=>wwv_flow_api.id(33391880175218418)
 ,p_event_id=>wwv_flow_api.id(22167954866368442)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'$s("P2_DRAGGED", "this.data.id="+this.data.id+" this.data.name="+this.data.name+" this.data.lat="+this.data.lat+" this.data.lng="+this.data.lng);'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P2_DRAGGED'
+,p_attribute_01=>'JAVASCRIPT_EXPRESSION'
+,p_attribute_05=>'"this.data.id="+this.data.id+" this.data.name="+this.data.name+" this.data.lat="+this.data.lat+" this.data.lng="+this.data.lng'
+,p_attribute_09=>'N'
+,p_stop_execution_on_error=>'Y'
+,p_wait_for_result=>'Y'
 );
 end;
 /
@@ -13525,12 +13576,20 @@ wwv_flow_api.create_page(
 '<p>',
 'When it is found, the map raises the <strong>addressFound</strong> event.',
 '<p>',
-'A dynamic action on the region then executes the following javascript:',
+'A dynamic action on the region then executes the following Actions:',
+'<ol><li>Execute JavaScript Code:',
 '<code>',
-'    $s("P5_ADDRESS", this.data.result.formatted_address);',
-'    $s("P5_DSP_LAT_LNG", this.data.lat + "," + this.data.lng);',
-'    $("#map_mymap").reportmap("instance").map.setZoom(17);',
+'    this.data.map.setZoom(17);',
 '</code>',
+'</li><li>Set Value, on item P5_ADDRESS, to JavaScript Expression:',
+'<code>',
+'    this.data.result.formatted_address',
+'</code>',
+'</li><li>Set Value, on item P5_DSP_LAT_LNG, to JavaScript Expression:',
+'<code>',
+'    this.data.lat + "," + this.data.lng);',
+'</code>',
+'</li></ol>',
 '<p>',
 'Alternatively, if you click any point on the map, the <strong>mapClick</strong> event fires and a dynamic action executes:',
 '<code>',
@@ -13554,7 +13613,7 @@ wwv_flow_api.create_page(
 'This demonstrates how to modify one of the plugin options at runtime, how to convert a string to a Google Maps LatLng object, and how to execute arbitrary Google Maps API calls.',
 '</p>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720145345'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(22167236053368435)
@@ -13689,10 +13748,37 @@ wwv_flow_api.create_page_da_action(
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'$s("P5_ADDRESS", this.data.result.formatted_address);',
-'$s("P5_DSP_LAT_LNG", this.data.lat + "," + this.data.lng);',
-'$("#map_mymap").reportmap("instance").map.setZoom(17);'))
+,p_attribute_01=>'this.data.map.setZoom(17);'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(33391528882218415)
+,p_event_id=>wwv_flow_api.id(102156728439353007)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P5_ADDRESS'
+,p_attribute_01=>'JAVASCRIPT_EXPRESSION'
+,p_attribute_05=>'this.data.result.formatted_address'
+,p_attribute_09=>'N'
+,p_stop_execution_on_error=>'Y'
+,p_wait_for_result=>'Y'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(33391652411218416)
+,p_event_id=>wwv_flow_api.id(102156728439353007)
+,p_event_result=>'TRUE'
+,p_action_sequence=>30
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P5_LATLNG,P5_DSP_LAT_LNG'
+,p_attribute_01=>'JAVASCRIPT_EXPRESSION'
+,p_attribute_05=>'this.data.lat + "," + this.data.lng'
+,p_attribute_09=>'N'
+,p_stop_execution_on_error=>'Y'
+,p_wait_for_result=>'Y'
 );
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(22166137092368424)
@@ -14472,7 +14558,7 @@ wwv_flow_api.create_page(
 '    where collection_name = ''MAP''',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720144640'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32938674169408718)
@@ -14604,19 +14690,6 @@ wwv_flow_api.create_page_plug(
 ,p_plug_source_type=>'NATIVE_HELP_TEXT'
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 );
-wwv_flow_api.create_page_item(
- p_id=>wwv_flow_api.id(109897339745436567)
-,p_name=>'P10_CLICKED'
-,p_item_sequence=>20
-,p_item_plug_id=>wwv_flow_api.id(109892143132436556)
-,p_prompt=>'P10_CLICKED'
-,p_display_as=>'NATIVE_DISPLAY_ONLY'
-,p_field_template=>wwv_flow_api.id(25186298275602505444)
-,p_item_template_options=>'#DEFAULT#'
-,p_attribute_01=>'Y'
-,p_attribute_02=>'VALUE'
-,p_attribute_04=>'Y'
-);
 end;
 /
 prompt --application/pages/page_00011
@@ -14648,7 +14721,7 @@ wwv_flow_api.create_page(
 '    $s("P11_LEGS",this.data.legs);',
 '</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720111803'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(22167390620368436)
@@ -14774,7 +14847,6 @@ wwv_flow_api.create_page_plug(
 ,p_attribute_02=>'DIRECTIONS'
 ,p_attribute_03=>'13'
 ,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED'
-,p_attribute_12=>'N'
 ,p_attribute_15=>'DRIVING'
 ,p_attribute_21=>'N'
 ,p_attribute_22=>'ROADMAP'
@@ -14935,19 +15007,29 @@ wwv_flow_api.create_page(
 ,p_page_template_options=>'#DEFAULT#'
 ,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'Click the button to geolocate: find your current location. Your browser may ask your permission to provide this information to the page. This demo app doesn''t send that info anywhere; but you could code your app to do something with it if you needed '
-||'to.',
-'<p>',
-'The accuracy of the geolocation will depend on the user''s device.',
-'<p>',
+||'to. The accuracy of the geolocation will depend on the user''s device.',
+'<p><p>',
 'The region has <b>Static ID</b> set to "mymap". The button has a dynamic action that executes the following javascript:',
 '<code>',
 '    $("#map_mymap").reportmap("geolocate");',
-'    $("#map_mymap").reportmap("instance").map.setZoom(15);',
 '</code>',
+'<p>',
+'The region has a Dynamic Action on the <b>geolocate</b> event which has two Actions:',
+'<ol>',
+'<li><b>Set Value</b>: set item P12_CENTRE to JavaScript Expression:',
+'<code>',
+'this.data.lat+","+this.data.lng',
+'</code></li>',
+'<li><b>Execute JavaScript Code</b>:',
+'<code>',
+'this.data.map.setZoom(15);',
+'</code></li>',
+'</ol>',
+'</p>',
 '<p>',
 '<a href="https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/Tip:-Zoom-to-user''s-current-location">Tip: Zoom to user''s current location</a>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720143936'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(32939196388408723)
@@ -14997,6 +15079,20 @@ wwv_flow_api.create_page_button(
 ,p_warn_on_unsaved_changes=>null
 ,p_icon_css_classes=>'fa-bolt'
 );
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(33390974272218409)
+,p_name=>'P12_CENTRE'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_api.id(135883373743086238)
+,p_prompt=>'Centre'
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
+,p_field_template=>wwv_flow_api.id(33868269191697067)
+,p_item_icon_css_classes=>'fa-map-pin'
+,p_item_template_options=>'#DEFAULT#'
+,p_attribute_01=>'N'
+,p_attribute_02=>'VALUE'
+,p_attribute_04=>'Y'
+);
 wwv_flow_api.create_page_da_event(
  p_id=>wwv_flow_api.id(135883585641086240)
 ,p_name=>'geolocate'
@@ -15013,9 +15109,40 @@ wwv_flow_api.create_page_da_action(
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'$("#map_mymap").reportmap("geolocate");',
-'$("#map_mymap").reportmap("instance").map.setZoom(15);'))
+,p_attribute_01=>'$("#map_mymap").reportmap("geolocate");'
+);
+wwv_flow_api.create_page_da_event(
+ p_id=>wwv_flow_api.id(33391015195218410)
+,p_name=>'on geolocate'
+,p_event_sequence=>20
+,p_triggering_element_type=>'REGION'
+,p_triggering_region_id=>wwv_flow_api.id(32939196388408723)
+,p_bind_type=>'bind'
+,p_bind_event_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1|REGION TYPE|geolocate'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(33391185195218411)
+,p_event_id=>wwv_flow_api.id(33391015195218410)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P12_CENTRE'
+,p_attribute_01=>'JAVASCRIPT_EXPRESSION'
+,p_attribute_05=>'this.data.lat+","+this.data.lng'
+,p_attribute_09=>'N'
+,p_stop_execution_on_error=>'Y'
+,p_wait_for_result=>'Y'
+);
+wwv_flow_api.create_page_da_action(
+ p_id=>wwv_flow_api.id(33391234015218412)
+,p_event_id=>wwv_flow_api.id(33391015195218410)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>'this.data.map.setZoom(15);'
 );
 end;
 /
@@ -15553,8 +15680,6 @@ wwv_flow_api.create_page(
 ,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<strong>Click a pin to get data about it, including the values for up to 10 "flex fields" that were supplied in the query. This example generates random 3-character strings.</strong>',
 '<p>',
-'The map region has static id "mymap".',
-'<p>',
 'Query for map plugin:',
 '<code>',
 '    select c003 as lat, c004 as lng, c002 as name, c001 as id',
@@ -15566,9 +15691,14 @@ wwv_flow_api.create_page(
 '    where collection_name = ''MAP''',
 '</code>',
 '<p>',
-'When a pin is clicked, a dynamic action on the markerClicked event gets the details for the pin, including the ten flex fields.'))
+'When a pin is clicked, a dynamic action on the <b>markerClick</b> event gets the details for the pin, including the ten flex fields. It has an Action, Set Value on P17_DATA, with JavaScript Expression:',
+'<code>',
+'    "this.data.attr01=" + this.data.attr01',
+'    + " this.data.attr02=" + this.data.attr02',
+'    + " this.data.attr03=" + this.data.attr03',
+'</code>'))
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20190719230930'
+,p_last_upd_yyyymmddhh24miss=>'20190720150249'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(106892920984447966)
@@ -15729,10 +15859,10 @@ wwv_flow_api.create_report_columns(
 );
 wwv_flow_api.create_page_item(
  p_id=>wwv_flow_api.id(33386384838209562)
-,p_name=>'P17_CLICKED'
+,p_name=>'P17_DATA'
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_api.id(106892920984447966)
-,p_prompt=>'P17_CLICKED'
+,p_prompt=>'Data'
 ,p_display_as=>'NATIVE_DISPLAY_ONLY'
 ,p_field_template=>wwv_flow_api.id(33868269191697067)
 ,p_item_template_options=>'#DEFAULT#'
@@ -15754,18 +15884,18 @@ wwv_flow_api.create_page_da_action(
 ,p_event_id=>wwv_flow_api.id(33389399247209593)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'$s("P17_CLICKED",',
-'   "this.data.id="+this.data.id',
-'   +" this.data.name="+this.data.name',
-'   +" this.data.lat="+this.data.lat',
-'   +" this.data.lng="+this.data.lng',
-'   +" this.data.attr01="+this.data.attr01',
-'   +" this.data.attr02="+this.data.attr02',
-'   +" this.data.attr03="+this.data.attr03',
-'  );'))
+,p_execute_on_page_init=>'Y'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P17_DATA'
+,p_attribute_01=>'JAVASCRIPT_EXPRESSION'
+,p_attribute_05=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'"this.data.attr01=" + this.data.attr01',
+'+ " this.data.attr02=" + this.data.attr02',
+'+ " this.data.attr03=" + this.data.attr03'))
+,p_attribute_09=>'N'
+,p_stop_execution_on_error=>'Y'
+,p_wait_for_result=>'Y'
 );
 end;
 /
