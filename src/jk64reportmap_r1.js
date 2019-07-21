@@ -31,6 +31,7 @@ $( function() {
       allowZoom:true,
       allowPan:true,
       gestureHandling:"auto",
+      initFn:null,
       noDataMessage:"No data to show",
       noAddressResults:"Address not found",
       directionsNotFound:"At least one of the origin, destination, or waypoints could not be geocoded.",
@@ -83,25 +84,23 @@ $( function() {
     },
     
     _showMessage: function (msg) {
-      apex.debug("reportmap._showMessage ");
-      var _this = this;
-      if (_this.infoWindow) {
-        _this.infoWindow.close();
+      apex.debug("reportmap._showMessage '"+msg+"'");
+      if (this.infoWindow) {
+        this.infoWindow.close();
       } else {
-        _this.infoWindow = new google.maps.InfoWindow(
+        this.infoWindow = new google.maps.InfoWindow(
           {
             content: msg,
-            position: _this.map.getCenter()
+            position: this.map.getCenter()
           });
       }
-      _this.infoWindow.open(_this.map);
+      this.infoWindow.open(this.map);
     },
     
     _hideMessage: function() {
       apex.debug("reportmap._hideMessage ");
-      var _this = this;
-      if (_this.infoWindow) {
-        _this.infoWindow.close();
+      if (this.infoWindow) {
+        this.infoWindow.close();
       }
     },
     
@@ -129,30 +128,32 @@ $( function() {
     },
 
     //place a report pin on the map
-    _repPin: function (pData) {
-      var _this = this;
-      var reppin = new google.maps.Marker({
-            map: _this.map,
+    _marker: function (pData) {
+      var marker = new google.maps.Marker({
+            map: this.map,
             position: new google.maps.LatLng(pData.x, pData.y),
             title: pData.n,
             icon: pData.c,
             label: pData.l,
-            draggable: _this.options.isDraggable                                                                        
+            draggable: this.options.isDraggable
           });
-      google.maps.event.addListener(reppin, "click", function () {
-        apex.debug("repPin "+pData.d+" clicked");
+      //load our own data into the marker
+      marker.reportmapId = pData.d;
+      var _this = this;
+      google.maps.event.addListener(marker, "click", function () {
+        apex.debug("marker "+pData.d+" clicked");
         var pos = this.getPosition();
         if (pData.i) {
           //show info window for this pin
-          if (_this.iw) {
-            _this.iw.close();
+          if (_this.infoWindow) {
+            _this.infoWindow.close();
           } else {
-            _this.iw = new google.maps.InfoWindow();
+            _this.infoWindow = new google.maps.InfoWindow();
           }
           //unescape the html for the info window contents
           var ht = new DOMParser().parseFromString(pData.i, "text/html");
-          _this.iw.setOptions({ content: ht.documentElement.textContent });
-          _this.iw.open(_this.map, this);
+          _this.infoWindow.setOptions({ content: ht.documentElement.textContent });
+          _this.infoWindow.open(_this.map, this);
         }
         if (_this.options.panOnClick) {
           _this.map.panTo(pos);
@@ -162,120 +163,112 @@ $( function() {
         }
         apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._pinData(pData, pos));	
       });
-      google.maps.event.addListener(reppin, "dragend", function () {
+      google.maps.event.addListener(marker, "dragend", function () {
         var pos = this.getPosition();
-        apex.debug("repPin "+pData.d+" moved to position ("+pos.lat()+","+pos.lng()+")");
+        apex.debug("marker "+pData.d+" moved to "+JSON.stringify(pos));
         apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", _this._pinData(pData, pos));
       });
-      if (!_this.reppin) { _this.reppin=[]; }
-      _this.reppin.push({"id":pData.d,"marker":reppin});
-      return reppin;
+      return marker;
     },
 
     //put all the report pins on the map, or show the "no data found" message
-    _showData: function () {
+    _showData: function (mapData) {
       apex.debug("reportmap._showData");
-      var _this = this;
-      if (_this.mapdata.length>0) {
-        _this._hideMessage();
-        var marker, markers = [];
-        for (var i = 0; i < _this.mapdata.length; i++) {
-          if (_this.options.visualisation=="heatmap") {
+      if (mapData.length>0) {
+        this._hideMessage();
+        var weightedLocations = [];
+        this.markers = [];
+        for (var i = 0; i < mapData.length; i++) {
+          if (this.options.visualisation=="heatmap") {
             // each data point is an array [x,y,weight]
-            markers.push({
-              location:new google.maps.LatLng(_this.mapdata[i][0], _this.mapdata[i][1]),
-              weight:_this.mapdata[i][2]
+            weightedLocations.push({
+              location:new google.maps.LatLng(mapData[i][0], mapData[i][1]),
+              weight:mapData[i][2]
             });
           } else {
             // each data point is a pin info structure with x, y, etc. attributes
-            marker = _this._repPin(_this.mapdata[i]);
-            if (_this.options.visualisation=="cluster") {
-              markers.push(marker);
-            }
+            this.markers.push(this._marker(mapData[i]));
           }
         }
-        switch (_this.options.visualisation) {
+        switch (this.options.visualisation) {
           case "cluster":
             // Add a marker clusterer to manage the markers.
             // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
-            var markerCluster = new MarkerClusterer(_this.map, markers,{imagePath:_this.imagePrefix});
+            var markerCluster = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
             break;
           case "heatmap":
-            if (_this.heatmapLayer) {
+            if (this.heatmapLayer) {
               apex.debug("remove heatmapLayer");
-              _this.heatmapLayer.setMap(null);
-              _this.heatmapLayer.delete;
-              _this.heatmapLayer = null;
+              this.heatmapLayer.setMap(null);
+              this.heatmapLayer.delete;
+              this.heatmapLayer = null;
             }
-            _this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
-              data: markers,
-              map: _this.map,
-              dissipating: _this.options.heatmapDissipating,
-              opacity: _this.options.heatmapOpacity,
-              radius: _this.options.heatmapRadius
+            this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
+              data: weightedLocations,
+              map: this.map,
+              dissipating: this.options.heatmapDissipating,
+              opacity: this.options.heatmapOpacity,
+              radius: this.options.heatmapRadius
             });
             break;
         }
       } else {
-        if (_this.options.noDataMessage !== "") {
+        if (this.options.noDataMessage !== "") {
           apex.debug("show No Data Found infowindow");
-          _this._showMessage(_this.options.noDataMessage);
+          this._showMessage(this.options.noDataMessage);
         }
       }
     },
 
-    _removePins: function() {
-      apex.debug("reportmap._removePins");
-      var _this = this;
-      if (_this.reppin) {
-        for (var i = 0; i < _this.reppin.length; i++) {
-          _this.reppin[i].marker.setMap(null);
+    _removeMarkers: function() {
+      apex.debug("reportmap._removeMarkers");
+      if (this.markers) {
+        for (var i = 0; i < this.markers.length; i++) {
+          this.markers[i].setMap(null);
         }
-        _this.reppin.delete;
+        this.markers.delete;
       }
     },
 
     //place or move the user pin to the given location
     gotoPos: function (lat,lng) {
-      apex.debug("reportmap.gotoPos");
-      var _this = this;
+      apex.debug("reportmap.gotoPos "+lat+" "+lng);
       if (lat!==null && lng!==null) {
-        var oldpos = _this.userpin?_this.userpin.getPosition():(new google.maps.LatLng(0,0));
+        var oldpos = this.userpin?this.userpin.getPosition():(new google.maps.LatLng(0,0));
         if (oldpos && lat==oldpos.lat() && lng==oldpos.lng()) {
           apex.debug("userpin not changed");
         } else {
           var pos = new google.maps.LatLng(lat,lng);
-          if (_this.userpin) {
+          if (this.userpin) {
             apex.debug("move existing pin to new position on map "+lat+","+lng);
-            _this.userpin.setMap(_this.map);
-            _this.userpin.setPosition(pos);
+            this.userpin.setMap(this.map);
+            this.userpin.setPosition(pos);
           } else {
             apex.debug("create userpin "+lat+","+lng);
-            _this.userpin = new google.maps.Marker({map: _this.map, position: pos});
+            this.userpin = new google.maps.Marker({map: this.map, position: pos});
           }
         }
-      } else if (_this.userpin) {
+      } else if (this.userpin) {
         apex.debug("move existing pin off the map");
-        _this.userpin.setMap(null);
+        this.userpin.setMap(null);
       }
     },
 
     //parse the given string as a lat,long pair, put a pin at that location
     gotoPosByString: function (v) {
       apex.debug("reportmap.gotoPosByString");
-      var _this = this;
-      var latlng = _this.parseLatLng(v);
+      var latlng = this.parseLatLng(v);
       if (latlng) {
-        _this.gotoPos(latlng.lat(),latlng.lng());
+        this.gotoPos(latlng.lat(),latlng.lng());
       }
     },
 
     //search the map for an address; if found, put a pin at that location and raise addressfound trigger
     gotoAddress: function (addressText) {
       apex.debug("reportmap.gotoAddress");
-      var _this = this;
       var geocoder = new google.maps.Geocoder;
-      _this._hideMessage();
+      this._hideMessage();
+      var _this = this;
       geocoder.geocode(
         {address: addressText
         ,componentRestrictions: _this.options.restrictCountry!==""?{country:_this.options.restrictCountry}:{}
@@ -302,20 +295,14 @@ $( function() {
       });
     },
 
-    //call this to simulate a mouse click on the report pin for the given id value
-    //e.g. this will show the info window for the given report pin and trigger the markerclick event
+    //call this to simulate a mouse click on the marker for the given id value
+    //e.g. this will show the info window for the given marker and trigger the markerclick event
     click: function (id) {
       apex.debug("reportmap.click");
-      var _this = this;
-      var found = false;
-      for (var i = 0; i < _this.reppin.length; i++) {
-        if (_this.reppin[i].id==id) {
-          new google.maps.event.trigger(_this.reppin[i].marker,"click");
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
+      var marker = this.markers.find( function(p){ return p.reportmapId==id; });
+      if (marker) {
+        new google.maps.event.trigger(marker,"click");
+      } else {
         apex.debug("id not found:"+id);
       }
     },
@@ -323,11 +310,10 @@ $( function() {
     //get the closest address to a given location by lat/long
     getAddressByPos: function (lat,lng) {
       apex.debug("reportmap.getAddressByPos");
-      var _this = this;
-      var latlng = {lat: lat, lng: lng};
       var geocoder = new google.maps.Geocoder;
-      _this._hideMessage();
-      geocoder.geocode({'location': latlng}, function(results, status) {
+      this._hideMessage();
+      var _this = this;
+      geocoder.geocode({'location': {lat: lat, lng: lng}}, function(results, status) {
         if (status === google.maps.GeocoderStatus.OK) {
           if (results[0]) {
             apex.debug("addressfound '"+results[0].formatted_address+"'");
@@ -354,9 +340,9 @@ $( function() {
     //search for the user device's location if possible
     geolocate: function () {
       apex.debug("reportmap.geolocate");
-      var _this = this;
       if (navigator.geolocation) {
         apex.debug("geolocate");
+        var _this = this;
         navigator.geolocation.getCurrentPosition(function(position) {
           var pos = {
             lat: position.coords.latitude,
@@ -376,53 +362,57 @@ $( function() {
     //this is called when directions are requested
     _directionsResponse: function (response,status) {
       apex.debug("reportmap._directionsResponse "+status);
-      var _this = this;
-      if (status == google.maps.DirectionsStatus.OK) {
-        _this.directionsDisplay.setDirections(response);
-        var totalDistance = 0, totalDuration = 0, legCount = 0;
-        for (var i=0; i < response.routes.length; i++) {
-          legCount = legCount + response.routes[i].legs.length;
-          for (var j=0; j < response.routes[i].legs.length; j++) {
-            var leg = response.routes[i].legs[j];
-            totalDistance = totalDistance + leg.distance.value;
-            totalDuration = totalDuration + leg.duration.value;
+      switch(status) {
+        case google.maps.DirectionsStatus.OK:
+          this.directionsDisplay.setDirections(response);
+          var totalDistance = 0, totalDuration = 0, legCount = 0;
+          for (var i=0; i < response.routes.length; i++) {
+            legCount = legCount + response.routes[i].legs.length;
+            for (var j=0; j < response.routes[i].legs.length; j++) {
+              var leg = response.routes[i].legs[j];
+              totalDistance = totalDistance + leg.distance.value;
+              totalDuration = totalDuration + leg.duration.value;
+            }
           }
-        }
-        apex.jQuery("#"+this.options.regionId).trigger("directions",{
-          map:_this.map,
-          distance:totalDistance,
-          duration:totalDuration,
-          legs:legCount
-        });
-      } else if (status == google.maps.DirectionsStatus.NOT_FOUND) {
-        _this._showMessage(_this.options.directionsNotFound);
-      } else if (status == google.maps.DirectionsStatus.ZERO_RESULTS) {
-        _this._showMessage(_this.options.directionsZeroResults);
-      } else {
-        apex.debug("Directions request failed: "+status);
+          var _this = this;
+          apex.jQuery("#"+this.options.regionId).trigger("directions",{
+            map:_this.map,
+            distance:totalDistance,
+            duration:totalDuration,
+            legs:legCount
+          });
+          break;
+        case google.maps.DirectionsStatus.NOT_FOUND:
+          this._showMessage(this.options.directionsNotFound);
+          break;
+        case google.maps.DirectionsStatus.ZERO_RESULTS:
+          this._showMessage(this.options.directionsZeroResults);
+          break;
+        default:
+          apex.debug("Directions request failed: "+status);
       }
     },
     
     //show simple route between two points
     showDirections: function (origin, destination, travelMode = "DRIVING") {
       apex.debug("reportmap.showDirections");
-      var _this = this;
-      _this.origin = origin;
-      _this.destination = destination;
-      _this._hideMessage();
-      if (_this.origin&&_this.destination) {
-        if (!_this.directionsDisplay) {
-          _this.directionsDisplay = new google.maps.DirectionsRenderer;
-          _this.directionsService = new google.maps.DirectionsService;
-          _this.directionsDisplay.setMap(_this.map);
+      this.origin = origin;
+      this.destination = destination;
+      this._hideMessage();
+      if (this.origin&&this.destination) {
+        if (!this.directionsDisplay) {
+          this.directionsDisplay = new google.maps.DirectionsRenderer;
+          this.directionsService = new google.maps.DirectionsService;
+          this.directionsDisplay.setMap(this.map);
         }
         //simple directions between two locations
-        _this.origin = _this.parseLatLng(_this.origin)||_this.origin;
-        _this.destination = _this.parseLatLng(_this.destination)||_this.destination;
-        if (_this.origin !== "" && _this.destination !== "") {
-          _this.directionsService.route({
-            origin:_this.origin,
-            destination:_this.destination,
+        this.origin = this.parseLatLng(this.origin)||this.origin;
+        this.destination = this.parseLatLng(this.destination)||this.destination;
+        if (this.origin !== "" && this.destination !== "") {
+          var _this = this;
+          this.directionsService.route({
+            origin:this.origin,
+            destination:this.destination,
             travelMode:google.maps.TravelMode[travelMode]
           }, function(response,status){_this._directionsResponse(response,status)});
         } else {
@@ -434,82 +424,75 @@ $( function() {
     },
 
     //directions visualisation based on query data
-    _directions: function () {
-      apex.debug("reportmap._directions");
-      var _this = this;
-      if (_this.mapdata) {
-        apex.debug("route "+_this.mapdata.length+" waypoints");
-        if (_this.mapdata.length>1) {
-          var origin
-             ,dest;
-          if (!_this.directionsDisplay) {
-            _this.directionsDisplay = new google.maps.DirectionsRenderer;
-            _this.directionsService = new google.maps.DirectionsService;
-            _this.directionsDisplay.setMap(_this.map);
-          }
-          var waypoints = [], latLng;
-          for (var i = 0; i < _this.mapdata.length; i++) {
-            latLng = new google.maps.LatLng(_this.mapdata[i].x, _this.mapdata[i].y);
-            if (i == 0) {
-              origin = latLng;
-            } else if (i == _this.mapdata.length-1) {
-              dest = latLng;
-            } else {
-              waypoints.push({
-                location: latLng,
-                stopover: true
-              });
-            }
-          }
-          apex.debug("origin="+origin+" dest="+dest+" waypoints:"+waypoints.length+" via:"+_this.options.travelMode);
-          _this.directionsService.route({
-            origin:origin,
-            destination:dest,
-            waypoints:waypoints,
-            optimizeWaypoints:_this.options.optimizeWaypoints,
-            travelMode:google.maps.TravelMode[_this.options.travelMode]
-          }, function(response,status){_this._directionsResponse(response,status)});
-        } else {
-          apex.debug("not enough waypoints - need at least an origin and a destination point");
+    _directions: function (mapData) {
+      apex.debug("reportmap._directions "+mapData.length+" waypoints");
+      if (mapData.length>1) {
+        var origin
+           ,dest;
+        if (!this.directionsDisplay) {
+          this.directionsDisplay = new google.maps.DirectionsRenderer;
+          this.directionsService = new google.maps.DirectionsService;
+          this.directionsDisplay.setMap(this.map);
         }
+        var waypoints = [], latLng;
+        for (var i = 0; i < mapData.length; i++) {
+          latLng = new google.maps.LatLng(mapData[i].x, mapData[i].y);
+          if (i == 0) {
+            origin = latLng;
+          } else if (i == mapData.length-1) {
+            dest = latLng;
+          } else {
+            waypoints.push({
+              location: latLng,
+              stopover: true
+            });
+          }
+        }
+        apex.debug("origin="+origin+" dest="+dest+" waypoints:"+waypoints.length+" via:"+this.options.travelMode);
+        var _this = this;
+        this.directionsService.route({
+          origin:origin,
+          destination:dest,
+          waypoints:waypoints,
+          optimizeWaypoints:this.options.optimizeWaypoints,
+          travelMode:google.maps.TravelMode[this.options.travelMode]
+        }, function(response,status){_this._directionsResponse(response,status)});
       } else {
-        apex.debug("Unable to show directions: no data");
+        apex.debug("not enough waypoints - need at least an origin and a destination point");
       }
     },
 
     // The constructor
     _create: function() {
-      var _this = this;
-      apex.debug("reportmap._create "+_this.element.prop("id"));
-      apex.debug("options: "+JSON.stringify(_this.options));
+      apex.debug("reportmap._create "+this.element.prop("id"));
+      apex.debug("options: "+JSON.stringify(this.options));
       // get absolute URL for this site, including /apex/ or /ords/ (this is required by some google maps APIs)
       var filePath = window.location.origin + window.location.pathname;
       filePath = filePath.substring(0, filePath.lastIndexOf("/"));
-      _this.imagePrefix = filePath + "/" + _this.options.pluginFilePrefix + "images/m";
-      apex.debug('_this.imagePrefix="'+_this.imagePrefix+'"');
+      this.imagePrefix = filePath + "/" + this.options.pluginFilePrefix + "images/m";
+      apex.debug('this.imagePrefix="'+this.imagePrefix+'"');
       var myOptions = {
-        minZoom: _this.options.minZoom,
-        maxZoom: _this.options.maxZoom,
-        zoom: _this.options.initialZoom,
-        center: _this.options.initialCenter,
-        mapTypeId: _this.options.mapType,
-        draggable: _this.options.allowPan,
-        zoomControl: _this.options.allowZoom,
-        scrollwheel: _this.options.allowZoom,
-        disableDoubleClickZoom: !(_this.options.allowZoom),
-        gestureHandling: _this.options.gestureHandling
+        minZoom: this.options.minZoom,
+        maxZoom: this.options.maxZoom,
+        zoom: this.options.initialZoom,
+        center: this.options.initialCenter,
+        mapTypeId: this.options.mapType,
+        draggable: this.options.allowPan,
+        zoomControl: this.options.allowZoom,
+        scrollwheel: this.options.allowZoom,
+        disableDoubleClickZoom: !(this.options.allowZoom),
+        gestureHandling: this.options.gestureHandling
       };
-      if (_this.options.mapStyle) {
-        myOptions["styles"] = _this.options.mapStyle;
+      if (this.options.mapStyle) {
+        myOptions["styles"] = this.options.mapStyle;
       }
-      _this.map = new google.maps.Map(document.getElementById(_this.element.prop("id")),myOptions);
-      if (_this.options.southwest&&_this.options.northeast) {
-        _this.map.fitBounds(new google.maps.LatLngBounds(_this.options.southwest,_this.options.northeast));
+      this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),myOptions);
+      if (this.options.southwest&&this.options.northeast) {
+        this.map.fitBounds(new google.maps.LatLngBounds(this.options.southwest,this.options.northeast));
       }
-      google.maps.event.addListener(_this.map, "click", function (event) {
-        var lat = event.latLng.lat()
-           ,lng = event.latLng.lng();
-        apex.debug("map clicked "+lat+","+lng);
+      var _this = this;
+      google.maps.event.addListener(this.map, "click", function (event) {
+        apex.debug("map clicked "+JSON.stringify(event.latLng));
         if (_this.options.clickZoomLevel) {
           apex.debug("pan+zoom");
           if (_this.options.panOnClick) {
@@ -517,46 +500,49 @@ $( function() {
           }
           _this.map.setZoom(_this.options.clickZoomLevel);
         }
-        apex.jQuery("#"+_this.options.regionId).trigger("mapclick", {map:_this.map, lat:lat, lng:lng});
+        apex.jQuery("#"+_this.options.regionId).trigger("mapclick", {map:_this.map, lat:event.latLng.lat(), lng:event.latLng.lng()});
       });
-      apex.jQuery("#"+_this.options.regionId).trigger("maploaded", {map:_this.map});
-      if (_this.options.expectData) {
-        _this.refresh();
+      if (this.options.initFn) {
+        apex.debug("running init_javascript_code...");
+        //inside the init() function we want "this" to refer to this
+        this.init=this.options.initFn;
+        this.init();
       }
+      if (this.options.expectData) {
+        this.refresh();
+      }
+      apex.jQuery("#"+this.options.regionId).trigger("maploaded", {map:this.map});
       apex.debug("reportmap.init finished");
     },
     
     // Called when created, and later when changing options
     refresh: function() {
       apex.debug("reportmap.refresh");
-      var _this = this;
-      _this._hideMessage();
-      if (_this.options.expectData) {
-        apex.jQuery("#"+_this.options.regionId).trigger("apexbeforerefresh");
+      this._hideMessage();
+      if (this.options.expectData) {
+        apex.jQuery("#"+this.options.regionId).trigger("apexbeforerefresh");
+        var _this = this;
         apex.server.plugin
-          (_this.options.ajaxIdentifier
-          ,{ pageItems: _this.options.ajaxItems }
+          (this.options.ajaxIdentifier
+          ,{ pageItems: this.options.ajaxItems }
           ,{ dataType: "json"
             ,success: function( pData ) {
-              apex.debug("success pData="+pData.southwest.lat+","+pData.southwest.lng+" "+pData.northeast.lat+","+pData.northeast.lng);
-              if (pData.southwest.lat&&pData.southwest.lng&&pData.northeast.lat&&pData.northeast.lng) {
-                _this.map.fitBounds(
-                  {south:pData.southwest.lat
-                  ,west: pData.southwest.lng
-                  ,north:pData.northeast.lat
-                  ,east: pData.northeast.lng});
+              apex.debug("success southwest="+JSON.stringify(pData.southwest)+" northeast="+JSON.stringify(pData.northeast));
+              _this.map.fitBounds(
+                {south:pData.southwest.lat
+                ,west: pData.southwest.lng
+                ,north:pData.northeast.lat
+                ,east: pData.northeast.lng});
+              if (_this.infoWindow) {
+                _this.infoWindow.close();
               }
-              if (_this.iw) {
-                _this.iw.close();
-              }
-              _this._removePins();
               apex.debug("pData.mapdata.length="+pData.mapdata.length);
-              _this.mapdata = pData.mapdata;
-              if (_this.mapdata) {
-                _this._showData();
-              }
-              if (_this.options.visualisation=="directions") {
-                _this._directions();
+              _this._removeMarkers();
+              if (pData.mapdata) {
+                _this._showData(pData.mapdata);
+                if (_this.options.visualisation=="directions") {
+                  _this._directions(pData.mapdata);
+                }
               }
               apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
             }
@@ -564,22 +550,20 @@ $( function() {
       }
       apex.debug("reportmap.refresh finished");
       // Trigger a callback/event
-      _this._trigger( "change" );
+      this._trigger( "change" );
     },
 
     // Events bound via _on are removed automatically
     // revert other modifications here
     _destroy: function() {
       // remove generated elements
-      var _this = this;
-      if (_this.heatmapLayer) {
-        _this.heatmapLayer.remove();
-      }
-      if (_this.iw) {
-        _this.iw.close();
-      }
-      _this._removePins();
-      _this.map.remove();
+      if (this.heatmapLayer) { this.heatmapLayer.remove(); }
+      if (this.userpin) { delete this.userpin; }
+      if (this.directionsDisplay) { delete this.directionsDisplay; }
+      if (this.directionsService) { delete this.directionsService; }
+      this._removeMarkers();
+      this._hideMessage();
+      this.map.remove();
     },
 
     // _setOptions is called with a hash of all options that are changing

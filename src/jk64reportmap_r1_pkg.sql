@@ -386,6 +386,9 @@ begin
       || apex_javascript.add_attribute('allowZoom', nullif(instr(':'||l_options||':',':ZOOM_ALLOWED:')>0,true))
       || apex_javascript.add_attribute('allowPan', nullif(instr(':'||l_options||':',':PAN_ALLOWED:')>0,true))
       || apex_javascript.add_attribute('gestureHandling', nullif(l_gesture_handling,'auto'))
+      || case when p_region.init_javascript_code is not null then
+         '"initFn":function(){' || p_region.init_javascript_code || '},'
+         end
       || apex_javascript.add_attribute('noDataMessage', p_region.no_data_found_message)
       || apex_javascript.add_attribute('noAddressResults', l_no_address_results_msg)
       || apex_javascript.add_attribute('directionsNotFound', l_directions_not_found_msg)
@@ -396,29 +399,19 @@ begin
          ,false,false)
       || '}';
         
-    -- we don't want the init to run until after the page is loaded including all resources; the r_ function
+    -- we don't want the initialisation to run until after the page is loaded including all resources; the r_ function
     -- method here waits until the document is ready before running the jquery plugin initialisation
-    l_buf := '<script>'
-          || 'function r_#REGION_ID#(f){/in/.test(document.readyState)?setTimeout("r_#REGION_ID#("+f+")",9):f()}'
-          || 'r_#REGION_ID#(function(){'
-          || '$("#map_#REGION_ID#").reportmap('
-          || l_opt
-          || ');';
-
-    if p_region.init_javascript_code is not null then
-      -- make "this" point to the reportmap object; this.map will be the google map object
-      l_buf := l_buf
-            || 'var m=$("#map_#REGION_ID#").reportmap("instance");'
-            || 'function i_#REGION_ID#(){apex.debug("running init_javascript_code...");'
-            || p_region.init_javascript_code
-            || '};m.init=i_#REGION_ID#;m.init();';
-    end if;
-
-    -- map apex refresh event to the jquery plugin refresh event
-    l_buf := l_buf
-          || 'apex.jQuery("##REGION_ID#").bind("apexrefresh",function(){$("#map_#REGION_ID#").reportmap("refresh");});'
-          || '});</script>'
-          || '<div id="map_#REGION_ID#" style="min-height:' || l_map_height || 'px"></div>';
+    l_buf := '
+<script>
+function r_#REGION_ID#(f){/in/.test(document.readyState)?setTimeout("r_#REGION_ID#("+f+")",9):f()}
+r_#REGION_ID#(function(){
+  $("#map_#REGION_ID#").reportmap(' || l_opt || ');
+  apex.jQuery("##REGION_ID#").bind("apexrefresh",function(){
+    $("#map_#REGION_ID#").reportmap("refresh");
+  });
+});
+</script>
+<div id="map_#REGION_ID#" style="min-height:' || l_map_height || 'px"></div>';
     
     sys.htp.p(replace(l_buf,'#REGION_ID#',l_region_id));
     
@@ -481,9 +474,7 @@ begin
             ,p_lat_min => l_lat_min
             ,p_lat_max => l_lat_max
             ,p_lng_min => l_lng_min
-            ,p_lng_max => l_lng_max
-            );
-
+            ,p_lng_max => l_lng_max);
     end if;
 
     sys.owa_util.mime_header('text/plain', false);
