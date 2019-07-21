@@ -1,4 +1,4 @@
-//jk64 ReportMap v1.0 Jul 2019
+//jk64 ReportMap v1.0.1 Jul 2019
 
 $( function() {
   $.widget( "jk64.reportmap", {
@@ -131,10 +131,9 @@ $( function() {
     //place a report pin on the map
     _repPin: function (pData) {
       var _this = this;
-      var pos = new google.maps.LatLng(pData.x, pData.y);
       var reppin = new google.maps.Marker({
             map: _this.map,
-            position: pos,
+            position: new google.maps.LatLng(pData.x, pData.y),
             title: pData.n,
             icon: pData.c,
             label: pData.l,
@@ -174,31 +173,34 @@ $( function() {
     },
 
     //put all the report pins on the map, or show the "no data found" message
-    _repPins: function () {
-      apex.debug("reportmap._repPins");
+    _showData: function () {
+      apex.debug("reportmap._showData");
       var _this = this;
-      if (_this.mapdata) {
-        if (_this.mapdata.length>0) {
-          _this._hideMessage();
-          var marker, markers = [];
-          for (var i = 0; i < _this.mapdata.length; i++) {
-            if (_this.options.visualisation=="heatmap") {
-              markers.push({
-                location:new google.maps.LatLng(_this.mapdata[i].x, _this.mapdata[i].y),
-                weight:_this.mapdata[i].d
-              });
-            } else {
-              marker = _this._repPin(_this.mapdata[i]);
-              if (_this.options.visualisation=="cluster") {
-                markers.push(marker);
-              }
+      if (_this.mapdata.length>0) {
+        _this._hideMessage();
+        var marker, markers = [];
+        for (var i = 0; i < _this.mapdata.length; i++) {
+          if (_this.options.visualisation=="heatmap") {
+            // each data point is an array [x,y,weight]
+            markers.push({
+              location:new google.maps.LatLng(_this.mapdata[i][0], _this.mapdata[i][1]),
+              weight:_this.mapdata[i][2]
+            });
+          } else {
+            // each data point is a pin info structure with x, y, etc. attributes
+            marker = _this._repPin(_this.mapdata[i]);
+            if (_this.options.visualisation=="cluster") {
+              markers.push(marker);
             }
           }
-          if (_this.options.visualisation=="cluster") {
+        }
+        switch (_this.options.visualisation) {
+          case "cluster":
             // Add a marker clusterer to manage the markers.
             // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
             var markerCluster = new MarkerClusterer(_this.map, markers,{imagePath:_this.imagePrefix});
-          } else if (_this.options.visualisation=="heatmap") {
+            break;
+          case "heatmap":
             if (_this.heatmapLayer) {
               apex.debug("remove heatmapLayer");
               _this.heatmapLayer.setMap(null);
@@ -212,12 +214,12 @@ $( function() {
               opacity: _this.options.heatmapOpacity,
               radius: _this.options.heatmapRadius
             });
-          }
-        } else {
-          if (_this.options.noDataMessage !== "") {
-            apex.debug("show No Data Found infowindow");
-            _this._showMessage(_this.options.noDataMessage);
-          }
+            break;
+        }
+      } else {
+        if (_this.options.noDataMessage !== "") {
+          apex.debug("show No Data Found infowindow");
+          _this._showMessage(_this.options.noDataMessage);
         }
       }
     },
@@ -550,7 +552,9 @@ $( function() {
               _this._removePins();
               apex.debug("pData.mapdata.length="+pData.mapdata.length);
               _this.mapdata = pData.mapdata;
-              _this._repPins();
+              if (_this.mapdata) {
+                _this._showData();
+              }
               if (_this.options.visualisation=="directions") {
                 _this._directions();
               }
