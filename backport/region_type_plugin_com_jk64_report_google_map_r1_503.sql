@@ -34,7 +34,7 @@ wwv_flow_api.create_plugin(
 ,p_display_name=>'JK64 Report Google Map R1'
 ,p_supported_ui_types=>'DESKTOP:JQM_SMARTPHONE'
 ,p_plsql_code=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
-'-- jk64 ReportMap v1.0 BACKPORT Jul 2019',
+'-- jk64 ReportMap v1.0.1 BACKPORT Jul 2019',
 '',
 '-- format to use to convert a string to a number',
 'g_num_format               constant varchar2(100) := ''99999999999999.999999999999999999999999999999'';',
@@ -592,7 +592,7 @@ wwv_flow_api.create_plugin(
 'Refer to the wiki for documentation and examples:',
 '<p>',
 '<strong><a href="https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki" target=_blank>https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki</a></strong>'))
-,p_version_identifier=>'1.0 BACKPORT'
+,p_version_identifier=>'1.0.1 BACKPORT'
 ,p_about_url=>'https://jeffreykemp.github.io/jk64-plugin-reportmap/'
 ,p_plugin_comment=>'Backported to APEX 5.0.3; some documented features might not have been implemented.'
 ,p_files_version=>93

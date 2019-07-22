@@ -466,6 +466,7 @@ $( function() {
     _create: function() {
       apex.debug("reportmap._create "+this.element.prop("id"));
       apex.debug("options: "+JSON.stringify(this.options));
+      var _this = this;
       // get absolute URL for this site, including /apex/ or /ords/ (this is required by some google maps APIs)
       var filePath = window.location.origin + window.location.pathname;
       filePath = filePath.substring(0, filePath.lastIndexOf("/"));
@@ -490,7 +491,6 @@ $( function() {
       if (this.options.southwest&&this.options.northeast) {
         this.map.fitBounds(new google.maps.LatLngBounds(this.options.southwest,this.options.northeast));
       }
-      var _this = this;
       google.maps.event.addListener(this.map, "click", function (event) {
         apex.debug("map clicked "+JSON.stringify(event.latLng));
         if (_this.options.clickZoomLevel) {
@@ -501,6 +501,9 @@ $( function() {
           _this.map.setZoom(_this.options.clickZoomLevel);
         }
         apex.jQuery("#"+_this.options.regionId).trigger("mapclick", {map:_this.map, lat:event.latLng.lat(), lng:event.latLng.lng()});
+      });
+      apex.jQuery("#"+this.options.regionId).bind("apexrefresh",function(){
+        $("#map_"+_this.options.regionId).reportmap("refresh");
       });
       if (this.options.initFn) {
         apex.debug("running init_javascript_code...");

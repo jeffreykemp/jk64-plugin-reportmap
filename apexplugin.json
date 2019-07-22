@@ -23,7 +23,7 @@
  "oracle" : {
     "versions" : ["11.2.0.1", "12.1.0.1", "18.0.0.0"],
     "apex" : {
-      "versions" : ["18.2.0"],
+      "versions" : ["5.0.3","5.1.0","18.1.0","18.2.0"],
       "plugin" : {
         "internalName" : "COM.JK64.REPORT_GOOGLE_MAP_R1",
         "type" : "region",
