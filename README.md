@@ -53,15 +53,13 @@ Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to
 
 4. Add a region to the page, select type **JK64 Report Google Map R1 [Plug-In]**
 
-5. For **SQL Source**, enter a query with at least 4 columns (see example below)
+5. For **SQL Source**, enter a query with at least 4 columns, for example:
+
+   ```sql
+   SELECT lat, lng, name, id FROM mydata
+   ```
 
 **IF YOU ARE UPGRADING** from an earlier release, refer to the **[Upgrade Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/Upgrading)**.
-
-**Sample query**
-
-```sql
-SELECT lat, lng, name, id FROM mydata
-```
 
 ## SUPPORT
 
