@@ -409,9 +409,11 @@ begin
       || apex_javascript.add_attribute('allowZoom', nullif(instr(':'||l_options||':',':ZOOM_ALLOWED:')>0,true))
       || apex_javascript.add_attribute('allowPan', nullif(instr(':'||l_options||':',':PAN_ALLOWED:')>0,true))
       || apex_javascript.add_attribute('gestureHandling', nullif(l_gesture_handling,'auto'))
+/* for APEX 5.0: comment these out (init_javascript_code was added in APEX 5.1) */
       || case when p_region.init_javascript_code is not null then
          '"initFn":function(){' || p_region.init_javascript_code || '},'
          end
+/* ---------------------------------------------------------------------------- */
       || apex_javascript.add_attribute('noDataMessage', p_region.no_data_found_message)
       || apex_javascript.add_attribute('noAddressResults', l_no_address_results_msg)
       || apex_javascript.add_attribute('directionsNotFound', l_directions_not_found_msg)
