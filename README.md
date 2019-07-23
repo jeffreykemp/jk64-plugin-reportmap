@@ -4,7 +4,7 @@
 
 **Leverage the power of Google Maps in your APEX application.** This plugin allows you to add one or more Google Map regions to any page, showing a number of markers (pins) retrieved from a query or other data source you specify.
 
-The plugin provides a rich array of built-in declarative features, dynamic actions and associated API routines, and it also giving you access to the underlying Google Maps object so you can customise it with any other behaviour you need.
+The plugin provides a rich array of built-in declarative features, dynamic actions and associated API routines, and gives access to the underlying Google Maps object so you can customise it with any other behaviour you need.
 
 Full documentation is provided in the [WIKI](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki).
 
