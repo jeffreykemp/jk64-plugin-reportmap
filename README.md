@@ -36,7 +36,7 @@ Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to
 
 ## PRE-REQUISITES
 
-* Oracle Application Express **18.2** or later
+* Oracle Application Express **5.0.3** or later
 * Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key)**
 
 ## INSTALLATION INSTRUCTIONS
@@ -44,7 +44,9 @@ Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to
 **Warning:** if you are upgrading to v1.0 from any prior version, this is NOT a drop-in replacement; some changes may be required to your application to support it as a number of attributes have been removed. Also, the minimum requirement has changed to APEX 18.2.
 
 1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
-2. Install the plugin to your application - **region_type_plugin_com_jk64_report_google_map_r1.sql**
+2. Install the plugin to your application - choose your version from the list below:
+   * If you are on APEX 18.2 or later: **`region_type_plugin_com_jk64_report_google_map_r1.sql`**
+   * If you are on APEX 5.0.3 to 18.1: **`backport/region_type_plugin_com_jk64_report_google_map_r1_503.sql`**
 3. Supply your public **Google API Key** (Component Settings)
 4. Add a region to the page, select type **JK64 Report Google Map R1 [Plug-In]**
 5. For **SQL Source**, enter a query with at least 4 columns (see example below)
