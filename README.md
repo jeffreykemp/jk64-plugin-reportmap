@@ -6,8 +6,6 @@
 
 The plugin provides a rich array of built-in declarative features, dynamic actions and associated API routines, and gives access to the underlying Google Maps object so you can customise it with any other behaviour you need.
 
-Full documentation is provided in the [WIKI](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki).
-
 ![plugin-reportmap-markers.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-markers.png)
 
 The user can click any marker to see a popup info window for it.
