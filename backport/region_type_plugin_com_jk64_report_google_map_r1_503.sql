@@ -427,7 +427,7 @@ wwv_flow_api.create_plugin(
 '      || apex_javascript.add_attribute(''allowZoom'', nullif(instr('':''||l_options||'':'','':ZOOM_ALLOWED:'')>0,true))',
 '      || apex_javascript.add_attribute(''allowPan'', nullif(instr('':''||l_options||'':'','':PAN_ALLOWED:'')>0,true))',
 '      || apex_javascript.add_attribute(''gestureHandling'', nullif(l_gesture_handling,''auto''))',
-'-- (this region attribute is not supported in APEX 5.0, not sure about 5.1 or 18.1?)',
+'-- (this region attribute is not supported in APEX 5.0; was added in APEX 5.1)',
 '--      || case when p_region.init_javascript_code is not null then',
 '--         ''"initFn":function(){'' || p_region.init_javascript_code || ''},''',
 '--         end',
