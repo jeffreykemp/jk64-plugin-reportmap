@@ -37,11 +37,11 @@ Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to
 * Oracle Application Express **5.0.3** or later
 * Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key)**
 
-  Google provides a free monthly credit which includes thresholds for some API requests (some are unlimited). You can use the platform to set daily quotas and email alerts to control your monthly costs. Refer to the pricing information page for details: https://cloud.google.com/maps-platform/pricing/.
+  > Google provides a free monthly credit which includes thresholds for some API requests (some are unlimited). You can use the platform to set daily quotas and email alerts to control your monthly costs. Refer to the pricing information page for details: https://cloud.google.com/maps-platform/pricing/.
 
 ## INSTALLATION INSTRUCTIONS
 
-**NOTE:** if you are upgrading to Release 1.0 from any prior version, some changes will be required to your application to support it as a number of attributes have been removed or changed.
+> **NOTE:** if you are upgrading to Release 1.0 from any prior version, some changes will be required to your application to support it as a number of attributes have been removed or changed.
 
 1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
 
