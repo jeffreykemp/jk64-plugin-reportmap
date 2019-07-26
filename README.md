@@ -35,7 +35,9 @@ Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to
 ## PRE-REQUISITES
 
 * Oracle Application Express **5.0.3** or later
-* Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key)**
+* Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key)**
+
+  Google provides a free monthly credit which includes thresholds for some API requests (some are unlimited). You can use the platform to set daily quotas and email alerts to control your monthly costs. Refer to the pricing information page for details: https://cloud.google.com/maps-platform/pricing/.
 
 ## INSTALLATION INSTRUCTIONS
 
