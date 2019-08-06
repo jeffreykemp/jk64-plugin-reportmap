@@ -1,4 +1,4 @@
-//jk64 ReportMap v1.0.1 Jul 2019
+//jk64 ReportMap v1.0.2 Aug 2019
 
 $( function() {
   $.widget( "jk64.reportmap", {
@@ -394,7 +394,7 @@ $( function() {
     },
     
     //show simple route between two points
-    showDirections: function (origin, destination, travelMode = "DRIVING") {
+    showDirections: function (origin, destination, travelMode) {
       apex.debug("reportmap.showDirections");
       this.origin = origin;
       this.destination = destination;
@@ -413,7 +413,7 @@ $( function() {
           this.directionsService.route({
             origin:this.origin,
             destination:this.destination,
-            travelMode:google.maps.TravelMode[travelMode]
+            travelMode:google.maps.TravelMode[travelMode||"DRIVING"]
           }, function(response,status){_this._directionsResponse(response,status)});
         } else {
           apex.debug("No directions to show - need both origin and destination location");
