@@ -1,4 +1,4 @@
-//jk64 ReportMap v1.0.1 Jul 2019
+//jk64 ReportMap v1.1 Nov 2019
 
 $( function() {
   $.widget( "jk64.reportmap", {
@@ -394,7 +394,7 @@ $( function() {
     },
     
     //show simple route between two points
-    showDirections: function (origin, destination, travelMode = "DRIVING") {
+    showDirections: function (origin, destination, travelMode) {
       apex.debug("reportmap.showDirections");
       this.origin = origin;
       this.destination = destination;
@@ -413,7 +413,7 @@ $( function() {
           this.directionsService.route({
             origin:this.origin,
             destination:this.destination,
-            travelMode:google.maps.TravelMode[travelMode]
+            travelMode:google.maps.TravelMode[travelMode?travelMode:"DRIVING"]
           }, function(response,status){_this._directionsResponse(response,status)});
         } else {
           apex.debug("No directions to show - need both origin and destination location");
@@ -421,6 +421,83 @@ $( function() {
       } else {
         apex.debug("Unable to show directions: no data, no origin/destination");
       }
+    },
+    
+    //drawing controls
+    _initDrawing: function () {
+      apex.debug("reportmap._initDrawing");
+      // from https://jsfiddle.net/geocodezip/ezfe2wLg/57/
+      var drawingManager = new google.maps.drawing.DrawingManager({
+        drawingMode: google.maps.drawing.OverlayType.MARKER,
+        drawingControl: true,
+        drawingControlOptions: {
+          position: google.maps.ControlPosition.TOP_CENTER,
+          drawingModes: [
+            google.maps.drawing.OverlayType.MARKER,
+            google.maps.drawing.OverlayType.CIRCLE,
+            google.maps.drawing.OverlayType.POLYGON,
+            google.maps.drawing.OverlayType.POLYLINE,
+            google.maps.drawing.OverlayType.RECTANGLE
+          ]
+        },
+        markerOptions: {
+          //icon: 'https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png'
+        },
+        circleOptions: {
+          fillColor: '#ffff00',
+          fillOpacity: 1,
+          strokeWeight: 5,
+          clickable: false,
+          editable: true,
+          zIndex: 1
+        }
+      });
+      drawingManager.setMap(this.map);
+      var dataLayer = this.map.data;
+
+      // from http://stackoverflow.com/questions/25072069/export-geojson-data-from-google-maps
+      // from http://jsfiddle.net/doktormolle/5F88D/
+      google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
+        switch (event.type) {
+          case google.maps.drawing.OverlayType.MARKER:
+            dataLayer.add(new google.maps.Data.Feature({
+              geometry: new google.maps.Data.Point(event.overlay.getPosition())
+            }));
+            break;
+          case google.maps.drawing.OverlayType.RECTANGLE:
+            var b = event.overlay.getBounds(),
+              p = [b.getSouthWest(), {
+                lat: b.getSouthWest().lat(),
+                lng: b.getNorthEast().lng()
+              }, b.getNorthEast(), {
+                lng: b.getSouthWest().lng(),
+                lat: b.getNorthEast().lat()
+              }]
+            dataLayer.add(new google.maps.Data.Feature({
+              geometry: new google.maps.Data.Polygon([p])
+            }));
+            break;
+          case google.maps.drawing.OverlayType.POLYGON:
+            dataLayer.add(new google.maps.Data.Feature({
+              geometry: new google.maps.Data.Polygon([event.overlay.getPath().getArray()])
+            }));
+            break;
+          case google.maps.drawing.OverlayType.POLYLINE:
+            dataLayer.add(new google.maps.Data.Feature({
+              geometry: new google.maps.Data.LineString(event.overlay.getPath().getArray())
+            }));
+            break;
+          case google.maps.drawing.OverlayType.CIRCLE:
+            dataLayer.add(new google.maps.Data.Feature({
+              properties: {
+                radius: event.overlay.getRadius()
+              },
+              geometry: new google.maps.Data.Point(event.overlay.getCenter())
+            }));
+            break;
+        }
+
+      });
     },
 
     //directions visualisation based on query data
@@ -490,6 +567,9 @@ $( function() {
       this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),myOptions);
       if (this.options.southwest&&this.options.northeast) {
         this.map.fitBounds(new google.maps.LatLngBounds(this.options.southwest,this.options.northeast));
+      }
+      if (this.options.visualisation=="drawing") {
+        this._initDrawing();
       }
       google.maps.event.addListener(this.map, "click", function (event) {
         apex.debug("map clicked "+JSON.stringify(event.latLng));
