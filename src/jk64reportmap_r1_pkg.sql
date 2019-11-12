@@ -1,5 +1,6 @@
+/**********************************************************
 create or replace package jk64reportmap_r1_pkg as
--- jk64 ReportMap v1.0.1 Jul 2019
+-- jk64 ReportMap v1.1 Nov 2019
 
 function render
     (p_region in apex_plugin.t_region
@@ -16,7 +17,8 @@ end jk64reportmap_r1_pkg;
 /
 
 create or replace package body jk64reportmap_r1_pkg as
--- jk64 ReportMap v1.0.1 Jul 2019
+**********************************************************/
+-- jk64 ReportMap v1.1 Nov 2019
 
 -- format to use to convert a lat/lng number to string for passing via javascript
 -- 0.0000001 is enough precision for the practical limit of commercial surveying, error up to +/- 11.132 mm at the equator
@@ -34,8 +36,8 @@ g_visualisation_directions constant varchar2(10) := 'DIRECTIONS';
 
 g_maptype_roadmap          constant varchar2(10) := 'ROADMAP'; -- default
 g_maptype_satellite	       constant varchar2(10) := 'SATELLITE';
-g_maptype_hybrid	         constant varchar2(10) := 'HYBRID';
-g_maptype_terrain	         constant varchar2(10) := 'TERRAIN';
+g_maptype_hybrid           constant varchar2(10) := 'HYBRID';
+g_maptype_terrain          constant varchar2(10) := 'TERRAIN';
 
 g_travelmode_driving       constant varchar2(10) := 'DRIVING'; -- default
 g_travelmode_walking       constant varchar2(10) := 'WALKING';
@@ -94,17 +96,17 @@ begin
 end valid_zoom_level;
 
 procedure get_lat_lng_attr
-  (lat_val   in varchar2
-  ,lng_val   in varchar2
-  ,record_no in number
-  ,p_lat     out number
-  ,p_lng     out number
-  ) is
+    (lat_val   in varchar2
+    ,lng_val   in varchar2
+    ,record_no in number
+    ,p_lat     out number
+    ,p_lng     out number
+    ) is
 begin
-  p_lat := round(apex_plugin_util.get_attribute_as_number(lat_val,'Latitude (#'||record_no||')')
-                ,g_coord_precision);
-  p_lng := round(apex_plugin_util.get_attribute_as_number(lng_val,'Longitude (#'||record_no||')')
-                ,g_coord_precision);
+    p_lat := round(apex_plugin_util.get_attribute_as_number(lat_val,'Latitude (#'||record_no||')')
+                  ,g_coord_precision);
+    p_lng := round(apex_plugin_util.get_attribute_as_number(lng_val,'Longitude (#'||record_no||')')
+                  ,g_coord_precision);
 end get_lat_lng_attr;
 
 function get_markers
@@ -200,7 +202,7 @@ begin
                   || ',' || to_char(greatest(l_weight,1))
                   || ']';
             if i < 8 /*don't send the whole dataset to debug log*/ then
-              apex_debug.message('#' || i || ': ' || l_buf);
+                apex_debug.message('#' || i || ': ' || l_buf);
             end if;
             l_data(nvl(l_data.last,0)+1) := l_buf;
 
@@ -236,7 +238,7 @@ begin
             -- get flex fields, if any
             l_flex := null;
             for attr_no in 1..10 loop
-              l_flex := l_flex || flex_field(attr_no,i);
+                l_flex := l_flex || flex_field(attr_no,i);
             end loop;
 
             l_buf := apex_javascript.add_attribute('x',l_lat)
@@ -251,7 +253,7 @@ begin
                      end;
             
             if i < 8 /*don't send the whole dataset to debug log*/ then
-              apex_debug.message('#' || i || ': ' || l_buf);
+                apex_debug.message('#' || i || ': ' || l_buf);
             end if;
             l_data(nvl(l_data.last,0)+1) := '{' || rtrim(l_buf,',') || '}';
 
@@ -300,27 +302,29 @@ function render
     l_no_address_results_msg       plugin_attr := p_plugin.attribute_02;
     l_directions_not_found_msg     plugin_attr := p_plugin.attribute_03;
     l_directions_zero_results_msg  plugin_attr := p_plugin.attribute_04;
-    l_min_zoom                     number; --p_plugin.attribute_05;
-    l_max_zoom                     number; --p_plugin.attribute_06;
+    l_min_zoom                     number;      --p_plugin.attribute_05;
+    l_max_zoom                     number;      --p_plugin.attribute_06;
 
     -- Plugin attributes
     l_map_height           plugin_attr := p_region.attribute_01;
     l_visualisation        plugin_attr := p_region.attribute_02;
-    l_click_zoom_level     number; --p_region.attribute_03;
+    l_click_zoom_level     number;      --p_region.attribute_03;
     l_options              plugin_attr := p_region.attribute_04;
-    l_initial_zoom_level   number; --p_region.attribute_05;
+    l_initial_zoom_level   number;      --p_region.attribute_05;
     l_initial_center       plugin_attr := p_region.attribute_06;
     l_restrict_country     plugin_attr := p_region.attribute_10;
     l_mapstyle             plugin_attr := p_region.attribute_11;
     l_heatmap_dissipating  plugin_attr := p_region.attribute_12;
-    l_heatmap_opacity      number; --p_region.attribute_13;
-    l_heatmap_radius       number; --p_region.attribute_14;
+    l_heatmap_opacity      number;      --p_region.attribute_13;
+    l_heatmap_radius       number;      --p_region.attribute_14;
     l_travel_mode          plugin_attr := p_region.attribute_15;
+    l_drawing_mode         plugin_attr := p_region.attribute_16;
     l_optimizewaypoints    plugin_attr := p_region.attribute_21;
     l_maptype              plugin_attr := p_region.attribute_22;
     l_gesture_handling     plugin_attr := p_region.attribute_25;
     
-    l_opt  varchar2(32767);
+    l_opt                  varchar2(32767);
+    l_dragdrop_geojson     boolean;
     
 begin
     -- debug information will be included
@@ -335,26 +339,6 @@ begin
       raise_application_error(-20000, 'Google Maps API Key is required (set in Component Settings)');
     end if;
     
-    apex_javascript.add_library
-        (p_name           => 'js?key=' || l_api_key
-                          || case when l_visualisation = g_visualisation_heatmap then
-                               '&libraries=visualization'
-                             end
-        ,p_directory      => 'https://maps.googleapis.com/maps/api/'
-        ,p_skip_extension => true);
-    
-    apex_javascript.add_library
-        (p_name                  => 'jk64reportmap_r1'
-        ,p_directory             => p_plugin.file_prefix
-        ,p_check_to_add_minified => true);
-
-    if l_visualisation = g_visualisation_cluster then
-        apex_javascript.add_library
-            (p_name                  => 'markerclusterer'
-            ,p_directory             => p_plugin.file_prefix
-            ,p_check_to_add_minified => true);
-    end if;
-
     l_region_id := case
                    when p_region.static_id is not null
                    then p_region.static_id
@@ -368,9 +352,45 @@ begin
     l_initial_zoom_level := valid_zoom_level(p_region.attribute_05, 'Initial Zoom Level');
     l_heatmap_opacity    := apex_plugin_util.get_attribute_as_number(p_region.attribute_13, 'Heatmap Opacity');
     l_heatmap_radius     := apex_plugin_util.get_attribute_as_number(p_region.attribute_14, 'Heatmap Radius');
+    l_dragdrop_geojson   := instr(':'||l_options||':',':GEOJSON_DRAGDROP:')>0;
+
+    apex_javascript.add_library
+        (p_name           => 'js?key=' || l_api_key
+                          || case
+                             when l_visualisation = g_visualisation_heatmap then
+                               '&libraries=visualization'
+                             when l_drawing_mode is not null then
+                               '&libraries=drawing'
+                             end
+        ,p_directory      => 'https://maps.googleapis.com/maps/api/'
+        ,p_skip_extension => true);
+    
+    apex_javascript.add_library
+        (p_name                  => 'jk64reportmap_r1'
+        ,p_directory             => p_plugin.file_prefix
+        ,p_check_to_add_minified => true );
+
+    if l_visualisation = g_visualisation_cluster then
+        apex_javascript.add_library
+            (p_name                  => 'markerclusterer'
+            ,p_directory             => p_plugin.file_prefix
+            ,p_check_to_add_minified => true);
+    end if;
+    
+    if l_dragdrop_geojson then
+        apex_css.add_file
+            (p_name      => 'jk64reportmap_r1'
+            ,p_directory => p_plugin.file_prefix);
+    end if;
     
     if l_initial_center is not null then
         parse_latlng(l_initial_center, p_label=>'Initial Map Center', p_lat=>l_lat, p_lng=>l_lng);
+    end if;
+    
+    if l_drawing_mode is not null then
+        -- convert colon-delimited list "marker:polygon:polyline:rectangle:circle"
+        -- to a javascript array "'marker','polygon','polyline','rectangle','circle'"
+        l_drawing_mode := '''' || replace(l_drawing_mode,':',''',''') || '''';
     end if;
     
     -- use nullif to convert default values to null; this reduces the footprint of the generated code
@@ -409,11 +429,13 @@ begin
       || apex_javascript.add_attribute('allowZoom', nullif(instr(':'||l_options||':',':ZOOM_ALLOWED:')>0,true))
       || apex_javascript.add_attribute('allowPan', nullif(instr(':'||l_options||':',':PAN_ALLOWED:')>0,true))
       || apex_javascript.add_attribute('gestureHandling', nullif(l_gesture_handling,'auto'))
-/* for APEX 5.0: comment these out (init_javascript_code was added in APEX 5.1) */
       || case when p_region.init_javascript_code is not null then
          '"initFn":function(){' || p_region.init_javascript_code || '},'
          end
-/* ---------------------------------------------------------------------------- */
+      || case when l_drawing_mode is not null then
+         '"drawingMode":[' || l_drawing_mode || '],'
+         end
+      || apex_javascript.add_attribute('dragDropGeoJSON', nullif(l_dragdrop_geojson,false))
       || apex_javascript.add_attribute('noDataMessage', p_region.no_data_found_message)
       || apex_javascript.add_attribute('noAddressResults', l_no_address_results_msg)
       || apex_javascript.add_attribute('directionsNotFound', l_directions_not_found_msg)
@@ -430,7 +452,11 @@ begin
       '$("#map_' || l_region_id || '").reportmap(' || l_opt || ');'
       );
   
-    sys.htp.p('<div id="map_' || l_region_id || '" style="min-height:' || l_map_height || 'px"></div>');
+    sys.htp.p('<div id="map_' || l_region_id || '" class="reportmap" style="min-height:' || l_map_height || 'px"></div>');
+    
+    if l_dragdrop_geojson then
+        sys.htp.p('<div id="drop_' || l_region_id || '" class="reportmap-drop-container"><div class="reportmap-drop-silhouette"></div></div>');
+    end if;
     
     return l_result;
 exception
@@ -524,5 +550,6 @@ exception
         return l_result;
 end ajax;
 
+/**********************************************************
 end jk64reportmap_r1_pkg;
-/
+**********************************************************/
