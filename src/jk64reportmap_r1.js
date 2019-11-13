@@ -2,7 +2,7 @@
 
 $( function() {
   $.widget( "jk64.reportmap", {
-    
+
     // default options
     options: {
         regionId               : "",
@@ -32,7 +32,10 @@ $( function() {
         allowPan               : true,
         gestureHandling        : "auto",
         initFn                 : null,
-        drawingMode            : null,
+        drawingModes           : null,
+        featureColor           : '#cc66ff',
+        featureColorSelected   : '#ff6600',
+        drawingPolygonHole     : false, //set this to true to subtract holes from existing polygons         
         dragDropGeoJSON        : false,
         noDataMessage          : "No data to show",
         noAddressResults       : "Address not found",
@@ -495,9 +498,74 @@ $( function() {
         });
     },
     
+    _addControl: function(icon, hint, callback) {
+        
+        var controlDiv = document.createElement('div');
+
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.className = 'reportmap-controlUI';
+        controlUI.title = hint;
+        controlDiv.appendChild(controlUI);
+
+        // Set CSS for the control interior.
+        var controlInner = document.createElement('div');
+        controlInner.className = 'reportmap-controlInner';
+        controlInner.style.backgroundImage = icon;
+        
+        //controlInner.innerHTML = label;
+        controlUI.appendChild(controlInner);
+
+        // Setup the click event listener
+        controlUI.addEventListener('click', callback);
+        
+        this.map.controls[google.maps.ControlPosition.TOP_CENTER].push(controlDiv);
+
+    },
+    
+    _addPolygon: function(dataLayer, arr) {
+        apex.debug("reportmap._addPolygon",dataLayer,arr);
+        
+        if (this.options.drawingPolygonHole) {
+            dataLayer.forEach(function(feature) {
+                if (feature.getProperty('isSelected')) {
+                    var geom = feature.getGeometry();
+                    if (geom.getType() == "Polygon") {
+                        //append the new hole to the existing polygon
+                        var poly = geom.getArray();
+                        //the polygon will now be an array of LinearRings
+                        poly.push(new google.maps.Data.LinearRing(arr));
+                        feature.setGeometry(new google.maps.Data.Polygon(poly));
+                    }
+                }
+            });
+        } else {
+            dataLayer.add(new google.maps.Data.Feature({
+                geometry: new google.maps.Data.Polygon([arr])
+            }));
+        }
+    },
+    
     _initDrawing: function() {
-        apex.debug("reportmap._initDrawing "+this.options.drawingMode);
+        apex.debug("reportmap._initDrawing",this.options.drawingModes);
         var _this = this;
+        
+        if (this.options.drawingModes.indexOf("polygon")>-1) {        
+            this._addControl(
+                "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAB/UlEQVQ4ja2Uv2vUcBjGP89xBIcipYOICUVKKcXVIYdI5woOTuKQCCp0EBz8Azr5FyjUwUUhwUFXcRTdEgfpcIOUUookIA7SoZRyHH0cLne2lR53xXf5/njffJ7nm++bwH8OjUt20rqFWTC+DPSA7TKPfk8NjJNqXug+4gjYAv8EBZglxCVg1/bbMo/6Y4GdtAaTIM+BXhVZeHiG4DXEI8zzMo9+jAOu2d4q8+jzuGM1tW3bz4CNMo+q4X7rmOqK7b1JYABFFvaR1iU97aT1iNMC6CQVwC2kd5PAhlFmYR94jX3vtMOOpC9lFk7DGzrtIi0O120Aw03sF3FSzUlamhRmfFhm0abtvTipZso82h84FO0yj3qSVmwvAgEQ2ASGADuwj+85AALBg4a9LWlh5BCPJJH0tcjCrUkcxkl1o5n2GhMNEIjTCuxd4G6cVn1Zg6YyWKDhONQ3aND4CF2x/f0vUOxglos82gQ2J32HoxDzQhU0tyzzUdKdqUFAnNQzQK9oOqQFUOTRPuYgTqurU5sTj4E3w3XrWO4l5kmcVBcnd1fdBraLLPw1EjhRkNaz4HWhjSILd84CdZIa4KFFr8zC/ITjf4rTqg1aA2Ztf5DoFll0NMjVM8armOuS3hdZ+O3082f+YOO0viB71bA8KBSIA8wnRLc4x2d6rvgDDhXQ+Lfw2kMAAAAASUVORK5CYII=')",
+                'Subtract hole from polygon',
+                function(e) {
+                    _this.options.drawingPolygonHole = !(_this.options.drawingPolygonHole);
+                    e.target.classList.toggle("reportmap-controlHighlight");
+                });
+        }
+        
+        this._addControl(
+            "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAA5ElEQVQ4jc3UP0oDQRTH8U9URGSx9ASewcoz5AAL9rYexc4T2FhY6gEE0TMIQS2VFEHEgCYpfMU62cz+0SI/GPbxfr/58mYYlnXXoMEvcZD0HnGxasNWBnaEY5wl/VM847YrcB93uEn6h+G10gjzjmuUAw57AIc54AamEXzBddT3fo4/j95T1NPY8wtQ1QzjqMe4jPohFlwlmVkOCG/x3cOkxp+EV83+GVj0ARb/PeE2vmr8T+z0AZJceEN2JfC1AdI5W2r/qMs2Ey4dI6OlbN3vq8AJdiu9TXwnuQ+c473DAGugBV7oWWGmvidcAAAAAElFTkSuQmCC')",
+            'Delete selected features',
+            function(e) {
+                _this.deleteSelectedFeatures();
+            });
         
         // from https://jsfiddle.net/geocodezip/ezfe2wLg/57/
 
@@ -505,7 +573,7 @@ $( function() {
             drawingControlOptions: {
               /*https://developers.google.com/maps/documentation/javascript/reference/control#ControlPosition*/
               position     : google.maps.ControlPosition.TOP_CENTER,
-              drawingModes : this.options.drawingMode
+              drawingModes : this.options.drawingModes
             }
         });
         drawingManager.setMap(this.map);
@@ -522,9 +590,8 @@ $( function() {
                 }));
                 break;
             case google.maps.drawing.OverlayType.POLYGON:
-                dataLayer.add(new google.maps.Data.Feature({
-                    geometry: new google.maps.Data.Polygon([event.overlay.getPath().getArray()])
-                }));
+                var p = event.overlay.getPath().getArray();
+                _this._addPolygon(dataLayer, p);
                 break;
             case google.maps.drawing.OverlayType.RECTANGLE:
                 var b = event.overlay.getBounds(),
@@ -536,9 +603,7 @@ $( function() {
                          {lng : b.getSouthWest().lng(),
                           lat : b.getNorthEast().lat()
                          }];
-                dataLayer.add(new google.maps.Data.Feature({
-                    geometry: new google.maps.Data.Polygon([p])
-                }));
+                _this._addPolygon(dataLayer, p);
                 break;
             case google.maps.drawing.OverlayType.POLYLINE:
                 dataLayer.add(new google.maps.Data.Feature({
@@ -546,7 +611,7 @@ $( function() {
                 }));
                 break;
             case google.maps.drawing.OverlayType.CIRCLE:
-                //todo: find some way of showing the circle, along with editable radius
+                //todo: find some way of showing the circle, along with editable radius?
                 dataLayer.add(new google.maps.Data.Feature({
                     properties: {
                         radius: event.overlay.getRadius()
@@ -560,11 +625,12 @@ $( function() {
 
         // Change the color when the isSelected property is set to true.
         dataLayer.setStyle(function(feature) {
-            var color = '#cc66ff',
+            var color = _this.options.featureColor,
                 editable = false;
             if (feature.getProperty('isSelected')) {
-                color = '#ff6600';
-                editable = true;
+                color = _this.options.featureColorSelected;
+                // if we're drawing a hole, we don't want to drag/edit the existing feature
+                editable = !(_this.options.drawingPolygonHole);
             }
             return /** @type {!google.maps.Data.StyleOptions} */({
                 fillColor    : color,
@@ -580,7 +646,7 @@ $( function() {
             apex.debug("reportmap.map.data - click",event);
             if (event.feature.getProperty('isSelected')) {
                 apex.debug("isSelected","false");
-                event.feature.setProperty('isSelected', false);
+                event.feature.removeProperty('isSelected');
             } else {
                 apex.debug("isSelected","true");
                 event.feature.setProperty('isSelected', true);
@@ -749,7 +815,7 @@ $( function() {
             $("#map_"+_this.options.regionId).reportmap("refresh");
         });
 
-        if (this.options.drawingMode) {
+        if (this.options.drawingModes) {
             this._initDrawing();
         }
         
@@ -785,27 +851,27 @@ $( function() {
                 { pageItems : this.options.ajaxItems },
                 { dataType : "json",
                   success: function( pData ) {
-                      apex.debug("success southwest="+JSON.stringify(pData.southwest)+" northeast="+JSON.stringify(pData.northeast));
-                      _this.map.fitBounds({
-                          south : pData.southwest.lat,
-                          west  : pData.southwest.lng,
-                          north : pData.northeast.lat,
-                          east  : pData.northeast.lng
-                      });
-                      if (_this.infoWindow) {
-                          _this.infoWindow.close();
-                      }
-                      apex.debug("pData.mapdata.length="+pData.mapdata.length);
-                      _this._removeMarkers();
-                      if (pData.mapdata) {
-                          _this._showData(pData.mapdata);
-                          if (_this.options.visualisation=="directions") {
-                              _this._directions(pData.mapdata);
-                          }
-                      }
-                      apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
+                    apex.debug("success southwest="+JSON.stringify(pData.southwest)+" northeast="+JSON.stringify(pData.northeast));
+                    _this.map.fitBounds({
+                        south : pData.southwest.lat,
+                        west  : pData.southwest.lng,
+                        north : pData.northeast.lat,
+                        east  : pData.northeast.lng
+                    });
+                    if (_this.infoWindow) {
+                        _this.infoWindow.close();
+                    }
+                    apex.debug("pData.mapdata.length="+pData.mapdata.length);
+                    _this._removeMarkers();
+                    if (pData.mapdata) {
+                        _this._showData(pData.mapdata);
+                        if (_this.options.visualisation=="directions") {
+                            _this._directions(pData.mapdata);
+                        }
+                    }
+                    apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
                   }
-              });
+                });
         }
         apex.debug("reportmap.refresh finished");
         // Trigger a callback/event

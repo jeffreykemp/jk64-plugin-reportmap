@@ -318,7 +318,7 @@ function render
     l_heatmap_opacity      number;      --p_region.attribute_13;
     l_heatmap_radius       number;      --p_region.attribute_14;
     l_travel_mode          plugin_attr := p_region.attribute_15;
-    l_drawing_mode         plugin_attr := p_region.attribute_16;
+    l_drawing_modes        plugin_attr := p_region.attribute_16;
     l_optimizewaypoints    plugin_attr := p_region.attribute_21;
     l_maptype              plugin_attr := p_region.attribute_22;
     l_gesture_handling     plugin_attr := p_region.attribute_25;
@@ -359,7 +359,7 @@ begin
                           || case
                              when l_visualisation = g_visualisation_heatmap then
                                '&libraries=visualization'
-                             when l_drawing_mode is not null then
+                             when l_drawing_modes is not null then
                                '&libraries=drawing'
                              end
         ,p_directory      => 'https://maps.googleapis.com/maps/api/'
@@ -387,10 +387,10 @@ begin
         parse_latlng(l_initial_center, p_label=>'Initial Map Center', p_lat=>l_lat, p_lng=>l_lng);
     end if;
     
-    if l_drawing_mode is not null then
+    if l_drawing_modes is not null then
         -- convert colon-delimited list "marker:polygon:polyline:rectangle:circle"
         -- to a javascript array "'marker','polygon','polyline','rectangle','circle'"
-        l_drawing_mode := '''' || replace(l_drawing_mode,':',''',''') || '''';
+        l_drawing_modes := '''' || replace(l_drawing_modes,':',''',''') || '''';
     end if;
     
     -- use nullif to convert default values to null; this reduces the footprint of the generated code
@@ -432,8 +432,8 @@ begin
       || case when p_region.init_javascript_code is not null then
          '"initFn":function(){' || p_region.init_javascript_code || '},'
          end
-      || case when l_drawing_mode is not null then
-         '"drawingMode":[' || l_drawing_mode || '],'
+      || case when l_drawing_modes is not null then
+         '"drawingModes":[' || l_drawing_modes || '],'
          end
       || apex_javascript.add_attribute('dragDropGeoJSON', nullif(l_dragdrop_geojson,false))
       || apex_javascript.add_attribute('noDataMessage', p_region.no_data_found_message)
