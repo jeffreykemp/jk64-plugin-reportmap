@@ -523,6 +523,14 @@ $( function() {
 
     },
     
+    _addPoint: function(dataLayer, pos) {
+        apex.debug("reportmap._addPoint",dataLayer,pos);
+        
+        dataLayer.add(new google.maps.Data.Feature({
+            geometry: new google.maps.Data.Point(pos)
+        }));
+    },
+    
     _addPolygon: function(dataLayer, arr) {
         apex.debug("reportmap._addPolygon",dataLayer,arr);
         
@@ -585,9 +593,7 @@ $( function() {
             apex.debug("reportmap.overlaycomplete",event);
             switch (event.type) {
             case google.maps.drawing.OverlayType.MARKER:
-                dataLayer.add(new google.maps.Data.Feature({
-                    geometry: new google.maps.Data.Point(event.overlay.getPosition())
-                }));
+                _this._addPoint(dataLayer, event.overlay.getPosition());
                 break;
             case google.maps.drawing.OverlayType.POLYGON:
                 var p = event.overlay.getPath().getArray();
@@ -647,9 +653,11 @@ $( function() {
             if (event.feature.getProperty('isSelected')) {
                 apex.debug("isSelected","false");
                 event.feature.removeProperty('isSelected');
+                apex.jQuery("#"+_this.options.regionId).trigger("unselectfeature", {map:_this.map, feature:event.feature});
             } else {
                 apex.debug("isSelected","true");
                 event.feature.setProperty('isSelected', true);
+                apex.jQuery("#"+_this.options.regionId).trigger("selectfeature", {map:_this.map, feature:event.feature});
             }
         });
 
@@ -666,7 +674,22 @@ $( function() {
             apex.debug("reportmap.map.data","mouseout",event);
             dataLayer.revertStyle();
         });
-        
+
+        dataLayer.addListener('addfeature', function(event) {
+            apex.debug("reportmap.map.data","addfeature",event);
+            apex.jQuery("#"+_this.options.regionId).trigger("addfeature", {map:_this.map, feature:event.feature});
+        });
+
+        dataLayer.addListener('removefeature', function(event) {
+            apex.debug("reportmap.map.data","removefeature",event);
+            apex.jQuery("#"+_this.options.regionId).trigger("removefeature", {map:_this.map, feature:event.feature});
+        });
+
+        dataLayer.addListener('setgeometry', function(event) {
+            apex.debug("reportmap.map.data","setgeometry",event);
+            apex.jQuery("#"+_this.options.regionId).trigger("setgeometry", {map:_this.map, feature:event.feature, newGeometry:event.newGeometry, oldGeometry:event.oldGeometry});
+        });
+                
         document.addEventListener('keydown', function(event) {
             if (event.key === "Delete") {
                 _this.deleteSelectedFeatures();
@@ -698,16 +721,19 @@ $( function() {
 
     loadGeoJsonString : function (geoString) {
         apex.debug("reportmap.loadGeoJsonString");
-        var _this = this;
-        var geojson = JSON.parse(geoString);
-        this.map.data.addGeoJson(geojson);
+        if (geoString) {
+            var _this = this;
+            var geojson = JSON.parse(geoString);
+            this.map.data.addGeoJson(geojson);
 
-        //Update a map's viewport to fit each geometry in a dataset
-        var bounds = new google.maps.LatLngBounds();
-        this.map.data.forEach(function(feature) {
-            _this._processPoints(feature.getGeometry(), bounds.extend, bounds);
-        });
-        this.map.fitBounds(bounds);
+            //Update a map's viewport to fit each geometry in a dataset
+            var bounds = new google.maps.LatLngBounds();
+            this.map.data.forEach(function(feature) {
+                _this._processPoints(feature.getGeometry(), bounds.extend, bounds);
+            });
+            this.map.fitBounds(bounds);
+            apex.jQuery("#"+this.options.regionId).trigger("loadedgeojson", {map:this.map, geoJson:geojson});
+        }
     },
 
     _initDragDropGeoJSON : function () {
@@ -815,19 +841,19 @@ $( function() {
             $("#map_"+_this.options.regionId).reportmap("refresh");
         });
 
+        if (this.options.initFn) {
+            apex.debug("running init_javascript_code...");
+            //inside the init() function we want "this" to refer to this
+            this.init=this.options.initFn;
+            this.init();
+        }
+
         if (this.options.drawingModes) {
             this._initDrawing();
         }
         
         if (this.options.dragDropGeoJSON) {
             this._initDragDropGeoJSON();
-        }
-
-        if (this.options.initFn) {
-            apex.debug("running init_javascript_code...");
-            //inside the init() function we want "this" to refer to this
-            this.init=this.options.initFn;
-            this.init();
         }
 
         if (this.options.expectData) {
