@@ -35,7 +35,6 @@ $( function() {
         drawingModes           : null,
         featureColor           : '#cc66ff',
         featureColorSelected   : '#ff6600',
-        drawingPolygonHole     : false, //set this to true to subtract holes from existing polygons         
         dragDropGeoJSON        : false,
         noDataMessage          : "No data to show",
         noAddressResults       : "Address not found",
@@ -513,11 +512,50 @@ $( function() {
         controlInner.className = 'reportmap-controlInner';
         controlInner.style.backgroundImage = icon;
         
-        //controlInner.innerHTML = label;
+        //controlInner.innerHTML = label; // this would be for a text button
         controlUI.appendChild(controlInner);
 
         // Setup the click event listener
         controlUI.addEventListener('click', callback);
+        
+        this.map.controls[google.maps.ControlPosition.TOP_CENTER].push(controlDiv);
+
+    },
+
+    _addCheckbox: function(name, label, hint) {
+        
+        var controlDiv = document.createElement('div');
+
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.className = 'reportmap-controlUI';
+        controlUI.title = hint;
+        controlDiv.appendChild(controlUI);
+
+        // Set CSS for the control interior.
+        var controlInner = document.createElement('div');
+        controlInner.className = 'reportmap-controlInner';
+        
+        //controlInner.innerHTML = label; // this would be for a text button
+        controlUI.appendChild(controlInner);
+
+        var controlCheckbox = document.createElement('input');
+        controlCheckbox.setAttribute('type', 'checkbox');
+        controlCheckbox.setAttribute('id', name+'_'+this.options.regionId);
+        controlCheckbox.setAttribute('name', name);
+        controlCheckbox.setAttribute('value', 'Y');
+        controlCheckbox.className = 'reportmap-controlCheckbox';
+        
+        controlCheckbox.className = 'reportmap-checkbox';
+        
+        controlInner.appendChild(controlCheckbox);
+        
+        var controlLabel = document.createElement('label');
+        controlLabel.setAttribute('for',name+'_'+this.options.regionId);
+        controlLabel.innerHTML = label;
+        controlLabel.className = 'reportmap-controlCheckboxLabel';
+        
+        controlInner.appendChild(controlLabel);
         
         this.map.controls[google.maps.ControlPosition.TOP_CENTER].push(controlDiv);
 
@@ -534,7 +572,7 @@ $( function() {
     _addPolygon: function(dataLayer, arr) {
         apex.debug("reportmap._addPolygon",dataLayer,arr);
         
-        if (this.options.drawingPolygonHole) {
+        if ($("#hole_"+this.options.regionId).prop("checked")) {
             dataLayer.forEach(function(feature) {
                 if (feature.getProperty('isSelected')) {
                     var geom = feature.getGeometry();
@@ -559,18 +597,17 @@ $( function() {
         var _this = this;
         
         if (this.options.drawingModes.indexOf("polygon")>-1) {        
-            this._addControl(
-                "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAB/UlEQVQ4ja2Uv2vUcBjGP89xBIcipYOICUVKKcXVIYdI5woOTuKQCCp0EBz8Azr5FyjUwUUhwUFXcRTdEgfpcIOUUookIA7SoZRyHH0cLne2lR53xXf5/njffJ7nm++bwH8OjUt20rqFWTC+DPSA7TKPfk8NjJNqXug+4gjYAv8EBZglxCVg1/bbMo/6Y4GdtAaTIM+BXhVZeHiG4DXEI8zzMo9+jAOu2d4q8+jzuGM1tW3bz4CNMo+q4X7rmOqK7b1JYABFFvaR1iU97aT1iNMC6CQVwC2kd5PAhlFmYR94jX3vtMOOpC9lFk7DGzrtIi0O120Aw03sF3FSzUlamhRmfFhm0abtvTipZso82h84FO0yj3qSVmwvAgEQ2ASGADuwj+85AALBg4a9LWlh5BCPJJH0tcjCrUkcxkl1o5n2GhMNEIjTCuxd4G6cVn1Zg6YyWKDhONQ3aND4CF2x/f0vUOxglos82gQ2J32HoxDzQhU0tyzzUdKdqUFAnNQzQK9oOqQFUOTRPuYgTqurU5sTj4E3w3XrWO4l5kmcVBcnd1fdBraLLPw1EjhRkNaz4HWhjSILd84CdZIa4KFFr8zC/ITjf4rTqg1aA2Ztf5DoFll0NMjVM8armOuS3hdZ+O3082f+YOO0viB71bA8KBSIA8wnRLc4x2d6rvgDDhXQ+Lfw2kMAAAAASUVORK5CYII=')",
-                'Subtract hole from polygon',
-                function(e) {
-                    _this.options.drawingPolygonHole = !(_this.options.drawingPolygonHole);
-                    e.target.classList.toggle("reportmap-controlHighlight");
-                });
+            this._addCheckbox(
+                'hole', //name
+                'Hole', //label
+                //"url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAB/UlEQVQ4ja2Uv2vUcBjGP89xBIcipYOICUVKKcXVIYdI5woOTuKQCCp0EBz8Azr5FyjUwUUhwUFXcRTdEgfpcIOUUookIA7SoZRyHH0cLne2lR53xXf5/njffJ7nm++bwH8OjUt20rqFWTC+DPSA7TKPfk8NjJNqXug+4gjYAv8EBZglxCVg1/bbMo/6Y4GdtAaTIM+BXhVZeHiG4DXEI8zzMo9+jAOu2d4q8+jzuGM1tW3bz4CNMo+q4X7rmOqK7b1JYABFFvaR1iU97aT1iNMC6CQVwC2kd5PAhlFmYR94jX3vtMOOpC9lFk7DGzrtIi0O120Aw03sF3FSzUlamhRmfFhm0abtvTipZso82h84FO0yj3qSVmwvAgEQ2ASGADuwj+85AALBg4a9LWlh5BCPJJH0tcjCrUkcxkl1o5n2GhMNEIjTCuxd4G6cVn1Zg6YyWKDhONQ3aND4CF2x/f0vUOxglos82gQ2J32HoxDzQhU0tyzzUdKdqUFAnNQzQK9oOqQFUOTRPuYgTqurU5sTj4E3w3XrWO4l5kmcVBcnd1fdBraLLPw1EjhRkNaz4HWhjSILd84CdZIa4KFFr8zC/ITjf4rTqg1aA2Ztf5DoFll0NMjVM8armOuS3hdZ+O3082f+YOO0viB71bA8KBSIA8wnRLc4x2d6rvgDDhXQ+Lfw2kMAAAAASUVORK5CYII=')",
+                'Subtract hole from polygon', //hint
+            );
         }
         
         this._addControl(
             "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAA5ElEQVQ4jc3UP0oDQRTH8U9URGSx9ASewcoz5AAL9rYexc4T2FhY6gEE0TMIQS2VFEHEgCYpfMU62cz+0SI/GPbxfr/58mYYlnXXoMEvcZD0HnGxasNWBnaEY5wl/VM847YrcB93uEn6h+G10gjzjmuUAw57AIc54AamEXzBddT3fo4/j95T1NPY8wtQ1QzjqMe4jPohFlwlmVkOCG/x3cOkxp+EV83+GVj0ARb/PeE2vmr8T+z0AZJceEN2JfC1AdI5W2r/qMs2Ey4dI6OlbN3vq8AJdiu9TXwnuQ+c473DAGugBV7oWWGmvidcAAAAAElFTkSuQmCC')",
-            'Delete selected features',
+            'Delete selected features', //hint
             function(e) {
                 _this.deleteSelectedFeatures();
             });
@@ -636,7 +673,7 @@ $( function() {
             if (feature.getProperty('isSelected')) {
                 color = _this.options.featureColorSelected;
                 // if we're drawing a hole, we don't want to drag/edit the existing feature
-                editable = !(_this.options.drawingPolygonHole);
+                editable = !($("#hole_"+_this.options.regionId).prop("checked"));
             }
             return /** @type {!google.maps.Data.StyleOptions} */({
                 fillColor    : color,
@@ -791,6 +828,31 @@ $( function() {
             return false;
         }, false);
     },
+    
+    _initDebug: function() {
+        apex.debug("reportmap._initDebug");
+        var _this = this;
+        
+        var controlDiv = document.createElement('div');
+
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.className = 'reportmap-debugPanel';
+        controlUI.innerHTML = '[debug mode]';
+        controlDiv.appendChild(controlUI);
+        
+        this.map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(controlDiv);
+        
+        // as mouse is moved over the map, show the current coordinates in the debug panel
+        google.maps.event.addListener(this.map, "mousemove", function (event) {
+            controlUI.innerHTML = 'mouse position '+ JSON.stringify(event.latLng);
+        });
+
+        // as map is panned or zoomed, show the current map bounds in the debug panel
+        google.maps.event.addListener(this.map, "bounds_changed", function (event) {
+            controlUI.innerHTML = 'map bounds ' + JSON.stringify(_this.map.getBounds());
+        });
+    },
 
     // The constructor
     _create: function() {
@@ -854,6 +916,10 @@ $( function() {
         
         if (this.options.dragDropGeoJSON) {
             this._initDragDropGeoJSON();
+        }
+        
+        if (apex.debug.getLevel()>0) {
+            this._initDebug();
         }
 
         if (this.options.expectData) {
