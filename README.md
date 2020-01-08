@@ -41,7 +41,7 @@ Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to
 
 ## INSTALLATION INSTRUCTIONS
 
-> **NOTE:** if you are upgrading to Release 1.0 from any prior version, some changes will be required to your application to support it as a number of attributes have been removed or changed.
+> **NOTE:** if you are upgrading from any version prior to 1.0 (i.e. 0.*x*), some changes will be required to your application to support it as a number of attributes have been removed or changed.
 
 1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
 
@@ -59,7 +59,7 @@ Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to
    SELECT lat, lng, name, id FROM mydata
    ```
 
-**IF YOU ARE UPGRADING** from an earlier release, refer to the **[Upgrade Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/Upgrading)**.
+**IF YOU ARE UPGRADING** from any prior release, refer to the **[Upgrade Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/Upgrading)**.
 
 ## SUPPORT
 
