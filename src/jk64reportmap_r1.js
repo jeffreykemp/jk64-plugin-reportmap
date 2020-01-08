@@ -1,4 +1,4 @@
-//jk64 ReportMap v1.1 Nov 2019
+//jk64 ReportMap v1.1 Jan 2020
 
 $( function() {
   $.widget( "jk64.reportmap", {
@@ -36,6 +36,7 @@ $( function() {
         featureColor           : '#cc66ff',
         featureColorSelected   : '#ff6600',
         dragDropGeoJSON        : false,
+		autoFitBounds          : true,
         noDataMessage          : "No data to show",
         noAddressResults       : "Address not found",
         directionsNotFound     : "At least one of the origin, destination, or waypoints could not be geocoded.",
@@ -600,12 +601,12 @@ $( function() {
             this._addCheckbox(
                 'hole', //name
                 'Hole', //label
-                //"url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAB/UlEQVQ4ja2Uv2vUcBjGP89xBIcipYOICUVKKcXVIYdI5woOTuKQCCp0EBz8Azr5FyjUwUUhwUFXcRTdEgfpcIOUUookIA7SoZRyHH0cLne2lR53xXf5/njffJ7nm++bwH8OjUt20rqFWTC+DPSA7TKPfk8NjJNqXug+4gjYAv8EBZglxCVg1/bbMo/6Y4GdtAaTIM+BXhVZeHiG4DXEI8zzMo9+jAOu2d4q8+jzuGM1tW3bz4CNMo+q4X7rmOqK7b1JYABFFvaR1iU97aT1iNMC6CQVwC2kd5PAhlFmYR94jX3vtMOOpC9lFk7DGzrtIi0O120Aw03sF3FSzUlamhRmfFhm0abtvTipZso82h84FO0yj3qSVmwvAgEQ2ASGADuwj+85AALBg4a9LWlh5BCPJJH0tcjCrUkcxkl1o5n2GhMNEIjTCuxd4G6cVn1Zg6YyWKDhONQ3aND4CF2x/f0vUOxglos82gQ2J32HoxDzQhU0tyzzUdKdqUFAnNQzQK9oOqQFUOTRPuYgTqurU5sTj4E3w3XrWO4l5kmcVBcnd1fdBraLLPw1EjhRkNaz4HWhjSILd84CdZIa4KFFr8zC/ITjf4rTqg1aA2Ztf5DoFll0NMjVM8armOuS3hdZ+O3082f+YOO0viB71bA8KBSIA8wnRLc4x2d6rvgDDhXQ+Lfw2kMAAAAASUVORK5CYII=')",
                 'Subtract hole from polygon', //hint
             );
         }
         
         this._addControl(
+			//trashcan icon
             "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAA5ElEQVQ4jc3UP0oDQRTH8U9URGSx9ASewcoz5AAL9rYexc4T2FhY6gEE0TMIQS2VFEHEgCYpfMU62cz+0SI/GPbxfr/58mYYlnXXoMEvcZD0HnGxasNWBnaEY5wl/VM847YrcB93uEn6h+G10gjzjmuUAw57AIc54AamEXzBddT3fo4/j95T1NPY8wtQ1QzjqMe4jPohFlwlmVkOCG/x3cOkxp+EV83+GVj0ARb/PeE2vmr8T+z0AZJceEN2JfC1AdI5W2r/qMs2Ey4dI6OlbN3vq8AJdiu9TXwnuQ+c473DAGugBV7oWWGmvidcAAAAAElFTkSuQmCC')",
             'Delete selected features', //hint
             function(e) {
@@ -737,11 +738,10 @@ $( function() {
     
     /**
      * Process each point in a Geometry, regardless of how deep the points may lie.
-     * @param {google.maps.Data.Geometry} geometry The structure to process
-     * @param {function(google.maps.LatLng)} callback A function to call on each
-     *     LatLng point encountered (e.g. Array.push)
-     * @param {Object} thisArg The value of 'this' as provided to 'callback' (e.g.
-     *     myArray)
+     * @param {google.maps.Data.Geometry} geometry - structure to process
+     * @param {function(google.maps.LatLng)} callback function to call on each
+     *     LatLng point encountered
+     * @param {Object} thisArg - value of 'this' as provided to 'callback'
      */
     _processPoints : function (geometry, callback, thisArg) {
       var _this = this;
@@ -944,12 +944,14 @@ $( function() {
                 { dataType : "json",
                   success: function( pData ) {
                     apex.debug("success southwest="+JSON.stringify(pData.southwest)+" northeast="+JSON.stringify(pData.northeast));
-                    _this.map.fitBounds({
-                        south : pData.southwest.lat,
-                        west  : pData.southwest.lng,
-                        north : pData.northeast.lat,
-                        east  : pData.northeast.lng
-                    });
+					if (_this.options.autoFitBounds) {
+						_this.map.fitBounds({
+							south : pData.southwest.lat,
+							west  : pData.southwest.lng,
+							north : pData.northeast.lat,
+							east  : pData.northeast.lng
+						});
+					}
                     if (_this.infoWindow) {
                         _this.infoWindow.close();
                     }

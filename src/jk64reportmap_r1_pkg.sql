@@ -1,6 +1,6 @@
 /**********************************************************
 create or replace package jk64reportmap_r1_pkg as
--- jk64 ReportMap v1.1 Nov 2019
+-- jk64 ReportMap v1.1 Jan 2020
 
 function render
     (p_region in apex_plugin.t_region
@@ -18,7 +18,7 @@ end jk64reportmap_r1_pkg;
 
 create or replace package body jk64reportmap_r1_pkg as
 **********************************************************/
--- jk64 ReportMap v1.1 Nov 2019
+-- jk64 ReportMap v1.1 Jan 2020
 
 -- format to use to convert a lat/lng number to string for passing via javascript
 -- 0.0000001 is enough precision for the practical limit of commercial surveying, error up to +/- 11.132 mm at the equator
@@ -436,6 +436,7 @@ begin
          '"drawingModes":[' || l_drawing_modes || '],'
          end
       || apex_javascript.add_attribute('dragDropGeoJSON', nullif(l_dragdrop_geojson,false))
+	  || apex_javascript.add_attribute('autoFitBounds', nullif(instr(':'||l_options||':',':DISABLEFITBOUNDS:')=0,true))
       || apex_javascript.add_attribute('noDataMessage', p_region.no_data_found_message)
       || apex_javascript.add_attribute('noAddressResults', l_no_address_results_msg)
       || apex_javascript.add_attribute('directionsNotFound', l_directions_not_found_msg)
