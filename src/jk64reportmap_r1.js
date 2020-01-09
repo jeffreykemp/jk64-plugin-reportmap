@@ -93,15 +93,11 @@ $( function() {
     
     _showMessage: function (msg) {
         apex.debug("reportmap._showMessage '"+msg+"'");
-        if (this.infoWindow) {
-            this.infoWindow.close();
-        } else {
-            this.infoWindow = new google.maps.InfoWindow(
-                {
-                    content  : msg,
-                    position : this.map.getCenter()
-                });
+        if (!this.infoWindow) {
+            this.infoWindow = new google.maps.InfoWindow();
         }
+		this.infoWindow.setContent(msg);
+		this.infoWindow.setPosition(this.map.getCenter());
         this.infoWindow.open(this.map);
     },
     
@@ -112,14 +108,15 @@ $( function() {
         }
     },
     
-    _pinData: function (pData, pos) {
+    _pinData: function (pData, marker) {
         //get pin data for passing to an event handler
         var d = {
-            map  : this.map,
-            id   : pData.d,
-            name : pData.n,
-            lat  : pos.lat(),
-            lng  : pos.lng()
+            map    : this.map,
+            id     : pData.d,
+            name   : pData.n,
+            lat    : marker.position.lat(),
+            lng    : marker.position.lng(),
+			marker : marker
         };
         if (pData.f) {
             if (pData.f.a1) { d["attr01"] = pData.f.a1; }
@@ -137,31 +134,30 @@ $( function() {
     },
 
     //place a report pin on the map
-    _marker: function (pData) {
+    _marker: function (pinData) {
         var marker = new google.maps.Marker({
               map       : this.map,
-              position  : new google.maps.LatLng(pData.x, pData.y),
-              title     : pData.n,
-              icon      : pData.c,
-              label     : pData.l,
+              position  : new google.maps.LatLng(pinData.x, pinData.y),
+              title     : pinData.n,
+              icon      : pinData.c,
+              label     : pinData.l,
               draggable : this.options.isDraggable
             });
         //load our own data into the marker
-        marker.reportmapId = pData.d;
+        marker.reportmapId = pinData.d;
         var _this = this;
         google.maps.event.addListener(marker, "click", function () {
-            apex.debug("marker "+pData.d+" clicked");
+            apex.debug("marker "+pinData.d+" clicked");
             var pos = this.getPosition();
-            if (pData.i) {
+            if (pinData.i) {
                 //show info window for this pin
-                if (_this.infoWindow) {
-                    _this.infoWindow.close();
-                } else {
+                if (!_this.infoWindow) {
                     _this.infoWindow = new google.maps.InfoWindow();
                 }
                 //unescape the html for the info window contents
-                var ht = new DOMParser().parseFromString(pData.i, "text/html");
-                _this.infoWindow.setOptions({ content: ht.documentElement.textContent });
+                var ht = new DOMParser().parseFromString(pinData.i, "text/html");
+                _this.infoWindow.setContent(ht.documentElement.textContent);
+				//associate the info window with the marker and show on the map
                 _this.infoWindow.open(_this.map, this);
             }
             if (_this.options.panOnClick) {
@@ -170,24 +166,36 @@ $( function() {
             if (_this.options.clickZoomLevel) {
                 _this.map.setZoom(_this.options.clickZoomLevel);
             }
-            apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._pinData(pData, pos));	
+            apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._pinData(pinData, marker));	
         });
         google.maps.event.addListener(marker, "dragend", function () {
             var pos = this.getPosition();
-            apex.debug("marker "+pData.d+" moved to "+JSON.stringify(pos));
-            apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", _this._pinData(pData, pos));
+            apex.debug("marker "+pinData.d+" moved to "+JSON.stringify(pos));
+            apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", _this._pinData(pinData, marker));
         });
+		if (this.options.visualisation=="pins") {
+			// if the marker was not previously shown in the last refresh, raise the marker added event
+			if (!this.idMap||!this.idMap.has(pinData.d)) {
+				apex.jQuery("#"+_this.options.regionId).trigger("markeradded", _this._pinData(pinData, marker));
+			}
+		}
         return marker;
     },
 
     //put all the report pins on the map, or show the "no data found" message
     _showData: function (mapData) {
-        apex.debug("reportmap._showData");
+        apex.debug("reportmap._showData");		
         if (mapData.length>0) {
             this._hideMessage();
-            var weightedLocations = [];
+            var weightedLocations = [],
+			    marker,
+				newIdMap;
 
-            this.markers = [];
+			this.markers = [];
+			
+			// idMap is a map of id to the data for a pin
+			newIdMap = new Map();
+			
             for (var i = 0; i < mapData.length; i++) {
                 if (this.options.visualisation=="heatmap") {
                     // each data point is an array [x,y,weight]
@@ -197,7 +205,11 @@ $( function() {
                     });
                 } else {
                     // each data point is a pin info structure with x, y, etc. attributes
-                    this.markers.push(this._marker(mapData[i]));
+					marker = this._marker(mapData[i]);
+					// put the marker into the array of markers
+					this.markers.push(marker);
+					// also put the id into the Map
+                    newIdMap.set(mapData[i].d, i);
                 }
             }
 
@@ -223,12 +235,19 @@ $( function() {
                 });
                 break;
             }
+			
+			// rememember the ID map for the next refresh
+			this.idMap = newIdMap;
 
         } else {
+			
+			delete this.idMap;
+			
             if (this.options.noDataMessage !== "") {
                 apex.debug("show No Data Found infowindow");
                 this._showMessage(this.options.noDataMessage);
             }
+			
         }
     },
 
@@ -725,7 +744,12 @@ $( function() {
 
         dataLayer.addListener('setgeometry', function(event) {
             apex.debug("reportmap.map.data","setgeometry",event);
-            apex.jQuery("#"+_this.options.regionId).trigger("setgeometry", {map:_this.map, feature:event.feature, newGeometry:event.newGeometry, oldGeometry:event.oldGeometry});
+            apex.jQuery("#"+_this.options.regionId).trigger("setgeometry", {
+				map         : _this.map,
+				feature     : event.feature,
+				newGeometry : event.newGeometry,
+				oldGeometry : event.oldGeometry
+			});
         });
                 
         document.addEventListener('keydown', function(event) {
@@ -845,7 +869,7 @@ $( function() {
         
         // as mouse is moved over the map, show the current coordinates in the debug panel
         google.maps.event.addListener(this.map, "mousemove", function (event) {
-            controlUI.innerHTML = 'mouse position '+ JSON.stringify(event.latLng);
+            controlUI.innerHTML = 'mouse position ' + JSON.stringify(event.latLng);
         });
 
         // as map is panned or zoomed, show the current map bounds in the debug panel
@@ -903,13 +927,6 @@ $( function() {
             $("#map_"+_this.options.regionId).reportmap("refresh");
         });
 
-        if (this.options.initFn) {
-            apex.debug("running init_javascript_code...");
-            //inside the init() function we want "this" to refer to this
-            this.init=this.options.initFn;
-            this.init();
-        }
-
         if (this.options.drawingModes) {
             this._initDrawing();
         }
@@ -922,13 +939,18 @@ $( function() {
             this._initDebug();
         }
 
+        if (this.options.initFn) {
+            apex.debug("running init_javascript_code...");
+            //inside the init() function we want "this" to refer to this
+            this.init=this.options.initFn;
+            this.init();
+        }
+
         if (this.options.expectData) {
             this.refresh();
         }
 
-        apex.jQuery("#"+this.options.regionId).trigger("maploaded", {map:this.map});
-
-        apex.debug("reportmap.init finished");
+        apex.debug("reportmap._create finished");
     },
     
     // Called when created, and later when changing options
@@ -944,7 +966,7 @@ $( function() {
                 { dataType : "json",
                   success: function( pData ) {
                     apex.debug("success southwest="+JSON.stringify(pData.southwest)+" northeast="+JSON.stringify(pData.northeast));
-					if (_this.options.autoFitBounds) {
+					if (_this.options.autoFitBounds&&pData.southwest&&pData.northeast) {
 						_this.map.fitBounds({
 							south : pData.southwest.lat,
 							west  : pData.southwest.lng,
@@ -955,14 +977,20 @@ $( function() {
                     if (_this.infoWindow) {
                         _this.infoWindow.close();
                     }
-                    apex.debug("pData.mapdata.length="+pData.mapdata.length);
                     _this._removeMarkers();
-                    if (pData.mapdata) {
-                        _this._showData(pData.mapdata);
-                        if (_this.options.visualisation=="directions") {
-                            _this._directions(pData.mapdata);
-                        }
-                    }
+					if (pData.mapdata) {
+						apex.debug("pData.mapdata.length="+pData.mapdata.length);
+						_this._showData(pData.mapdata);
+						if (_this.options.visualisation=="directions") {
+							_this._directions(pData.mapdata);
+						}
+						apex.jQuery("#"+_this.options.regionId).trigger("maploaded", {
+							map       : _this.map,
+							countPins : pData.mapdata.length,
+							southwest : pData.southwest,
+							northeast : pData.northeast
+						});
+					}
                     apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
                   }
                 });
