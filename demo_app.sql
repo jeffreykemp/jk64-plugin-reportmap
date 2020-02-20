@@ -883,7 +883,7 @@ wwv_flow_api.create_plugin_setting(
  p_id=>wwv_flow_api.id(44658048572715472)
 ,p_plugin_type=>'REGION TYPE'
 ,p_plugin=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
-,p_attribute_01=>'AIzaSyDN1n03b7SUyRZAn0hYFqIG5tHcDoy1RQI'
+,p_attribute_01=>'...enter your Google Maps API key here...'
 ,p_attribute_05=>'1'
 ,p_attribute_07=>'10000'
 );
