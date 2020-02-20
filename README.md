@@ -28,6 +28,12 @@ This is suitable for a large volume of data points. Each data point can have a "
 
 Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to derive a route. Google Maps can generate a route for Driving, Walking, Bicycling, or Transit (public transport). The plugin can also get the calculated total Distance and Time for the route.
 
+### Drawing & GeoJSON
+
+![plugin-reportmap-drawing.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-drawing.png)
+
+Allow users to interactively draw shapes (points, lines, polygons, and holes in polygons) onto the map. Export the shapes as a GeoJSON document. Load shapes from a GeoJSON document.
+
 ## DEMO
 
 [https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64](https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64)
