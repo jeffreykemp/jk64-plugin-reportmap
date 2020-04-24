@@ -594,7 +594,7 @@ wwv_flow_api.create_plugin(
 ,p_render_function=>'render'
 ,p_ajax_function=>'ajax'
 ,p_standard_attributes=>'SOURCE_SQL:AJAX_ITEMS_TO_SUBMIT:NO_DATA_FOUND_MESSAGE'
-,p_sql_min_column_count=>4
+,p_sql_min_column_count=>3
 ,p_sql_max_column_count=>17
 ,p_sql_examples=>wwv_flow_utilities.join(wwv_flow_t_varchar2(
 '<p>',
