@@ -32,7 +32,8 @@ If applicable, add screenshots to help explain your problem.
  - Type: [e.g. desktop, mobile phone]
 
 **Plugin Attributes**
-Run the page in Debug mode, copy the attributes from the console log here.
+Run the page in Debug mode. Open your browser's Console Log.
+Copy the plugin attributes and any errors or warnings from the console log here.
 
 **Additional context**
 Add any other context about the problem here, such as SQL query used, and sample data scripts.
