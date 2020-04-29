@@ -1,4 +1,4 @@
-//jk64 ReportMap v1.1 Jan 2020
+//jk64 ReportMap v1.1a Apr 2020
 
 $( function() {
   $.widget( "jk64.reportmap", {
@@ -37,6 +37,7 @@ $( function() {
         featureColorSelected   : '#ff6600',
         dragDropGeoJSON        : false,
 		autoFitBounds          : true,
+        directionsPanel        : null,
         noDataMessage          : "No data to show",
         noAddressResults       : "Address not found",
         directionsNotFound     : "At least one of the origin, destination, or waypoints could not be geocoded.",
@@ -445,10 +446,11 @@ $( function() {
             }
             var _this = this;
             apex.jQuery("#"+this.options.regionId).trigger("directions",{
-                map      : _this.map,
-                distance : totalDistance,
-                duration : totalDuration,
-                legs     : legCount
+                map        : _this.map,
+                distance   : totalDistance,
+                duration   : totalDuration,
+                legs       : legCount,
+                directions : response
             });
             break;
         case google.maps.DirectionsStatus.NOT_FOUND:
@@ -473,6 +475,10 @@ $( function() {
                 this.directionsDisplay = new google.maps.DirectionsRenderer;
                 this.directionsService = new google.maps.DirectionsService;
                 this.directionsDisplay.setMap(this.map);
+                apex.debug("directionsPanel=", this.options.directionsPanel);
+                if (this.options.directionsPanel) {
+                    this.directionsDisplay.setPanel(document.getElementById(this.options.directionsPanel));
+                }
             }
             //simple directions between two locations
             this.origin = this.parseLatLng(this.origin)||this.origin;
@@ -504,6 +510,10 @@ $( function() {
                 this.directionsDisplay = new google.maps.DirectionsRenderer;
                 this.directionsService = new google.maps.DirectionsService;
                 this.directionsDisplay.setMap(this.map);
+                apex.debug("directionsPanel=", this.options.directionsPanel);
+                if (this.options.directionsPanel) {
+                    this.directionsDisplay.setPanel(document.getElementById(this.options.directionsPanel));
+                }
             }
             var waypoints = [], latLng;
             for (var i = 0; i < mapData.length; i++) {
@@ -1093,6 +1103,7 @@ $( function() {
 
     // _setOption is called for each individual option that is changing
     _setOption: function( key, value ) {
+        apex.debug(key, '=', value);
         this._super( key, value );
     }      
 
