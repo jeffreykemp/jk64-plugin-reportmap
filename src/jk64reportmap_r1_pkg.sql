@@ -1,6 +1,6 @@
 /**********************************************************
 create or replace package jk64reportmap_r1_pkg as
--- jk64 ReportMap v1.1 Jan 2020
+-- jk64 ReportMap v1.2 May 2020
 
 function render
     (p_region in apex_plugin.t_region
@@ -18,7 +18,7 @@ end jk64reportmap_r1_pkg;
 
 create or replace package body jk64reportmap_r1_pkg as
 **********************************************************/
--- jk64 ReportMap v1.1 Jan 2020
+-- jk64 ReportMap v1.2 May 2020
 
 -- format to use to convert a lat/lng number to string for passing via javascript
 -- 0.0000001 is enough precision for the practical limit of commercial surveying, error up to +/- 11.132 mm at the equator
@@ -312,6 +312,8 @@ function render
     l_options              plugin_attr := p_region.attribute_04;
     l_initial_zoom_level   number;      --p_region.attribute_05;
     l_initial_center       plugin_attr := p_region.attribute_06;
+    l_language             plugin_attr := p_region.attribute_08;
+    l_region               plugin_attr := p_region.attribute_09;
     l_restrict_country     plugin_attr := p_region.attribute_10;
     l_mapstyle             plugin_attr := p_region.attribute_11;
     l_heatmap_dissipating  plugin_attr := p_region.attribute_12;
@@ -361,6 +363,12 @@ begin
                                '&libraries=visualization'
                              when l_drawing_modes is not null then
                                '&libraries=drawing'
+                             end
+                          || case when l_language is not null then
+                               '&language=' || l_language
+                             end
+                          || case when l_region is not null then
+                               '&region=' || l_region
                              end
         ,p_directory      => 'https://maps.googleapis.com/maps/api/'
         ,p_skip_extension => true);

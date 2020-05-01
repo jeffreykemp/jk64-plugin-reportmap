@@ -1,4 +1,4 @@
-//jk64 ReportMap v1.1a Apr 2020
+//jk64 ReportMap v1.2 May 2020
 
 $( function() {
   $.widget( "jk64.reportmap", {
