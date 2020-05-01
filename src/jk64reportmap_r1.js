@@ -163,6 +163,8 @@ $( function() {
 
     //place a report pin on the map
     _newMarker: function (pinData) {
+        var _this = this;
+
         var marker = new google.maps.Marker({
               map       : this.map,
               position  : new google.maps.LatLng(pinData.x, pinData.y),
@@ -171,10 +173,11 @@ $( function() {
               label     : pinData.l,
               draggable : this.options.isDraggable
             });
+
         //load our own data into the marker
         marker.reportmapId = pinData.d;
 		marker.info = pinData.i;
-        var _this = this;
+
         google.maps.event.addListener(marker, "click", function () {
             apex.debug("marker clicked", pinData.d);
             var pos = this.getPosition();
@@ -189,12 +192,14 @@ $( function() {
             }
             apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._pinData(pinData, marker));	
         });
+
         google.maps.event.addListener(marker, "dragend", function () {
             var pos = this.getPosition();
             apex.debug("marker moved", pinData.d, JSON.stringify(pos));
             apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", _this._pinData(pinData, marker));
         });
-		if (this.options.visualisation=="pins") {
+
+		if (["pins","cluster","spiderfier"].indexOf(this.options.visualisation) > -1) {
 			// if the marker was not previously shown in the last refresh, raise the marker added event
 			if (!this.idMap||!this.idMap.has(pinData.d)) {
 				apex.jQuery("#"+_this.options.regionId).trigger("markeradded", _this._pinData(pinData, marker));
@@ -207,46 +212,57 @@ $( function() {
     _showData: function (mapData) {
         apex.debug("reportmap._showData");		
         if (mapData.length>0) {
-            this._hideMessage();
+
             var weightedLocations = [],
 			    marker,
 				newIdMap;
-
 			this.markers = [];
+
+            this._hideMessage();
 			
 			// idMap is a map of id to the data for a pin
 			newIdMap = new Map();
 			
             for (var i = 0; i < mapData.length; i++) {
                 if (this.options.visualisation=="heatmap") {
+                    
                     // each data point is an array [x,y,weight]
                     weightedLocations.push({
                         location:new google.maps.LatLng(mapData[i][0], mapData[i][1]),
                         weight:mapData[i][2]
                     });
+                    
                 } else {
+                    
                     // each data point is a pin info structure with x, y, etc. attributes
 					marker = this._newMarker(mapData[i]);
+                    
 					// put the marker into the array of markers
 					this.markers.push(marker);
+                    
 					// also put the id into the Map
                     newIdMap.set(mapData[i].d, i);
+
                 }
             }
 
             switch (this.options.visualisation) {
             case "cluster":
                 // Add a marker clusterer to manage the markers.
+        
                 // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
                 var markerCluster = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
+
                 break;
             case "heatmap":
+
                 if (this.heatmapLayer) {
                     apex.debug("remove heatmapLayer");
                     this.heatmapLayer.setMap(null);
                     this.heatmapLayer.delete;
                     this.heatmapLayer = null;
                 }
+
                 this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
                     data        : weightedLocations,
                     map         : this.map,
@@ -254,6 +270,7 @@ $( function() {
                     opacity     : this.options.heatmapOpacity,
                     radius      : this.options.heatmapRadius
                 });
+
                 break;
             }
 			
@@ -816,16 +833,16 @@ $( function() {
      * @param {Object} thisArg - value of 'this' as provided to 'callback'
      */
     _processPoints : function (geometry, callback, thisArg) {
-      var _this = this;
-      if (geometry instanceof google.maps.LatLng) {
-        callback.call(thisArg, geometry);
-      } else if (geometry instanceof google.maps.Data.Point) {
-        callback.call(thisArg, geometry.get());
-      } else {
-        geometry.getArray().forEach(function(g) {
-          _this._processPoints(g, callback, thisArg);
-        });
-      }
+        var _this = this;
+        if (geometry instanceof google.maps.LatLng) {
+            callback.call(thisArg, geometry);
+        } else if (geometry instanceof google.maps.Data.Point) {
+            callback.call(thisArg, geometry.get());
+        } else {
+            geometry.getArray().forEach(function(g) {
+                _this._processPoints(g, callback, thisArg);
+            });
+        }
     },
 
 	/*
@@ -870,9 +887,11 @@ $( function() {
 
         // overlay specific events (since it only appears once drag starts)
         dropContainer.addEventListener('dragover', showPanel, false);
+
         dropContainer.addEventListener('dragleave', function() {
             dropContainer.style.display = 'none';
         }, false);
+
         dropContainer.addEventListener('drop', function(e) {
             apex.debug("reportmap.drop",e);
             e.preventDefault();
@@ -905,6 +924,34 @@ $( function() {
             // prevent drag event from bubbling further
             return false;
         }, false);
+    },
+    
+    _spiderfy: function() {
+        apex.debug("reportmap._spiderfy");
+        
+        var _this = this;
+        
+        this.oms = new OverlappingMarkerSpiderfier(this.map, {
+            markersWontMove: true,
+            markersWontHide: true,
+            keepSpiderfied: true
+        });
+
+        // register the markers with the OverlappingMarkerSpiderfier
+        for (var i = 0; i < this.markers.length; i++) {
+            this.oms.addMarker(this.markers[i]);
+        }
+
+        this.oms.addListener('spiderfy', function(markers) {
+            apex.debug("spiderfy", markers);
+			apex.jQuery("#"+_this.options.regionId).trigger("spiderfy", { map:_this.map, markers:markers });
+        });
+
+        this.oms.addListener('unspiderfy', function(markers) {
+            apex.debug("unspiderfy", markers);
+			apex.jQuery("#"+_this.options.regionId).trigger("unspiderfy", { map:_this.map, markers:markers });
+        });
+
     },
     
 	/*
@@ -1075,7 +1122,9 @@ $( function() {
                 { pageItems : this.options.ajaxItems },
                 { dataType : "json",
                   success: function( pData ) {
+
                     apex.debug("success", pData.southwest, pData.northeast);
+
 					if (_this.options.autoFitBounds
 						&& pData.southwest
 						&& pData.northeast) {
@@ -1086,16 +1135,24 @@ $( function() {
 							east  : pData.northeast.lng
 						});
 					}
-                    if (_this.infoWindow) {
-                        _this.infoWindow.close();
-                    }
+
+                    _this._hideMessage();
+
                     _this._removeMarkers();
+
 					if (pData.mapdata) {
 						apex.debug("pData.mapdata length", pData.mapdata.length);
+
 						_this._showData(pData.mapdata);
+
 						if (_this.options.visualisation=="directions") {
 							_this._directions(pData.mapdata);
 						}
+
+                        if (_this.options.visualisation=="spiderfier") {
+                            _this._spiderfy();
+                        }
+
 						apex.jQuery("#"+_this.options.regionId).trigger(
 							(_this.maploaded?"maprefreshed":"maploaded"), {
 							map       : _this.map,
@@ -1103,9 +1160,13 @@ $( function() {
 							southwest : pData.southwest,
 							northeast : pData.northeast
 						});
+
 						_this.maploaded = true;
+
 					}
+
                     apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
+
                   }
                 });
         }

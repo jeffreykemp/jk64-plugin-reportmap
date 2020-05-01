@@ -31,6 +31,7 @@ g_single_row_lat_margin    constant number := 0.005;
 
 g_visualisation_pins       constant varchar2(10) := 'PINS'; -- default
 g_visualisation_cluster    constant varchar2(10) := 'CLUSTER';
+g_visualisation_spiderfier constant varchar2(10) := 'SPIDERFIER';
 g_visualisation_heatmap    constant varchar2(10) := 'HEATMAP';
 g_visualisation_directions constant varchar2(10) := 'DIRECTIONS';
 
@@ -379,10 +380,15 @@ begin
         ,p_check_to_add_minified => true );
 
     if l_visualisation = g_visualisation_cluster then
+        -- MarkerClustererPlus for Google Maps V3
         apex_javascript.add_library
-            (p_name                  => 'markerclusterer'
-            ,p_directory             => p_plugin.file_prefix
-            ,p_check_to_add_minified => true);
+            (p_name      => 'markerclusterer.min'
+            ,p_directory => p_plugin.file_prefix);
+    elsif l_visualisation = g_visualisation_spiderfier then
+        -- OverlappingMarkerSpiderfier
+        apex_javascript.add_library
+            (p_name      => 'oms.min'
+            ,p_directory => p_plugin.file_prefix);
     end if;
     
     if l_dragdrop_geojson then
