@@ -36,14 +36,15 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 
 ## DEMO
 
-[apex.oracle.com](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)
+[jk64_report_map demo on apex.oracle.com](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)
 
 ## PRE-REQUISITES
 
 * Oracle Application Express **5.0.3** or later
 * Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key)**
 
-  > Google provides a free monthly credit which includes thresholds for some API requests (some are unlimited). You can use the platform to set daily quotas and email alerts to control your monthly costs. Refer to the pricing information page for details: https://cloud.google.com/maps-platform/pricing/. Make sure to [restrict your API key](https://developers.google.com/maps/documentation/javascript/get-api-key#restrict_key) to your domain, especially if your website will be accessible on the internet. You can modify this at any time as required.
+  > Google provides a free monthly credit which includes thresholds for some API requests (some are unlimited). You can use the platform to set daily quotas and email alerts to control your monthly costs. Refer to the pricing information page for details: https://cloud.google.com/maps-platform/pricing/.
+  > Make sure to [restrict your API key](https://developers.google.com/maps/documentation/javascript/get-api-key#restrict_key) to your domain, especially if your website will be accessible on the internet. You can modify this at any time as required.
 
 ## INSTALLATION INSTRUCTIONS
 
@@ -51,7 +52,7 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 
 1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
 
-2. In your application, go to Shared Components -> Plug-ins and click Import
+2. In your application, go to **Shared Components** -> **Plug-ins** and click **Import**
 
 2. Choose your version from the list below:
    * If you are on APEX 18.2 or later: **`region_type_plugin_com_jk64_report_google_map_r1.sql`**
