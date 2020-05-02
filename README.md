@@ -36,7 +36,7 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 
 ## DEMO
 
-[https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64](https://apex.oracle.com/pls/apex/f?p=JK64_REPORT_MAP&c=JK64)
+[apex.oracle.com](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)
 
 ## PRE-REQUISITES
 
@@ -51,7 +51,9 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 
 1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
 
-2. Install the plugin to your application - choose your version from the list below:
+2. In your application, go to Shared Components -> Plug-ins and click Import
+
+2. Choose your version from the list below:
    * If you are on APEX 18.2 or later: **`region_type_plugin_com_jk64_report_google_map_r1.sql`**
    * If you are on APEX 5.0.3 to 18.1: **`backport/region_type_plugin_com_jk64_report_google_map_r1_503.sql`**
 
@@ -64,6 +66,8 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
    ```sql
    SELECT lat, lng, name, id FROM mydata
    ```
+   
+   (if you just want a map with no data, enter a dummy query (e.g. `select 1 from dual`); then in the map region properties, set Source -> Location to "- Select -")
 
 **IF YOU ARE UPGRADING** from any prior release, refer to the **[Upgrade Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/Upgrading)**.
 
