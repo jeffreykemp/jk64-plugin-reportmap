@@ -1,4 +1,9 @@
-//jk64 ReportMap v1.2 May 2020
+/*
+jk64 ReportMap v1.2 May 2020
+https://github.com/jeffreykemp/jk64-plugin-reportmap
+Copyright (c) 2016 - 2020 Jeffrey Kemp
+Released under the MIT licence: http://opensource.org/licenses/mit-license
+*/
 
 $( function() {
   $.widget( "jk64.reportmap", {
@@ -178,7 +183,9 @@ $( function() {
         marker.reportmapId = pinData.d;
 		marker.info = pinData.i;
 
-        google.maps.event.addListener(marker, "click", function () {
+        google.maps.event.addListener(marker,
+            (this.options.visualisation=="spiderfier"?"spider_click":"click"),
+            function () {
             apex.debug("marker clicked", pinData.d);
             var pos = this.getPosition();
             if (pinData.i) {
@@ -207,7 +214,37 @@ $( function() {
 		}
         return marker;
     },
+    
+    // set up the Spiderfier visualisation
+    _spiderfy: function() {
+        apex.debug("reportmap._spiderfy");
+        // refer to: https://github.com/jawj/OverlappingMarkerSpiderfier
+        
+        var _this = this;
+        
+        this.oms = new OverlappingMarkerSpiderfier(this.map, {
+            markersWontMove: !this.options.isDraggable,
+            keepSpiderfied: true, // don't unspiderfy when the user clicks a pin
+            basicFormatEvents: true // we aren't changing the format of the pins when spiderfying
+        });
 
+        // register the markers with the OverlappingMarkerSpiderfier
+        for (var i = 0; i < this.markers.length; i++) {
+            this.oms.addMarker(this.markers[i]);
+        }
+
+        this.oms.addListener('spiderfy', function(markers) {
+            apex.debug("spiderfy", markers);
+			apex.jQuery("#"+_this.options.regionId).trigger("spiderfy", { map:_this.map, markers:markers });
+        });
+
+        this.oms.addListener('unspiderfy', function(markers) {
+            apex.debug("unspiderfy", markers);
+			apex.jQuery("#"+_this.options.regionId).trigger("unspiderfy", { map:_this.map, markers:markers });
+        });
+
+    },
+    
     //put all the report pins on the map, or show the "no data found" message
     _showData: function (mapData) {
         apex.debug("reportmap._showData");		
@@ -924,34 +961,6 @@ $( function() {
             // prevent drag event from bubbling further
             return false;
         }, false);
-    },
-    
-    _spiderfy: function() {
-        apex.debug("reportmap._spiderfy");
-        
-        var _this = this;
-        
-        this.oms = new OverlappingMarkerSpiderfier(this.map, {
-            markersWontMove: true,
-            markersWontHide: true,
-            keepSpiderfied: true
-        });
-
-        // register the markers with the OverlappingMarkerSpiderfier
-        for (var i = 0; i < this.markers.length; i++) {
-            this.oms.addMarker(this.markers[i]);
-        }
-
-        this.oms.addListener('spiderfy', function(markers) {
-            apex.debug("spiderfy", markers);
-			apex.jQuery("#"+_this.options.regionId).trigger("spiderfy", { map:_this.map, markers:markers });
-        });
-
-        this.oms.addListener('unspiderfy', function(markers) {
-            apex.debug("unspiderfy", markers);
-			apex.jQuery("#"+_this.options.regionId).trigger("unspiderfy", { map:_this.map, markers:markers });
-        });
-
     },
     
 	/*
