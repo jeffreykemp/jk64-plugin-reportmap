@@ -43,6 +43,7 @@ $( function() {
         dragDropGeoJSON        : false,
 		autoFitBounds          : true,
         directionsPanel        : null,
+        spiderfier             : {},
         noDataMessage          : "No data to show",
         noAddressResults       : "Address not found",
         directionsNotFound     : "At least one of the origin, destination, or waypoints could not be geocoded.",
@@ -220,13 +221,24 @@ $( function() {
         apex.debug("reportmap._spiderfy");
         // refer to: https://github.com/jawj/OverlappingMarkerSpiderfier
         
-        var _this = this;
+        var _this = this, opt = this.options.spiderfier;
+            
+        opt.markersWontMove = !this.options.isDraggable;
         
-        this.oms = new OverlappingMarkerSpiderfier(this.map, {
-            markersWontMove: !this.options.isDraggable,
-            keepSpiderfied: true, // don't unspiderfy when the user clicks a pin
-            basicFormatEvents: true // we aren't changing the format of the pins when spiderfying
-        });
+        // allow the developer to set other spiderfy options, e.g. nearbyDistance, circleSpiralSwitchover, etc.
+        // if the developer has set these options, don't overwrite them
+
+        if (!('keepSpiderfied' in opt)) {
+            // don't unspiderfy when the user clicks a pin
+            opt.keepSpiderfied = true;
+        }
+        
+        if (!('basicFormatEvents' in opt)) {
+            // we aren't changing the format of the pins when spiderfying
+            opt.basicFormatEvents = true;
+        }
+        
+        this.oms = new OverlappingMarkerSpiderfier(this.map, opt);
 
         // register the markers with the OverlappingMarkerSpiderfier
         for (var i = 0; i < this.markers.length; i++) {
@@ -1050,7 +1062,7 @@ $( function() {
         this.imagePrefix = this._getWindowPath() + "/" + this.options.pluginFilePrefix + "images/m";
         apex.debug('imagePrefix', this.imagePrefix);
         
-        var myOptions = {
+        var mapOptions = {
             minZoom                : this.options.minZoom,
             maxZoom                : this.options.maxZoom,
             zoom                   : this.options.initialZoom,
@@ -1062,20 +1074,45 @@ $( function() {
             disableDoubleClickZoom : !(this.options.allowZoom),
             gestureHandling        : this.options.gestureHandling
         };
+        
         if (this.options.mapStyle) {
-            myOptions["styles"] = this.options.mapStyle;
+            mapOptions["styles"] = this.options.mapStyle;
         }
 
-        this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),myOptions);
+        this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),mapOptions);
 
         if (this.options.southwest&&this.options.northeast) {
             this.map.fitBounds(new google.maps.LatLngBounds(this.options.southwest,this.options.northeast));
         }
 
+        if (this.options.drawingModes) {
+            this._initDrawing();
+        }
+        
+        if (this.options.dragDropGeoJSON) {
+            this._initDragDropGeoJSON();
+        }
+        
+        if (this.options.initFn) {
+            apex.debug("init_javascript_code running...");
+            //inside the init() function we want "this" to refer to this
+            this.init=this.options.initFn;
+            this.init();
+            this.init.delete;
+            apex.debug("init_javascript_code finished.");
+        }
+
+        if (apex.debug.getLevel()>0) {
+            this._initDebug();
+        }
+
+        if (this.options.expectData) {
+            this.refresh();
+        }
+
         google.maps.event.addListener(this.map, "click", function (event) {
             apex.debug("map clicked", event.latLng);
             if (_this.options.clickZoomLevel) {
-                apex.debug("pan+zoom");
                 if (_this.options.panOnClick) {
                     _this.map.panTo(event.latLng);
                 }
@@ -1091,32 +1128,6 @@ $( function() {
         apex.jQuery("#"+this.options.regionId).bind("apexrefresh",function(){
             $("#map_"+_this.options.regionId).reportmap("refresh");
         });
-
-        if (this.options.drawingModes) {
-            this._initDrawing();
-        }
-        
-        if (this.options.dragDropGeoJSON) {
-            this._initDragDropGeoJSON();
-        }
-        
-        if (apex.debug.getLevel()>0) {
-            this._initDebug();
-        }
-
-        if (this.options.initFn) {
-            apex.debug("init_javascript_code running...");
-            //inside the init() function we want "this" to refer to this
-            this.init=this.options.initFn;
-            this.init();
-            apex.debug("init_javascript_code finished.");
-        }
-
-        if (this.options.expectData) {
-            this.refresh();
-        }
-
-        apex.debug("reportmap._create finished");
         
         // put some useful info in the console log for developers to have fun with
         if (apex.debug.getLevel()>0) {
@@ -1132,6 +1143,8 @@ $( function() {
                 console_css);
             
         }
+
+        apex.debug("reportmap._create finished");
     },
     
     // Called when created, and later when changing options
@@ -1165,7 +1178,7 @@ $( function() {
                     _this._removeMarkers();
 
 					if (pData.mapdata) {
-						apex.debug("pData.mapdata length", pData.mapdata.length);
+						apex.debug("pData.mapdata length:", pData.mapdata.length);
 
 						_this._showData(pData.mapdata);
 

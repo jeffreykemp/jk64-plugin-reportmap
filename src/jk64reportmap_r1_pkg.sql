@@ -455,7 +455,11 @@ begin
       || apex_javascript.add_attribute('allowPan', nullif(instr(':'||l_options||':',':PAN_ALLOWED:')>0,true))
       || apex_javascript.add_attribute('gestureHandling', nullif(l_gesture_handling,'auto'))
       || case when l_init_js_code is not null then
-         '"initFn":function(){' || l_init_js_code || '},'
+         '"initFn":function(){'
+            || chr(13)
+            || l_init_js_code
+            || chr(13) /* this handles the case if developer ends their javascript with a line comment // */
+            || '},'
          end
       || case when l_drawing_modes is not null then
          '"drawingModes":[' || l_drawing_modes || '],'
