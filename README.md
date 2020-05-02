@@ -44,13 +44,14 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 * Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key)**
 
   > Google provides a free monthly credit which includes thresholds for some API requests (some are unlimited). You can use the platform to set daily quotas and email alerts to control your monthly costs. Refer to the pricing information page for details: https://cloud.google.com/maps-platform/pricing/.
-  > Make sure to [restrict your API key](https://developers.google.com/maps/documentation/javascript/get-api-key#restrict_key) to your domain, especially if your website will be accessible on the internet. You can modify this at any time as required.
+  
+  > Make sure to **[restrict your API key](https://developers.google.com/maps/documentation/javascript/get-api-key#restrict_key)** to your domain, especially if your website will be accessible on the internet. You can modify this at any time as required.
 
 ## INSTALLATION INSTRUCTIONS
 
 > **NOTE:** if you are upgrading from any version prior to 1.0 (i.e. 0.*x*), some changes will be required to your application to support it as a number of attributes have been removed or changed.
 
-1. Download the [latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)
+1. Download the **[latest release](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/latest)**
 
 2. In your application, go to **Shared Components** -> **Plug-ins** and click **Import**
 
@@ -68,7 +69,7 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
    SELECT lat, lng, name, id FROM mydata
    ```
    
-   (if you just want a map with no data, enter a dummy query (e.g. `select 1 from dual`); then in the map region properties, set Source -> Location to "- Select -")
+   (if you just want a map with no data, enter a dummy query (e.g. `select 1 from dual`); then in the map region properties, set **Source** -> **Location** to `- Select -`)
 
 **IF YOU ARE UPGRADING** from any prior release, refer to the **[Upgrade Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/Upgrading)**.
 
