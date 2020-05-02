@@ -1117,6 +1117,21 @@ $( function() {
         }
 
         apex.debug("reportmap._create finished");
+        
+        // put some useful info in the console log for developers to have fun with
+        if (apex.debug.getLevel()>0) {
+
+            // pretty it up (for browsers that support this)
+            var console_css = 'font-size:18px;background-color:#0076ff;color:white;line-height:30px;display:block;padding:10px;'
+               ,sample_code = '$("#map_' + _this.options.regionId + '").reportmap("instance").map';
+            
+            apex.debug("%cThank you for using the jk64 Report Map plugin!\n"
+                + "To access the Google Map object on this page, use:\n"
+                + sample_code + "\n"
+                + "More info: https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki",
+                console_css);
+            
+        }
     },
     
     // Called when created, and later when changing options

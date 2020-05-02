@@ -327,7 +327,9 @@ function render
     l_gesture_handling     plugin_attr := p_region.attribute_25;
     
     l_opt                  varchar2(32767);
+    l_js_options           varchar2(1000);
     l_dragdrop_geojson     boolean;
+    l_init_js_code         varchar2(32767);
     
 begin
     -- debug information will be included
@@ -338,7 +340,7 @@ begin
             ,p_is_printer_friendly => p_is_printer_friendly);
     end if;
     
-    if l_api_key is null then
+    if l_api_key is null or instr(l_api_key,'(') > 0 then
       raise_application_error(-20000, 'Google Maps API Key is required (set in Component Settings)');
     end if;
     
@@ -356,23 +358,32 @@ begin
     l_heatmap_opacity    := apex_plugin_util.get_attribute_as_number(p_region.attribute_13, 'Heatmap Opacity');
     l_heatmap_radius     := apex_plugin_util.get_attribute_as_number(p_region.attribute_14, 'Heatmap Radius');
     l_dragdrop_geojson   := instr(':'||l_options||':',':GEOJSON_DRAGDROP:')>0;
+    
+/*******************************************************************/
+/* Remove this for apex 5.0 or earlier                             */
+    l_init_js_code := p_region.init_javascript_code;
+/*******************************************************************/
+    
+    if l_visualisation = g_visualisation_heatmap then
+        l_js_options := l_js_options || '&libraries=visualization';
+    elsif l_drawing_modes is not null then
+        l_js_options := l_js_options || '&libraries=drawing';
+    end if;
+    
+    if l_language is not null then
+        l_js_options := l_js_options || '&language=' || l_language;
+    end if;
+
+    if l_region is not null then
+        l_js_options := l_js_options || '&region=' || l_region;
+    end if;
 
     apex_javascript.add_library
-        (p_name           => 'js?key=' || l_api_key
-                          || case
-                             when l_visualisation = g_visualisation_heatmap then
-                               '&libraries=visualization'
-                             when l_drawing_modes is not null then
-                               '&libraries=drawing'
-                             end
-                          || case when l_language is not null then
-                               '&language=' || l_language
-                             end
-                          || case when l_region is not null then
-                               '&region=' || l_region
-                             end
+        (p_name           => 'js?key=' || l_api_key || l_js_options
         ,p_directory      => 'https://maps.googleapis.com/maps/api/'
-        ,p_skip_extension => true);
+        ,p_skip_extension => true
+        ,p_key            => 'https://maps.googleapis.com/maps/api/js' -- don't load multiple google maps APIs on same page
+        );
     
     apex_javascript.add_library
         (p_name                  => 'jk64reportmap_r1'
@@ -443,8 +454,8 @@ begin
       || apex_javascript.add_attribute('allowZoom', nullif(instr(':'||l_options||':',':ZOOM_ALLOWED:')>0,true))
       || apex_javascript.add_attribute('allowPan', nullif(instr(':'||l_options||':',':PAN_ALLOWED:')>0,true))
       || apex_javascript.add_attribute('gestureHandling', nullif(l_gesture_handling,'auto'))
-      || case when p_region.init_javascript_code is not null then
-         '"initFn":function(){' || p_region.init_javascript_code || '},'
+      || case when l_init_js_code is not null then
+         '"initFn":function(){' || l_init_js_code || '},'
          end
       || case when l_drawing_modes is not null then
          '"drawingModes":[' || l_drawing_modes || '],'
@@ -472,7 +483,7 @@ begin
     if l_dragdrop_geojson then
         sys.htp.p('<div id="drop_' || l_region_id || '" class="reportmap-drop-container"><div class="reportmap-drop-silhouette"></div></div>');
     end if;
-    
+
     return l_result;
 exception
     when others then
