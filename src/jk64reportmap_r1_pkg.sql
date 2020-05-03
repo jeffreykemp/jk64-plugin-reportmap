@@ -45,6 +45,14 @@ g_travelmode_walking       constant varchar2(10) := 'WALKING';
 g_travelmode_bicycling     constant varchar2(10) := 'BICYCLING';
 g_travelmode_transit       constant varchar2(10) := 'TRANSIT';
 
+g_option_pan_on_click      constant varchar2(30) := ':PAN_ON_CLICK:';
+g_option_draggable         constant varchar2(30) := ':DRAGGABLE:';
+g_option_pan_allowed       constant varchar2(30) := ':PAN_ALLOWED:';
+g_option_zoom_allowed      constant varchar2(30) := ':ZOOM_ALLOWED:';
+g_option_drag_drop_geojson constant varchar2(30) := ':GEOJSON_DRAGDROP:';
+g_option_disable_autofit   constant varchar2(30) := ':DISABLEFITBOUNDS:';
+g_option_spinner           constant varchar2(30) := ':SPINNER:';
+
 subtype plugin_attr is varchar2(32767);
 
 procedure get_map_bounds
@@ -357,7 +365,7 @@ begin
     l_initial_zoom_level := valid_zoom_level(p_region.attribute_05, 'Initial Zoom Level');
     l_heatmap_opacity    := apex_plugin_util.get_attribute_as_number(p_region.attribute_13, 'Heatmap Opacity');
     l_heatmap_radius     := apex_plugin_util.get_attribute_as_number(p_region.attribute_14, 'Heatmap Radius');
-    l_dragdrop_geojson   := instr(':'||l_options||':',':GEOJSON_DRAGDROP:')>0;
+    l_dragdrop_geojson   := instr(':'||l_options||':',g_option_drag_drop_geojson)>0;
     
 /*******************************************************************/
 /* Remove this for apex 5.0 or earlier                             */
@@ -431,13 +439,13 @@ begin
             '"initialCenter":' || latlng_literal(l_lat,l_lng) || ','
          end
       || apex_javascript.add_attribute('clickZoomLevel', l_click_zoom_level)
-      || apex_javascript.add_attribute('isDraggable', nullif(instr(':'||l_options||':',':DRAGGABLE:')>0,false))
+      || apex_javascript.add_attribute('isDraggable', nullif(instr(':'||l_options||':',g_option_draggable)>0,false))
       || case when l_visualisation = g_visualisation_heatmap then
             apex_javascript.add_attribute('heatmapDissipating', nullif(l_heatmap_dissipating='Y',false))
          || apex_javascript.add_attribute('heatmapOpacity', nullif(l_heatmap_opacity,0.6))
          || apex_javascript.add_attribute('heatmapRadius', nullif(l_heatmap_radius,5))
          end
-      || apex_javascript.add_attribute('panOnClick', nullif(instr(':'||l_options||':',':PAN_ON_CLICK:')>0,true))
+      || apex_javascript.add_attribute('panOnClick', nullif(instr(':'||l_options||':',g_option_pan_on_click)>0,true))
       || apex_javascript.add_attribute('restrictCountry', l_restrict_country)
       || case when l_lat_min is not null and l_lng_min is not null
                and l_lat_max is not null and l_lng_max is not null then
@@ -451,8 +459,8 @@ begin
             apex_javascript.add_attribute('travelMode', nullif(l_travel_mode,g_travelmode_driving))
          || apex_javascript.add_attribute('optimizeWaypoints', nullif(l_optimizewaypoints='Y',false))
          end
-      || apex_javascript.add_attribute('allowZoom', nullif(instr(':'||l_options||':',':ZOOM_ALLOWED:')>0,true))
-      || apex_javascript.add_attribute('allowPan', nullif(instr(':'||l_options||':',':PAN_ALLOWED:')>0,true))
+      || apex_javascript.add_attribute('allowZoom', nullif(instr(':'||l_options||':',g_option_zoom_allowed)>0,true))
+      || apex_javascript.add_attribute('allowPan', nullif(instr(':'||l_options||':',g_option_pan_allowed)>0,true))
       || apex_javascript.add_attribute('gestureHandling', nullif(l_gesture_handling,'auto'))
       || case when l_init_js_code is not null then
          '"initFn":function(){'
@@ -465,7 +473,8 @@ begin
          '"drawingModes":[' || l_drawing_modes || '],'
          end
       || apex_javascript.add_attribute('dragDropGeoJSON', nullif(l_dragdrop_geojson,false))
-	  || apex_javascript.add_attribute('autoFitBounds', nullif(instr(':'||l_options||':',':DISABLEFITBOUNDS:')=0,true))
+	  || apex_javascript.add_attribute('autoFitBounds', nullif(instr(':'||l_options||':',g_option_disable_autofit)=0,true))
+      || apex_javascript.add_attribute('showSpinner', nullif(instr(':'||l_options||':',g_option_spinner)>0,true))
       || apex_javascript.add_attribute('noDataMessage', p_region.no_data_found_message)
       || apex_javascript.add_attribute('noAddressResults', l_no_address_results_msg)
       || apex_javascript.add_attribute('directionsNotFound', l_directions_not_found_msg)

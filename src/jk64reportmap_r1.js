@@ -44,6 +44,7 @@ $( function() {
 		autoFitBounds          : true,
         directionsPanel        : null,
         spiderfier             : {},
+        showSpinner            : true,
         noDataMessage          : "No data to show",
         noAddressResults       : "Address not found",
         directionsNotFound     : "At least one of the origin, destination, or waypoints could not be geocoded.",
@@ -1058,6 +1059,11 @@ $( function() {
         apex.debug(JSON.stringify(this.options));
         var _this = this;
 
+        if (this.options.showSpinner && this.options.expectData) {
+            apex.debug("show spinner");
+            this.spinner = apex.util.showSpinner($("#"+this.options.regionId));
+        }
+        
         // get absolute URL for this site, including /apex/ or /ords/ (this is required by some google maps APIs)
         this.imagePrefix = this._getWindowPath() + "/" + this.options.pluginFilePrefix + "images/m";
         apex.debug('imagePrefix', this.imagePrefix);
@@ -1153,7 +1159,14 @@ $( function() {
         this._hideMessage();
         if (this.options.expectData) {
             apex.jQuery("#"+this.options.regionId).trigger("apexbeforerefresh");
+
+            if (this.options.showSpinner && this.maploaded) {
+                apex.debug("show spinner");
+                this.spinner = apex.util.showSpinner($("#"+this.options.regionId));
+            }            
+
             var _this = this;
+            
             apex.server.plugin(
                 this.options.ajaxIdentifier,
                 { pageItems : this.options.ajaxItems },
@@ -1198,6 +1211,11 @@ $( function() {
 							northeast : pData.northeast
 						});
 
+                        if (_this.options.showSpinner) {
+                            apex.debug("remove spinner");
+                            _this.spinner.remove();
+                        }
+                        
 						_this.maploaded = true;
 
 					}
