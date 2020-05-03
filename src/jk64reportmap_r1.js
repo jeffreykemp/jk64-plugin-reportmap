@@ -37,6 +37,7 @@ $( function() {
         allowPan               : true,
         gestureHandling        : "auto",
         initFn                 : null,
+        markerFormatFn         : null,
         drawingModes           : null,
         featureColor           : '#cc66ff',
         featureColorSelected   : '#ff6600',
@@ -44,6 +45,7 @@ $( function() {
 		autoFitBounds          : true,
         directionsPanel        : null,
         spiderfier             : {},
+        spiderfyFormatFn       : null,
         showSpinner            : true,
         noDataMessage          : "No data to show",
         noAddressResults       : "Address not found",
@@ -184,6 +186,11 @@ $( function() {
         //load our own data into the marker
         marker.reportmapId = pinData.d;
 		marker.info = pinData.i;
+        
+        //if a marker formatting function has been supplied, call it
+        if (this.options.markerFormatFn) {
+            this.options.markerFormatFn(marker, pinData.f);
+        }
 
         google.maps.event.addListener(marker,
             (this.options.visualisation=="spiderfier"?"spider_click":"click"),
@@ -240,6 +247,22 @@ $( function() {
         }
         
         this.oms = new OverlappingMarkerSpiderfier(this.map, opt);
+        
+        // format the markers using the provided format function (options.spiderfyFormatFn),
+        // or if not specified, provide a default function
+        this.oms.addListener('format',
+            this.options.spiderfyFormatFn
+            ||  function(marker, status) {
+                    // if basicFormatEvents = true, status will be SPIDERFIED, SPIDERFIABLE, or UNSPIDERFIABLE
+                    // if basicFormatEvents = false, status will be SPIDERFIED or UNSPIDERFIED
+                    var iconURL = status == OverlappingMarkerSpiderfier.markerStatus.SPIDERFIED ?
+                                  'https://mt.googleapis.com/vt/icon/name=icons/spotlight/spotlight-waypoint-blue.png' :
+                                  status == OverlappingMarkerSpiderfier.markerStatus.SPIDERFIABLE ?
+                                  'https://mt.googleapis.com/vt/icon/name=icons/spotlight/spotlight-waypoint-a.png' :
+                                  'https://mt.googleapis.com/vt/icon/name=icons/spotlight/spotlight-poi.png';
+                    //apex.debug("spiderfy.format", marker, status, iconURL);
+                    marker.setIcon({url: iconURL});
+                });
 
         // register the markers with the OverlappingMarkerSpiderfier
         for (var i = 0; i < this.markers.length; i++) {
@@ -418,7 +441,7 @@ $( function() {
         }, function(results, status) {
             if (status === google.maps.GeocoderStatus.OK) {
                 var pos = results[0].geometry.location;
-                apex.debug("geocode ok");
+                apex.debug("geocode ok", pos);
                 _this.map.setCenter(pos);
                 _this.map.panTo(pos);
                 if (_this.options.clickZoomLevel) {
@@ -448,7 +471,6 @@ $( function() {
             if (status === google.maps.GeocoderStatus.OK) {
                 if (results[0]) {
                   apex.debug("addressfound", results);
-                  var components = results[0].address_components;
                   apex.jQuery("#"+_this.options.regionId).trigger("addressfound", {
                       map    : _this.map,
                       lat    : lat,
