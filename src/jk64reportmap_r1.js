@@ -1053,11 +1053,6 @@ $( function() {
         apex.debug(JSON.stringify(this.options));
         var _this = this;
 
-        if (this.options.showSpinner && this.options.expectData) {
-            apex.debug("show spinner");
-            this.spinner = apex.util.showSpinner($("#"+this.options.regionId));
-        }
-        
         // get absolute URL for this site, including /apex/ or /ords/ (this is required by some google maps APIs)
         this.imagePrefix = this._getWindowPath() + "/" + this.options.pluginFilePrefix + "images/m";
         apex.debug('imagePrefix', this.imagePrefix);
@@ -1141,6 +1136,20 @@ $( function() {
         }
 
         apex.debug("reportmap._create finished");
+    },
+    
+    _afterRefresh: function() {
+        apex.debug("_afterRefresh");
+
+        if (this.spinner) {
+            apex.debug("remove spinner");
+            this.spinner.remove();
+        }
+
+        apex.jQuery("#"+this.options.regionId).trigger("apexafterrefresh");
+
+        // Trigger a callback/event
+        this._trigger( "change" );
     },
     
     _renderPage: function(_this, pData, startRow) {
@@ -1247,21 +1256,14 @@ $( function() {
                     southwest : _this.bounds.getSouthWest().toJSON(),
                     northeast : _this.bounds.getNorthEast().toJSON()
                 });
-
-                if (_this.options.showSpinner) {
-                    apex.debug("remove spinner");
-                    _this.spinner.remove();
-                }
                 
                 _this.maploaded = true;
             
-                apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
+                _this._afterRefresh();
             }
 
         } else {
-
-            apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
-        
+            _this._afterRefresh();
         }
 
     },
@@ -1273,7 +1275,10 @@ $( function() {
         if (this.options.expectData) {
             apex.jQuery("#"+this.options.regionId).trigger("apexbeforerefresh");
 
-            if (this.options.showSpinner && this.maploaded) {
+            if (this.options.showSpinner) {
+                if (this.spinner) {
+                    this.spinner.remove();
+                }
                 apex.debug("show spinner");
                 this.spinner = apex.util.showSpinner($("#"+this.options.regionId));
             }
@@ -1304,10 +1309,9 @@ $( function() {
                       _this._renderPage(_this, pData, 1);
                   }
                 });
+        } else {
+            this._afterRefresh();
         }
-        apex.debug("reportmap.refresh finished");
-        // Trigger a callback/event
-        this._trigger( "change" );
     },
 
     // Events bound via _on are removed automatically
