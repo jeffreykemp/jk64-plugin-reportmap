@@ -134,7 +134,6 @@ function get_markers
     l_lng                   number;
     l_weight                number;     
     l_column_value_list     apex_plugin_util.t_column_value_list;
-    l_max_rows              number; --p_plugin.attribute_07;
     l_visualisation         plugin_attr := p_region.attribute_02;
     l_escape_special_chars  plugin_attr := p_region.attribute_24;
 
@@ -160,7 +159,9 @@ function get_markers
     end varchar2_field;
         
 begin
-
+    apex_debug.message('reportmap x01 (startRow): ' || apex_application.g_x01);
+    apex_debug.message('reportmap x02 (fetchCnt): ' || apex_application.g_x02);
+    
     /*
        For most cases, column list is as follows:
     
@@ -180,9 +181,7 @@ begin
        3.  weight - required
     
     */
-    
-    l_max_rows := apex_plugin_util.get_attribute_as_number(p_plugin.attribute_07, 'Maximum Records');
-    
+
     if l_visualisation = g_visualisation_heatmap then
 
         l_column_value_list := apex_plugin_util.get_data
@@ -190,7 +189,7 @@ begin
             ,p_min_columns    => 3
             ,p_max_columns    => 3
             ,p_component_name => p_region.name
-            ,p_max_rows       => l_max_rows);
+            ,p_max_rows       => apex_application.g_x02);
   
         for i in 1..l_column_value_list(1).count loop
         
@@ -233,7 +232,8 @@ begin
             ,p_min_columns    => 4
             ,p_max_columns    => 17
             ,p_component_name => p_region.name
-            ,p_max_rows       => l_max_rows);
+            ,p_first_row      => apex_application.g_x01
+            ,p_max_rows       => apex_application.g_x02);
     
         for i in 1..l_column_value_list(1).count loop
 
@@ -301,10 +301,6 @@ function render
     l_lat        number;
     l_lng        number;
     l_region_id  varchar2(100);
-    l_lat_min    number;
-    l_lat_max    number;
-    l_lng_min    number;
-    l_lng_max    number;
 
     -- Component settings
     l_api_key                      plugin_attr := p_plugin.attribute_01;
@@ -313,6 +309,7 @@ function render
     l_directions_zero_results_msg  plugin_attr := p_plugin.attribute_04;
     l_min_zoom                     number;      --p_plugin.attribute_05;
     l_max_zoom                     number;      --p_plugin.attribute_06;
+    l_max_rows                     number;      --p_plugin.attribute_07;
 
     -- Plugin attributes
     l_map_height           plugin_attr := p_region.attribute_01;
@@ -321,6 +318,7 @@ function render
     l_options              plugin_attr := p_region.attribute_04;
     l_initial_zoom_level   number;      --p_region.attribute_05;
     l_initial_center       plugin_attr := p_region.attribute_06;
+    l_rows_per_batch       number;      --p_region.attribute_07;
     l_language             plugin_attr := p_region.attribute_08;
     l_region               plugin_attr := p_region.attribute_09;
     l_restrict_country     plugin_attr := p_region.attribute_10;
@@ -359,23 +357,45 @@ begin
                    end;
     apex_debug.message('map region: ' || l_region_id);
 
-    l_min_zoom           := valid_zoom_level(p_plugin.attribute_05, 'Min. Zoom');
-    l_max_zoom           := valid_zoom_level(p_plugin.attribute_06, 'Max. Zoom');
-    l_click_zoom_level   := valid_zoom_level(p_region.attribute_03, 'Zoom Level on Click');
-    l_initial_zoom_level := valid_zoom_level(p_region.attribute_05, 'Initial Zoom Level');
-    l_heatmap_opacity    := apex_plugin_util.get_attribute_as_number(p_region.attribute_13, 'Heatmap Opacity');
-    l_heatmap_radius     := apex_plugin_util.get_attribute_as_number(p_region.attribute_14, 'Heatmap Radius');
-    l_dragdrop_geojson   := instr(':'||l_options||':',g_option_drag_drop_geojson)>0;
-    
 /*******************************************************************/
 /* Remove this for apex 5.0 or earlier                             */
     l_init_js_code := p_region.init_javascript_code;
 /*******************************************************************/
+
+    -- Component settings
+    l_min_zoom           := valid_zoom_level(p_plugin.attribute_05, 'Min. Zoom');
+    l_max_zoom           := valid_zoom_level(p_plugin.attribute_06, 'Max. Zoom');
+    l_max_rows           := apex_plugin_util.get_attribute_as_number(p_plugin.attribute_07, 'Maximum Records');
+
+    -- Plugin attributes
+    l_click_zoom_level   := valid_zoom_level(p_region.attribute_03, 'Zoom Level on Click');
+    l_initial_zoom_level := valid_zoom_level(p_region.attribute_05, 'Initial Zoom Level');
+    l_rows_per_batch     := apex_plugin_util.get_attribute_as_number(p_region.attribute_07, 'Rows per Batch');
+    l_heatmap_opacity    := apex_plugin_util.get_attribute_as_number(p_region.attribute_13, 'Heatmap Opacity');
+    l_heatmap_radius     := apex_plugin_util.get_attribute_as_number(p_region.attribute_14, 'Heatmap Radius');
+    l_dragdrop_geojson   := instr(':'||l_options||':',g_option_drag_drop_geojson)>0;
     
+    if l_initial_center is not null then
+        parse_latlng(l_initial_center, p_label=>'Initial Map Center', p_lat=>l_lat, p_lng=>l_lng);
+    end if;
+    
+    if l_drawing_modes is not null then
+        -- convert colon-delimited list "marker:polygon:polyline:rectangle:circle"
+        -- to a javascript array "'marker','polygon','polyline','rectangle','circle'"
+        l_drawing_modes := '''' || replace(l_drawing_modes,':',''',''') || '''';
+    end if;
+        
     if l_visualisation = g_visualisation_heatmap then
+
         l_js_options := l_js_options || '&libraries=visualization';
+
+        -- Heatmap visualisation cannot be batched; get max rows in first batch
+        l_rows_per_batch := l_max_rows;
+
     elsif l_drawing_modes is not null then
+
         l_js_options := l_js_options || '&libraries=drawing';
+
     end if;
     
     if l_language is not null then
@@ -416,20 +436,12 @@ begin
             ,p_directory => p_plugin.file_prefix);
     end if;
     
-    if l_initial_center is not null then
-        parse_latlng(l_initial_center, p_label=>'Initial Map Center', p_lat=>l_lat, p_lng=>l_lng);
-    end if;
-    
-    if l_drawing_modes is not null then
-        -- convert colon-delimited list "marker:polygon:polyline:rectangle:circle"
-        -- to a javascript array "'marker','polygon','polyline','rectangle','circle'"
-        l_drawing_modes := '''' || replace(l_drawing_modes,':',''',''') || '''';
-    end if;
-    
     -- use nullif to convert default values to null; this reduces the footprint of the generated code
     l_opt := '{'
       || apex_javascript.add_attribute('regionId', l_region_id)
       || apex_javascript.add_attribute('expectData', nullif(p_region.source is not null,true))
+      || apex_javascript.add_attribute('maximumRows', l_max_rows)
+      || apex_javascript.add_attribute('rowsPerBatch', l_rows_per_batch)
       || apex_javascript.add_attribute('visualisation', lower(nullif(l_visualisation,g_visualisation_pins)))
       || apex_javascript.add_attribute('mapType', lower(nullif(l_maptype,g_maptype_roadmap)))
       || apex_javascript.add_attribute('minZoom', nullif(l_min_zoom,1))
@@ -447,11 +459,6 @@ begin
          end
       || apex_javascript.add_attribute('panOnClick', nullif(instr(':'||l_options||':',g_option_pan_on_click)>0,true))
       || apex_javascript.add_attribute('restrictCountry', l_restrict_country)
-      || case when l_lat_min is not null and l_lng_min is not null
-               and l_lat_max is not null and l_lng_max is not null then
-              '"southwest":' || latlng_literal(l_lat_min,l_lng_min) || ','
-           || '"northeast":' || latlng_literal(l_lat_max,l_lng_max) || ','
-         end
       || case when l_mapstyle is not null then
          '"mapStyle":' || l_mapstyle || ','
          end

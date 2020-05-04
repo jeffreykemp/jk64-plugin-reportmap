@@ -15,12 +15,12 @@ $( function() {
         ajaxItems              : "",
         pluginFilePrefix       : "",
         expectData             : true,
+        maximumRows            : null,
+        rowsPerBatch           : null,
         initialCenter          : {lat:0,lng:0},
         minZoom                : 1,
         maxZoom                : null,
         initialZoom            : 2,
-        southwest              : null,
-        northeast              : null,
         visualisation          : "pins",
         mapType                : "roadmap",
         clickZoomLevel         : null,
@@ -286,12 +286,8 @@ $( function() {
         apex.debug("reportmap._showData");		
         if (mapData.length>0) {
 
-            var weightedLocations = [],
-			    marker,
+            var marker,
 				newIdMap;
-			this.markers = [];
-
-            this._hideMessage();
 			
 			// idMap is a map of id to the data for a pin
 			newIdMap = new Map();
@@ -300,7 +296,7 @@ $( function() {
                 if (this.options.visualisation=="heatmap") {
                     
                     // each data point is an array [x,y,weight]
-                    weightedLocations.push({
+                    this.weightedLocations.push({
                         location:new google.maps.LatLng(mapData[i][0], mapData[i][1]),
                         weight:mapData[i][2]
                     });
@@ -318,39 +314,11 @@ $( function() {
 
                 }
             }
-
-            switch (this.options.visualisation) {
-            case "cluster":
-                // Add a marker clusterer to manage the markers.
-        
-                // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
-                var markerCluster = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
-
-                break;
-            case "heatmap":
-
-                if (this.heatmapLayer) {
-                    apex.debug("remove heatmapLayer");
-                    this.heatmapLayer.setMap(null);
-                    this.heatmapLayer.delete;
-                    this.heatmapLayer = null;
-                }
-
-                this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
-                    data        : weightedLocations,
-                    map         : this.map,
-                    dissipating : this.options.heatmapDissipating,
-                    opacity     : this.options.heatmapOpacity,
-                    radius      : this.options.heatmapRadius
-                });
-
-                break;
-            }
 			
 			// rememember the ID map for the next refresh
 			this.idMap = newIdMap;
 
-        } else {
+        } else if (this.totalRows == 0) {
 			
 			delete this.idMap;
 			
@@ -364,6 +332,7 @@ $( function() {
 
     _removeMarkers: function() {
         apex.debug("reportmap._removeMarkers");
+        this.totalRows = 0;
         if (this.markers) {
             for (var i = 0; i < this.markers.length; i++) {
                 this.markers[i].setMap(null);
@@ -1109,10 +1078,6 @@ $( function() {
 
         this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),mapOptions);
 
-        if (this.options.southwest&&this.options.northeast) {
-            this.map.fitBounds(new google.maps.LatLngBounds(this.options.southwest,this.options.northeast));
-        }
-
         if (this.options.drawingModes) {
             this._initDrawing();
         }
@@ -1175,6 +1140,133 @@ $( function() {
         apex.debug("reportmap._create finished");
     },
     
+    _renderPage: function(_this, pData, startRow) {
+        apex.debug("_renderPage", startRow);
+        
+        if (pData.southwest && pData.northeast) {            
+            _this.south = Math.min(_this.south || pData.southwest.lat, pData.southwest.lat);
+            _this.north = Math.max(_this.north || pData.northeast.lat, pData.northeast.lat);
+            _this.west = Math.min(_this.west || pData.southwest.lng, pData.southwest.lng);
+            _this.east = Math.max(_this.east || pData.northeast.lng, pData.northeast.lng);
+
+            if (_this.options.autoFitBounds) {
+                _this.map.fitBounds({
+                    south : _this.south,
+                    west  : _this.north,
+                    north : _this.north,
+                    east  : _this.east
+                });
+            }
+        }
+
+        if (pData.mapdata) {
+            apex.debug("pData.mapdata length:", pData.mapdata.length);
+
+            _this._showData(pData.mapdata);
+            
+            _this.totalRows += pData.mapdata.length;
+            
+            if ((_this.totalRows < _this.options.maximumRows)
+                && (pData.mapdata.length == _this.options.rowsPerBatch)) {
+                // get the next page of data
+
+                apex.jQuery("#"+_this.options.regionId).trigger(
+                    "batchloaded", {
+                    map       : _this.map,
+                    countPins : _this.totalRows,
+                    southwest : { lat: _this.south, lng: _this.west },
+                    northeast : { lat: _this.north, lng: _this.east }
+                });
+                
+                startRow += _this.options.rowsPerBatch;
+                
+                var batchSize = _this.options.rowsPerBatch;
+
+                // don't exceed the maximum rows
+                if (_this.totalRows + batchSize > _this.options.maximumRows) {
+                    batchSize = _this.options.maximumRows - _this.totalRows;
+                }
+
+                apex.server.plugin(
+                    _this.options.ajaxIdentifier,
+                    { pageItems : _this.options.ajaxItems,
+                      x01       : startRow,
+                      x02       : batchSize
+                    },
+                    { dataType : "json",
+                      success: function(pData) {
+                          apex.debug("next batch received");
+                          _this._renderPage(_this, pData, startRow);
+                      }
+                    });
+
+            } else {
+                // no more data to render, finish rendering
+
+                switch (this.options.visualisation) {
+                case "directions":
+                    _this._directions(pData.mapdata);
+                
+                    break;
+                case "cluster":
+                    // Add a marker clusterer to manage the markers.
+            
+                    // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
+                    var markerCluster = new MarkerClusterer(_this.map, _this.markers, {imagePath:_this.imagePrefix});
+
+                    break;
+                case "spiderfier":
+                    _this._spiderfy();
+
+                    break;
+                case "heatmap":
+
+                    if (_this.heatmapLayer) {
+                        apex.debug("remove heatmapLayer");
+                        _this.heatmapLayer.setMap(null);
+                        _this.heatmapLayer.delete;
+                        _this.heatmapLayer = null;
+                    }
+
+                    _this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
+                        data        : _this.weightedLocations,
+                        map         : _this.map,
+                        dissipating : _this.options.heatmapDissipating,
+                        opacity     : _this.options.heatmapOpacity,
+                        radius      : _this.options.heatmapRadius
+                    });
+                    
+                    _this.weightedLocations.delete;
+
+                    break;
+                }
+
+                apex.jQuery("#"+_this.options.regionId).trigger(
+                    (_this.maploaded?"maprefreshed":"maploaded"), {
+                    map       : _this.map,
+                    countPins : _this.totalRows,
+                    southwest : { lat: _this.south, lng: _this.west },
+                    northeast : { lat: _this.north, lng: _this.east }
+                });
+
+                if (_this.options.showSpinner) {
+                    apex.debug("remove spinner");
+                    _this.spinner.remove();
+                }
+                
+                _this.maploaded = true;
+            
+                apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
+            }
+
+        } else {
+
+            apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
+        
+        }
+
+    },
+    
     // Called when created, and later when changing options
     refresh: function() {
         apex.debug("reportmap.refresh");
@@ -1185,65 +1277,31 @@ $( function() {
             if (this.options.showSpinner && this.maploaded) {
                 apex.debug("show spinner");
                 this.spinner = apex.util.showSpinner($("#"+this.options.regionId));
-            }            
+            }
 
-            var _this = this;
+            var _this = this,
+                batchSize = this.options.rowsPerBatch;
+            
+            if (this.options.maximumRows < batchSize) {
+                batchSize = this.options.maximumRows;
+            }
             
             apex.server.plugin(
                 this.options.ajaxIdentifier,
-                { pageItems : this.options.ajaxItems },
+                { pageItems : this.options.ajaxItems,
+                  x01       : 1,
+                  x02       : batchSize
+                },
                 { dataType : "json",
-                  success: function( pData ) {
+                  success: function(pData) {
+                      apex.debug("first batch received");      
 
-                    apex.debug("success", pData.southwest, pData.northeast);
+                      _this._removeMarkers();
 
-					if (_this.options.autoFitBounds
-						&& pData.southwest
-						&& pData.northeast) {
-						_this.map.fitBounds({
-							south : pData.southwest.lat,
-							west  : pData.southwest.lng,
-							north : pData.northeast.lat,
-							east  : pData.northeast.lng
-						});
-					}
+                      _this.weightedLocations = [];
+                      _this.markers = [];
 
-                    _this._hideMessage();
-
-                    _this._removeMarkers();
-
-					if (pData.mapdata) {
-						apex.debug("pData.mapdata length:", pData.mapdata.length);
-
-						_this._showData(pData.mapdata);
-
-						if (_this.options.visualisation=="directions") {
-							_this._directions(pData.mapdata);
-						}
-
-                        if (_this.options.visualisation=="spiderfier") {
-                            _this._spiderfy();
-                        }
-
-						apex.jQuery("#"+_this.options.regionId).trigger(
-							(_this.maploaded?"maprefreshed":"maploaded"), {
-							map       : _this.map,
-							countPins : pData.mapdata.length,
-							southwest : pData.southwest,
-							northeast : pData.northeast
-						});
-
-                        if (_this.options.showSpinner) {
-                            apex.debug("remove spinner");
-                            _this.spinner.remove();
-                        }
-                        
-						_this.maploaded = true;
-
-					}
-
-                    apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
-
+                      _this._renderPage(_this, pData, 1);
                   }
                 });
         }
