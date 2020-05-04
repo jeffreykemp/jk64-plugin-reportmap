@@ -81,6 +81,19 @@ begin
         end;
 end latlng_literal;
 
+function bounds_literal (south in number, west in number, north in number, east in number) return varchar2 is
+begin
+    return case when south is not null and west is not null and north is not null and east is not null then
+        '{'
+        || apex_javascript.add_attribute('south', round(south,g_coord_precision))
+        || apex_javascript.add_attribute('west', round(west,g_coord_precision))
+        || apex_javascript.add_attribute('north', round(north,g_coord_precision))
+        || apex_javascript.add_attribute('east', round(east,g_coord_precision)
+           , false, false)
+        || '}'
+        end;
+end bounds_literal;
+
 procedure parse_latlng (p_val in varchar2, p_label in varchar2, p_lat out number, p_lng out number) is
     delim_pos number;
 begin
@@ -136,6 +149,8 @@ function get_markers
     l_column_value_list     apex_plugin_util.t_column_value_list;
     l_visualisation         plugin_attr := p_region.attribute_02;
     l_escape_special_chars  plugin_attr := p_region.attribute_24;
+    l_first_row             number;
+    l_max_rows              number;
 
     function flex_field (attr_no in number, i in number) return varchar2 is
       d varchar2(4000);
@@ -159,8 +174,11 @@ function get_markers
     end varchar2_field;
         
 begin
-    apex_debug.message('reportmap x01 (startRow): ' || apex_application.g_x01);
-    apex_debug.message('reportmap x02 (fetchCnt): ' || apex_application.g_x02);
+    apex_debug.message('reportmap x01 (first row): ' || apex_application.g_x01);
+    apex_debug.message('reportmap x02 (max rows): ' || apex_application.g_x02);
+    
+    l_first_row := to_number(apex_application.g_x01);
+    l_max_rows := to_number(apex_application.g_x02);
     
     /*
        For most cases, column list is as follows:
@@ -189,7 +207,7 @@ begin
             ,p_min_columns    => 3
             ,p_max_columns    => 3
             ,p_component_name => p_region.name
-            ,p_max_rows       => apex_application.g_x02);
+            ,p_max_rows       => l_max_rows);
   
         for i in 1..l_column_value_list(1).count loop
         
@@ -232,8 +250,8 @@ begin
             ,p_min_columns    => 4
             ,p_max_columns    => 17
             ,p_component_name => p_region.name
-            ,p_first_row      => apex_application.g_x01
-            ,p_max_rows       => apex_application.g_x02);
+            ,p_first_row      => l_first_row
+            ,p_max_rows       => l_max_rows);
     
         for i in 1..l_column_value_list(1).count loop
 
@@ -283,7 +301,7 @@ begin
 
     -- handle edge case when there is exactly one row from query
     -- (otherwise the map zooms to maximum)
-    if l_data.count = 1 then
+    if l_first_row = 1 and l_data.count = 1 then
         p_lat_min := p_lat_min - g_single_row_lat_margin;
         p_lat_max := p_lat_max + g_single_row_lat_margin;
     end if;
@@ -572,11 +590,10 @@ begin
     sys.owa_util.http_header_close;
     
     sys.htp.p('{'
-      || case when l_lat_min is not null then
-            '"southwest":' || latlng_literal(l_lat_min,l_lng_min) || ','
-         || '"northeast":' || latlng_literal(l_lat_max,l_lng_max) || ','
-         end
-      || '"mapdata":[');
+      || '"bounds":'
+      || nvl(bounds_literal(south => l_lat_min, west => l_lng_min, north => l_lat_max, east => l_lng_max)
+            ,'null')
+      || ',"mapdata":[');
 
     for i in 1..l_data.count loop
         -- use prn to avoid downloading a whole lot of unnecessary \n characters

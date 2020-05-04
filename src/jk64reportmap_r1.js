@@ -47,6 +47,7 @@ $( function() {
         spiderfier             : {},
         spiderfyFormatFn       : null,
         showSpinner            : true,
+        iconBasePath           : "",
         noDataMessage          : "No data to show",
         noAddressResults       : "Address not found",
         directionsNotFound     : "At least one of the origin, destination, or waypoints could not be geocoded.",
@@ -178,7 +179,7 @@ $( function() {
               map       : this.map,
               position  : new google.maps.LatLng(pinData.x, pinData.y),
               title     : pinData.n,
-              icon      : pinData.c,
+              icon      : (pinData.c?(this.options.iconBasePath + pinData.c):null),
               label     : pinData.l,
               draggable : this.options.isDraggable
             });
@@ -229,7 +230,8 @@ $( function() {
         apex.debug("reportmap._spiderfy");
         // refer to: https://github.com/jawj/OverlappingMarkerSpiderfier
         
-        var _this = this, opt = this.options.spiderfier;
+        var _this = this,
+            opt = this.options.spiderfier;
             
         opt.markersWontMove = !this.options.isDraggable;
         
@@ -333,6 +335,7 @@ $( function() {
     _removeMarkers: function() {
         apex.debug("reportmap._removeMarkers");
         this.totalRows = 0;
+        if (this.bounds) { this.bounds.delete; }
         if (this.markers) {
             for (var i = 0; i < this.markers.length; i++) {
                 this.markers[i].setMap(null);
@@ -1143,19 +1146,15 @@ $( function() {
     _renderPage: function(_this, pData, startRow) {
         apex.debug("_renderPage", startRow);
         
-        if (pData.southwest && pData.northeast) {            
-            _this.south = Math.min(_this.south || pData.southwest.lat, pData.southwest.lat);
-            _this.north = Math.max(_this.north || pData.northeast.lat, pData.northeast.lat);
-            _this.west = Math.min(_this.west || pData.southwest.lng, pData.southwest.lng);
-            _this.east = Math.max(_this.east || pData.northeast.lng, pData.northeast.lng);
+        if (pData.bounds) {
+            
+            _this.bounds.extend({lat:pData.bounds.south,lng:pData.bounds.west});
+            _this.bounds.extend({lat:pData.bounds.north,lng:pData.bounds.east});
+            
+            apex.debug("bounds:", _this.bounds.toJSON());
 
             if (_this.options.autoFitBounds) {
-                _this.map.fitBounds({
-                    south : _this.south,
-                    west  : _this.north,
-                    north : _this.north,
-                    east  : _this.east
-                });
+                _this.map.fitBounds(_this.bounds);
             }
         }
 
@@ -1174,8 +1173,8 @@ $( function() {
                     "batchloaded", {
                     map       : _this.map,
                     countPins : _this.totalRows,
-                    southwest : { lat: _this.south, lng: _this.west },
-                    northeast : { lat: _this.north, lng: _this.east }
+                    southwest : _this.bounds.getSouthWest().toJSON(),
+                    northeast : _this.bounds.getNorthEast().toJSON()
                 });
                 
                 startRow += _this.options.rowsPerBatch;
@@ -1245,8 +1244,8 @@ $( function() {
                     (_this.maploaded?"maprefreshed":"maploaded"), {
                     map       : _this.map,
                     countPins : _this.totalRows,
-                    southwest : { lat: _this.south, lng: _this.west },
-                    northeast : { lat: _this.north, lng: _this.east }
+                    southwest : _this.bounds.getSouthWest().toJSON(),
+                    northeast : _this.bounds.getNorthEast().toJSON()
                 });
 
                 if (_this.options.showSpinner) {
@@ -1300,6 +1299,7 @@ $( function() {
 
                       _this.weightedLocations = [];
                       _this.markers = [];
+                      _this.bounds = new google.maps.LatLngBounds;
 
                       _this._renderPage(_this, pData, 1);
                   }
