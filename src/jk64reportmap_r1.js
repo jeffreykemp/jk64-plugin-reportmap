@@ -1,4 +1,9 @@
-//jk64 ReportMap v1.1 Jan 2020
+/*
+jk64 ReportMap v1.2 May 2020
+https://github.com/jeffreykemp/jk64-plugin-reportmap
+Copyright (c) 2016 - 2020 Jeffrey Kemp
+Released under the MIT licence: http://opensource.org/licenses/mit-license
+*/
 
 $( function() {
   $.widget( "jk64.reportmap", {
@@ -10,12 +15,12 @@ $( function() {
         ajaxItems              : "",
         pluginFilePrefix       : "",
         expectData             : true,
+        maximumRows            : null,
+        rowsPerBatch           : null,
         initialCenter          : {lat:0,lng:0},
         minZoom                : 1,
         maxZoom                : null,
         initialZoom            : 2,
-        southwest              : null,
-        northeast              : null,
         visualisation          : "pins",
         mapType                : "roadmap",
         clickZoomLevel         : null,
@@ -32,11 +37,17 @@ $( function() {
         allowPan               : true,
         gestureHandling        : "auto",
         initFn                 : null,
+        markerFormatFn         : null,
         drawingModes           : null,
         featureColor           : '#cc66ff',
         featureColorSelected   : '#ff6600',
         dragDropGeoJSON        : false,
 		autoFitBounds          : true,
+        directionsPanel        : null,
+        spiderfier             : {},
+        spiderfyFormatFn       : null,
+        showSpinner            : true,
+        iconBasePath           : "",
         noDataMessage          : "No data to show",
         noAddressResults       : "Address not found",
         directionsNotFound     : "At least one of the origin, destination, or waypoints could not be geocoded.",
@@ -68,7 +79,7 @@ $( function() {
     //    -17,9609 122,2122
     //    -17,9609;122,2122
     parseLatLng: function (v) {
-        apex.debug("reportmap.parseLatLng "+v);
+        apex.debug("reportmap.parseLatLng", v);
         var pos;
         if (v !== null && v !== undefined) {
             var arr;
@@ -83,10 +94,10 @@ $( function() {
                 //convert to use period (.) for decimal point
                 arr[0] = arr[0].replace(/,/g, ".");
                 arr[1] = arr[1].replace(/,/g, ".");
-                apex.debug("parsed "+arr[0]+" "+arr[1]);
+                apex.debug("parsed", arr);
                 pos = new google.maps.LatLng(parseFloat(arr[0]),parseFloat(arr[1]));
             } else {
-                apex.debug('no LatLng found in "'+v+'"');
+                apex.debug('no LatLng found', v);
             }
         }
         return pos;
@@ -99,7 +110,7 @@ $( function() {
 	 */
     
     _showMessage: function (msg) {
-        apex.debug("reportmap._showMessage '"+msg+"'");
+        apex.debug("reportmap._showMessage", msg);
         if (!this.infoWindow) {
             this.infoWindow = new google.maps.InfoWindow();
         }
@@ -109,7 +120,7 @@ $( function() {
     },
     
     _hideMessage: function() {
-        apex.debug("reportmap._hideMessage ");
+        apex.debug("reportmap._hideMessage");
         if (this.infoWindow) {
             this.infoWindow.close();
         }
@@ -162,20 +173,30 @@ $( function() {
 
     //place a report pin on the map
     _newMarker: function (pinData) {
+        var _this = this;
+
         var marker = new google.maps.Marker({
               map       : this.map,
               position  : new google.maps.LatLng(pinData.x, pinData.y),
               title     : pinData.n,
-              icon      : pinData.c,
+              icon      : (pinData.c?(this.options.iconBasePath + pinData.c):null),
               label     : pinData.l,
               draggable : this.options.isDraggable
             });
+
         //load our own data into the marker
         marker.reportmapId = pinData.d;
 		marker.info = pinData.i;
-        var _this = this;
-        google.maps.event.addListener(marker, "click", function () {
-            apex.debug("marker "+pinData.d+" clicked");
+        
+        //if a marker formatting function has been supplied, call it
+        if (this.options.markerFormatFn) {
+            this.options.markerFormatFn(marker, pinData.f);
+        }
+
+        google.maps.event.addListener(marker,
+            (this.options.visualisation=="spiderfier"?"spider_click":"click"),
+            function () {
+            apex.debug("marker clicked", pinData.d);
             var pos = this.getPosition();
             if (pinData.i) {
 				_this.showInfoWindow(this);
@@ -188,12 +209,14 @@ $( function() {
             }
             apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._pinData(pinData, marker));	
         });
+
         google.maps.event.addListener(marker, "dragend", function () {
             var pos = this.getPosition();
-            apex.debug("marker "+pinData.d+" moved to "+JSON.stringify(pos));
+            apex.debug("marker moved", pinData.d, JSON.stringify(pos));
             apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", _this._pinData(pinData, marker));
         });
-		if (this.options.visualisation=="pins") {
+
+		if (["pins","cluster","spiderfier"].indexOf(this.options.visualisation) > -1) {
 			// if the marker was not previously shown in the last refresh, raise the marker added event
 			if (!this.idMap||!this.idMap.has(pinData.d)) {
 				apex.jQuery("#"+_this.options.regionId).trigger("markeradded", _this._pinData(pinData, marker));
@@ -201,65 +224,103 @@ $( function() {
 		}
         return marker;
     },
+    
+    // set up the Spiderfier visualisation
+    _spiderfy: function() {
+        apex.debug("reportmap._spiderfy");
+        // refer to: https://github.com/jawj/OverlappingMarkerSpiderfier
+        
+        var _this = this,
+            opt = this.options.spiderfier;
+            
+        opt.markersWontMove = !this.options.isDraggable;
+        
+        // allow the developer to set other spiderfy options, e.g. nearbyDistance, circleSpiralSwitchover, etc.
+        // if the developer has set these options, don't overwrite them
 
+        if (!('keepSpiderfied' in opt)) {
+            // don't unspiderfy when the user clicks a pin
+            opt.keepSpiderfied = true;
+        }
+        
+        if (!('basicFormatEvents' in opt)) {
+            // we aren't changing the format of the pins when spiderfying
+            opt.basicFormatEvents = true;
+        }
+        
+        this.oms = new OverlappingMarkerSpiderfier(this.map, opt);
+        
+        // format the markers using the provided format function (options.spiderfyFormatFn),
+        // or if not specified, provide a default function
+        this.oms.addListener('format',
+            this.options.spiderfyFormatFn
+            ||  function(marker, status) {
+                    // if basicFormatEvents = true, status will be SPIDERFIED, SPIDERFIABLE, or UNSPIDERFIABLE
+                    // if basicFormatEvents = false, status will be SPIDERFIED or UNSPIDERFIED
+                    var iconURL = status == OverlappingMarkerSpiderfier.markerStatus.SPIDERFIED ?
+                                  'https://mt.googleapis.com/vt/icon/name=icons/spotlight/spotlight-waypoint-blue.png' :
+                                  status == OverlappingMarkerSpiderfier.markerStatus.SPIDERFIABLE ?
+                                  'https://mt.googleapis.com/vt/icon/name=icons/spotlight/spotlight-waypoint-a.png' :
+                                  'https://mt.googleapis.com/vt/icon/name=icons/spotlight/spotlight-poi.png';
+                    //apex.debug("spiderfy.format", marker, status, iconURL);
+                    marker.setIcon({url: iconURL});
+                });
+
+        // register the markers with the OverlappingMarkerSpiderfier
+        for (var i = 0; i < this.markers.length; i++) {
+            this.oms.addMarker(this.markers[i]);
+        }
+
+        this.oms.addListener('spiderfy', function(markers) {
+            apex.debug("spiderfy", markers);
+			apex.jQuery("#"+_this.options.regionId).trigger("spiderfy", { map:_this.map, markers:markers });
+        });
+
+        this.oms.addListener('unspiderfy', function(markers) {
+            apex.debug("unspiderfy", markers);
+			apex.jQuery("#"+_this.options.regionId).trigger("unspiderfy", { map:_this.map, markers:markers });
+        });
+
+    },
+    
     //put all the report pins on the map, or show the "no data found" message
     _showData: function (mapData) {
         apex.debug("reportmap._showData");		
         if (mapData.length>0) {
-            this._hideMessage();
-            var weightedLocations = [],
-			    marker,
-				newIdMap;
 
-			this.markers = [];
+            var marker,
+				newIdMap;
 			
 			// idMap is a map of id to the data for a pin
 			newIdMap = new Map();
 			
             for (var i = 0; i < mapData.length; i++) {
                 if (this.options.visualisation=="heatmap") {
+                    
                     // each data point is an array [x,y,weight]
-                    weightedLocations.push({
+                    this.weightedLocations.push({
                         location:new google.maps.LatLng(mapData[i][0], mapData[i][1]),
                         weight:mapData[i][2]
                     });
+                    
                 } else {
+                    
                     // each data point is a pin info structure with x, y, etc. attributes
 					marker = this._newMarker(mapData[i]);
+                    
 					// put the marker into the array of markers
 					this.markers.push(marker);
+                    
 					// also put the id into the Map
                     newIdMap.set(mapData[i].d, i);
-                }
-            }
 
-            switch (this.options.visualisation) {
-            case "cluster":
-                // Add a marker clusterer to manage the markers.
-                // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
-                var markerCluster = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
-                break;
-            case "heatmap":
-                if (this.heatmapLayer) {
-                    apex.debug("remove heatmapLayer");
-                    this.heatmapLayer.setMap(null);
-                    this.heatmapLayer.delete;
-                    this.heatmapLayer = null;
                 }
-                this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
-                    data        : weightedLocations,
-                    map         : this.map,
-                    dissipating : this.options.heatmapDissipating,
-                    opacity     : this.options.heatmapOpacity,
-                    radius      : this.options.heatmapRadius
-                });
-                break;
             }
 			
 			// rememember the ID map for the next refresh
 			this.idMap = newIdMap;
 
-        } else {
+        } else if (this.totalRows == 0) {
 			
 			delete this.idMap;
 			
@@ -273,6 +334,8 @@ $( function() {
 
     _removeMarkers: function() {
         apex.debug("reportmap._removeMarkers");
+        this.totalRows = 0;
+        if (this.bounds) { this.bounds.delete; }
         if (this.markers) {
             for (var i = 0; i < this.markers.length; i++) {
                 this.markers[i].setMap(null);
@@ -289,7 +352,7 @@ $( function() {
         if (marker) {
             new google.maps.event.trigger(marker,"click");
         } else {
-            apex.debug("id not found:"+id);
+            apex.debug("id not found", id);
         }
     },
 
@@ -309,11 +372,11 @@ $( function() {
             } else {
                 var pos = new google.maps.LatLng(lat,lng);
                 if (this.userpin) {
-                    apex.debug("move existing pin to new position on map",lat+","+lng);
+                    apex.debug("move existing pin to new position on map",pos);
                     this.userpin.setMap(this.map);
                     this.userpin.setPosition(pos);
                 } else {
-                    apex.debug("create userpin",lat+","+lng);
+                    apex.debug("create userpin",pos);
                     this.userpin = new google.maps.Marker({map: this.map, position: pos});
                 }
             }
@@ -325,7 +388,7 @@ $( function() {
 
     //parse the given string as a lat,long pair, put a pin at that location
     gotoPosByString: function (v) {
-        apex.debug("reportmap.gotoPosByString");
+        apex.debug("reportmap.gotoPosByString", v);
         var latlng = this.parseLatLng(v);
         if (latlng) {
             this.gotoPos(latlng.lat(),latlng.lng());
@@ -340,7 +403,7 @@ $( function() {
 	
     //search the map for an address; if found, put a pin at that location and raise addressfound trigger
     gotoAddress: function (addressText) {
-        apex.debug("reportmap.gotoAddress");
+        apex.debug("reportmap.gotoAddress", addressText);
         var geocoder = new google.maps.Geocoder;
         this._hideMessage();
         var _this = this;
@@ -350,14 +413,14 @@ $( function() {
         }, function(results, status) {
             if (status === google.maps.GeocoderStatus.OK) {
                 var pos = results[0].geometry.location;
-                apex.debug("geocode ok");
+                apex.debug("geocode ok", pos);
                 _this.map.setCenter(pos);
                 _this.map.panTo(pos);
                 if (_this.options.clickZoomLevel) {
                     _this.map.setZoom(_this.options.clickZoomLevel);
                 }
                 _this.gotoPos(pos.lat(), pos.lng());
-                apex.debug("addressfound '"+results[0].formatted_address+"'");
+                apex.debug("addressfound", results);
                 apex.jQuery("#"+_this.options.regionId).trigger("addressfound", {
                     map    : _this.map,
                     lat    : pos.lat(),
@@ -365,25 +428,21 @@ $( function() {
                     result : results[0]
                 });
             } else {
-                apex.debug("Geocoder failed: "+status);
+                apex.debug("Geocoder failed", status);
             }
         });
     },
 
     //get the closest address to a given location by lat/long
     getAddressByPos: function (lat,lng) {
-        apex.debug("reportmap.getAddressByPos");
+        apex.debug("reportmap.getAddressByPos", lat,lng);
         var geocoder = new google.maps.Geocoder;
         this._hideMessage();
         var _this = this;
         geocoder.geocode({'location': {lat: lat, lng: lng}}, function(results, status) {
             if (status === google.maps.GeocoderStatus.OK) {
                 if (results[0]) {
-                  apex.debug("addressfound '"+results[0].formatted_address+"'");
-                  var components = results[0].address_components;
-                  for (i=0; i<components.length; i++) {
-                      apex.debug("result[0] "+components[i].types+"="+components[i].short_name+" ("+components[i].long_name+")");
-                  }
+                  apex.debug("addressfound", results);
                   apex.jQuery("#"+_this.options.regionId).trigger("addressfound", {
                       map    : _this.map,
                       lat    : lat,
@@ -395,7 +454,7 @@ $( function() {
                     _this._showMessage(_this.options.noAddressResults);
                 }
             } else {
-                apex.debug("Geocoder failed: " + status);
+                apex.debug("Geocoder failed", status);
             }
         });
     },
@@ -404,7 +463,6 @@ $( function() {
     geolocate: function () {
         apex.debug("reportmap.geolocate");
         if (navigator.geolocation) {
-            apex.debug("geolocate");
             var _this = this;
             navigator.geolocation.getCurrentPosition(function(position) {
                 var pos = {
@@ -430,7 +488,7 @@ $( function() {
 
 	 //this is called when directions are requested
     _directionsResponse: function (response,status) {
-        apex.debug("reportmap._directionsResponse "+status);
+        apex.debug("reportmap._directionsResponse",response,status);
         switch(status) {
         case google.maps.DirectionsStatus.OK:
             this.directionsDisplay.setDirections(response);
@@ -445,10 +503,11 @@ $( function() {
             }
             var _this = this;
             apex.jQuery("#"+this.options.regionId).trigger("directions",{
-                map      : _this.map,
-                distance : totalDistance,
-                duration : totalDuration,
-                legs     : legCount
+                map        : _this.map,
+                distance   : totalDistance,
+                duration   : totalDuration,
+                legs       : legCount,
+                directions : response
             });
             break;
         case google.maps.DirectionsStatus.NOT_FOUND:
@@ -458,13 +517,13 @@ $( function() {
             this._showMessage(this.options.directionsZeroResults);
             break;
         default:
-            apex.debug("Directions request failed: "+status);
+            apex.debug("Directions request failed", status);
         }
     },
     
     //show simple route between two points
     showDirections: function (origin, destination, travelMode) {
-        apex.debug("reportmap.showDirections");
+        apex.debug("reportmap.showDirections", origin, destination, travelMode);
         this.origin = origin;
         this.destination = destination;
         this._hideMessage();
@@ -473,6 +532,9 @@ $( function() {
                 this.directionsDisplay = new google.maps.DirectionsRenderer;
                 this.directionsService = new google.maps.DirectionsService;
                 this.directionsDisplay.setMap(this.map);
+                if (this.options.directionsPanel) {
+                    this.directionsDisplay.setPanel(document.getElementById(this.options.directionsPanel));
+                }
             }
             //simple directions between two locations
             this.origin = this.parseLatLng(this.origin)||this.origin;
@@ -504,6 +566,9 @@ $( function() {
                 this.directionsDisplay = new google.maps.DirectionsRenderer;
                 this.directionsService = new google.maps.DirectionsService;
                 this.directionsDisplay.setMap(this.map);
+                if (this.options.directionsPanel) {
+                    this.directionsDisplay.setPanel(document.getElementById(this.options.directionsPanel));
+                }
             }
             var waypoints = [], latLng;
             for (var i = 0; i < mapData.length; i++) {
@@ -519,7 +584,7 @@ $( function() {
                     });
                 }
             }
-            apex.debug("origin="+origin+" dest="+dest+" waypoints:"+waypoints.length+" via:"+this.options.travelMode);
+            apex.debug(origin, dest, waypoints, this.options.travelMode);
             var _this = this;
             this.directionsService.route({
                 origin            : origin,
@@ -812,16 +877,16 @@ $( function() {
      * @param {Object} thisArg - value of 'this' as provided to 'callback'
      */
     _processPoints : function (geometry, callback, thisArg) {
-      var _this = this;
-      if (geometry instanceof google.maps.LatLng) {
-        callback.call(thisArg, geometry);
-      } else if (geometry instanceof google.maps.Data.Point) {
-        callback.call(thisArg, geometry.get());
-      } else {
-        geometry.getArray().forEach(function(g) {
-          _this._processPoints(g, callback, thisArg);
-        });
-      }
+        var _this = this;
+        if (geometry instanceof google.maps.LatLng) {
+            callback.call(thisArg, geometry);
+        } else if (geometry instanceof google.maps.Data.Point) {
+            callback.call(thisArg, geometry.get());
+        } else {
+            geometry.getArray().forEach(function(g) {
+                _this._processPoints(g, callback, thisArg);
+            });
+        }
     },
 
 	/*
@@ -831,7 +896,7 @@ $( function() {
 	 */
 
     loadGeoJsonString : function (geoString) {
-        apex.debug("reportmap.loadGeoJsonString");
+        apex.debug("reportmap.loadGeoJsonString", geoString);
         if (geoString) {
             var _this = this;
             var geojson = JSON.parse(geoString);
@@ -866,9 +931,11 @@ $( function() {
 
         // overlay specific events (since it only appears once drag starts)
         dropContainer.addEventListener('dragover', showPanel, false);
+
         dropContainer.addEventListener('dragleave', function() {
             dropContainer.style.display = 'none';
         }, false);
+
         dropContainer.addEventListener('drop', function(e) {
             apex.debug("reportmap.drop",e);
             e.preventDefault();
@@ -905,7 +972,7 @@ $( function() {
     
 	/*
 	 *
-	 * DEBUG WINDOW
+	 * UTILITIES
 	 *
 	 */
 
@@ -933,6 +1000,46 @@ $( function() {
             controlUI.innerHTML = 'map bounds ' + JSON.stringify(_this.map.getBounds());
         });
     },
+    
+    _getWindowPath: function() {
+        apex.debug("reportmap._getWindowPath");
+        
+        var path = window.location.origin + window.location.pathname;
+
+        if (path.indexOf("/r/") > -1) {
+            // Friendly URLs in use
+            apex.debug("Friendly URL detected", path);
+
+            // Expected: https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map_dev/clustering
+
+            // strip off everything including and after the "/r/" bit
+            path = path.substring(0, path.lastIndexOf("/r/"));
+
+            // now it is something like:
+            // https://apex.oracle.com/pls/apex/jk64
+
+            // strip off the path prefix
+            path = path.substring(0, path.lastIndexOf("/"));
+
+            // now it is something like:
+            // https://apex.oracle.com/pls/apex
+        } else {
+            // Legacy URLs in use
+            apex.debug("Legacy URL detected", path);
+
+            // Expected: https://apex.oracle.com/pls/apex/f
+
+            // strip off the "/f" bit
+            path = path.substring(0, path.lastIndexOf("/"));
+
+            // now it is something like:
+            // https://apex.oracle.com/pls/apex
+        }
+        
+        apex.debug("path", path);
+
+        return path;
+    },
 
 	/*
 	 *
@@ -942,16 +1049,15 @@ $( function() {
 
     // The constructor
     _create: function() {
-        apex.debug("reportmap._create "+this.element.prop("id"));
-        apex.debug("options: "+JSON.stringify(this.options));
+        apex.debug("reportmap._create", this.element.prop("id"));
+        apex.debug(JSON.stringify(this.options));
         var _this = this;
 
         // get absolute URL for this site, including /apex/ or /ords/ (this is required by some google maps APIs)
-        var filePath = window.location.origin + window.location.pathname;
-        filePath = filePath.substring(0, filePath.lastIndexOf("/"));
-        this.imagePrefix = filePath + "/" + this.options.pluginFilePrefix + "images/m";
-        apex.debug('this.imagePrefix="'+this.imagePrefix+'"');
-        var myOptions = {
+        this.imagePrefix = this._getWindowPath() + "/" + this.options.pluginFilePrefix + "images/m";
+        apex.debug('imagePrefix', this.imagePrefix);
+        
+        var mapOptions = {
             minZoom                : this.options.minZoom,
             maxZoom                : this.options.maxZoom,
             zoom                   : this.options.initialZoom,
@@ -963,20 +1069,41 @@ $( function() {
             disableDoubleClickZoom : !(this.options.allowZoom),
             gestureHandling        : this.options.gestureHandling
         };
+        
         if (this.options.mapStyle) {
-            myOptions["styles"] = this.options.mapStyle;
+            mapOptions["styles"] = this.options.mapStyle;
         }
 
-        this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),myOptions);
+        this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),mapOptions);
 
-        if (this.options.southwest&&this.options.northeast) {
-            this.map.fitBounds(new google.maps.LatLngBounds(this.options.southwest,this.options.northeast));
+        if (this.options.drawingModes) {
+            this._initDrawing();
+        }
+        
+        if (this.options.dragDropGeoJSON) {
+            this._initDragDropGeoJSON();
+        }
+        
+        if (this.options.initFn) {
+            apex.debug("init_javascript_code running...");
+            //inside the init() function we want "this" to refer to this
+            this.init=this.options.initFn;
+            this.init();
+            this.init.delete;
+            apex.debug("init_javascript_code finished.");
+        }
+
+        if (apex.debug.getLevel()>0) {
+            this._initDebug();
+        }
+
+        if (this.options.expectData) {
+            this.refresh();
         }
 
         google.maps.event.addListener(this.map, "click", function (event) {
-            apex.debug("map clicked "+JSON.stringify(event.latLng));
+            apex.debug("map clicked", event.latLng);
             if (_this.options.clickZoomLevel) {
-                apex.debug("pan+zoom");
                 if (_this.options.panOnClick) {
                     _this.map.panTo(event.latLng);
                 }
@@ -992,31 +1119,153 @@ $( function() {
         apex.jQuery("#"+this.options.regionId).bind("apexrefresh",function(){
             $("#map_"+_this.options.regionId).reportmap("refresh");
         });
-
-        if (this.options.drawingModes) {
-            this._initDrawing();
-        }
         
-        if (this.options.dragDropGeoJSON) {
-            this._initDragDropGeoJSON();
-        }
-        
+        // put some useful info in the console log for developers to have fun with
         if (apex.debug.getLevel()>0) {
-            this._initDebug();
-        }
 
-        if (this.options.initFn) {
-            apex.debug("running init_javascript_code...");
-            //inside the init() function we want "this" to refer to this
-            this.init=this.options.initFn;
-            this.init();
-        }
-
-        if (this.options.expectData) {
-            this.refresh();
+            // pretty it up (for browsers that support this)
+            var console_css = 'font-size:18px;background-color:#0076ff;color:white;line-height:30px;display:block;padding:10px;'
+               ,sample_code = '$("#map_' + _this.options.regionId + '").reportmap("instance").map';
+            
+            apex.debug("%cThank you for using the jk64 Report Map plugin!\n"
+                + "To access the Google Map object on this page, use:\n"
+                + sample_code + "\n"
+                + "More info: https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki",
+                console_css);
+            
         }
 
         apex.debug("reportmap._create finished");
+    },
+    
+    _afterRefresh: function() {
+        apex.debug("_afterRefresh");
+
+        if (this.spinner) {
+            apex.debug("remove spinner");
+            this.spinner.remove();
+        }
+
+        apex.jQuery("#"+this.options.regionId).trigger("apexafterrefresh");
+
+        // Trigger a callback/event
+        this._trigger( "change" );
+    },
+    
+    _renderPage: function(_this, pData, startRow) {
+        apex.debug("_renderPage", startRow);
+        
+        if (pData.bounds) {
+            
+            _this.bounds.extend({lat:pData.bounds.south,lng:pData.bounds.west});
+            _this.bounds.extend({lat:pData.bounds.north,lng:pData.bounds.east});
+            
+            apex.debug("bounds:", _this.bounds.toJSON());
+
+            if (_this.options.autoFitBounds) {
+                _this.map.fitBounds(_this.bounds);
+            }
+        }
+
+        if (pData.mapdata) {
+            apex.debug("pData.mapdata length:", pData.mapdata.length);
+
+            _this._showData(pData.mapdata);
+            
+            _this.totalRows += pData.mapdata.length;
+            
+            if ((_this.totalRows < _this.options.maximumRows)
+                && (pData.mapdata.length == _this.options.rowsPerBatch)) {
+                // get the next page of data
+
+                apex.jQuery("#"+_this.options.regionId).trigger(
+                    "batchloaded", {
+                    map       : _this.map,
+                    countPins : _this.totalRows,
+                    southwest : _this.bounds.getSouthWest().toJSON(),
+                    northeast : _this.bounds.getNorthEast().toJSON()
+                });
+                
+                startRow += _this.options.rowsPerBatch;
+                
+                var batchSize = _this.options.rowsPerBatch;
+
+                // don't exceed the maximum rows
+                if (_this.totalRows + batchSize > _this.options.maximumRows) {
+                    batchSize = _this.options.maximumRows - _this.totalRows;
+                }
+
+                apex.server.plugin(
+                    _this.options.ajaxIdentifier,
+                    { pageItems : _this.options.ajaxItems,
+                      x01       : startRow,
+                      x02       : batchSize
+                    },
+                    { dataType : "json",
+                      success: function(pData) {
+                          apex.debug("next batch received");
+                          _this._renderPage(_this, pData, startRow);
+                      }
+                    });
+
+            } else {
+                // no more data to render, finish rendering
+
+                switch (this.options.visualisation) {
+                case "directions":
+                    _this._directions(pData.mapdata);
+                
+                    break;
+                case "cluster":
+                    // Add a marker clusterer to manage the markers.
+            
+                    // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
+                    var markerCluster = new MarkerClusterer(_this.map, _this.markers, {imagePath:_this.imagePrefix});
+
+                    break;
+                case "spiderfier":
+                    _this._spiderfy();
+
+                    break;
+                case "heatmap":
+
+                    if (_this.heatmapLayer) {
+                        apex.debug("remove heatmapLayer");
+                        _this.heatmapLayer.setMap(null);
+                        _this.heatmapLayer.delete;
+                        _this.heatmapLayer = null;
+                    }
+
+                    _this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
+                        data        : _this.weightedLocations,
+                        map         : _this.map,
+                        dissipating : _this.options.heatmapDissipating,
+                        opacity     : _this.options.heatmapOpacity,
+                        radius      : _this.options.heatmapRadius
+                    });
+                    
+                    _this.weightedLocations.delete;
+
+                    break;
+                }
+
+                apex.jQuery("#"+_this.options.regionId).trigger(
+                    (_this.maploaded?"maprefreshed":"maploaded"), {
+                    map       : _this.map,
+                    countPins : _this.totalRows,
+                    southwest : _this.bounds.getSouthWest().toJSON(),
+                    northeast : _this.bounds.getNorthEast().toJSON()
+                });
+                
+                _this.maploaded = true;
+            
+                _this._afterRefresh();
+            }
+
+        } else {
+            _this._afterRefresh();
+        }
+
     },
     
     // Called when created, and later when changing options
@@ -1025,49 +1274,44 @@ $( function() {
         this._hideMessage();
         if (this.options.expectData) {
             apex.jQuery("#"+this.options.regionId).trigger("apexbeforerefresh");
-            var _this = this;
+
+            if (this.options.showSpinner) {
+                if (this.spinner) {
+                    this.spinner.remove();
+                }
+                apex.debug("show spinner");
+                this.spinner = apex.util.showSpinner($("#"+this.options.regionId));
+            }
+
+            var _this = this,
+                batchSize = this.options.rowsPerBatch;
+            
+            if (this.options.maximumRows < batchSize) {
+                batchSize = this.options.maximumRows;
+            }
+            
             apex.server.plugin(
                 this.options.ajaxIdentifier,
-                { pageItems : this.options.ajaxItems },
+                { pageItems : this.options.ajaxItems,
+                  x01       : 1,
+                  x02       : batchSize
+                },
                 { dataType : "json",
-                  success: function( pData ) {
-                    apex.debug("success southwest="+JSON.stringify(pData.southwest)+" northeast="+JSON.stringify(pData.northeast));
-					if (_this.options.autoFitBounds
-						&& pData.southwest
-						&& pData.northeast) {
-						_this.map.fitBounds({
-							south : pData.southwest.lat,
-							west  : pData.southwest.lng,
-							north : pData.northeast.lat,
-							east  : pData.northeast.lng
-						});
-					}
-                    if (_this.infoWindow) {
-                        _this.infoWindow.close();
-                    }
-                    _this._removeMarkers();
-					if (pData.mapdata) {
-						apex.debug("pData.mapdata.length="+pData.mapdata.length);
-						_this._showData(pData.mapdata);
-						if (_this.options.visualisation=="directions") {
-							_this._directions(pData.mapdata);
-						}
-						apex.jQuery("#"+_this.options.regionId).trigger(
-							(_this.maploaded?"maprefreshed":"maploaded"), {
-							map       : _this.map,
-							countPins : pData.mapdata.length,
-							southwest : pData.southwest,
-							northeast : pData.northeast
-						});
-						_this.maploaded = true;
-					}
-                    apex.jQuery("#"+_this.options.regionId).trigger("apexafterrefresh");
+                  success: function(pData) {
+                      apex.debug("first batch received");      
+
+                      _this._removeMarkers();
+
+                      _this.weightedLocations = [];
+                      _this.markers = [];
+                      _this.bounds = new google.maps.LatLngBounds;
+
+                      _this._renderPage(_this, pData, 1);
                   }
                 });
+        } else {
+            this._afterRefresh();
         }
-        apex.debug("reportmap.refresh finished");
-        // Trigger a callback/event
-        this._trigger( "change" );
     },
 
     // Events bound via _on are removed automatically
@@ -1093,6 +1337,7 @@ $( function() {
 
     // _setOption is called for each individual option that is changing
     _setOption: function( key, value ) {
+        apex.debug(key, value);
         this._super( key, value );
     }      
 
