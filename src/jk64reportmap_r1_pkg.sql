@@ -1,6 +1,12 @@
-/**********************************************************
+--/**********************************************************
 create or replace package jk64reportmap_r1_pkg as
 -- jk64 ReportMap v1.2 May 2020
+-- https://github.com/jeffreykemp/jk64-plugin-reportmap
+-- Copyright (c) 2016 - 2020 Jeffrey Kemp
+-- Released under the MIT licence: http://opensource.org/licenses/mit-license
+
+-- If you compile this on your database, make sure to edit the plugin to clear
+-- out the Source PL/SQL Code. This will improve the performance of the plugin.
 
 function render
     (p_region in apex_plugin.t_region
@@ -17,8 +23,11 @@ end jk64reportmap_r1_pkg;
 /
 
 create or replace package body jk64reportmap_r1_pkg as
-**********************************************************/
+--**********************************************************/
 -- jk64 ReportMap v1.2 May 2020
+-- https://github.com/jeffreykemp/jk64-plugin-reportmap
+-- Copyright (c) 2016 - 2020 Jeffrey Kemp
+-- Released under the MIT licence: http://opensource.org/licenses/mit-license
 
 -- format to use to convert a lat/lng number to string for passing via javascript
 -- 0.0000001 is enough precision for the practical limit of commercial surveying, error up to +/- 11.132 mm at the equator
@@ -377,7 +386,7 @@ begin
 
 /*******************************************************************/
 /* Remove this for apex 5.0 or earlier                             */
-    l_init_js_code := p_region.init_javascript_code;
+--    l_init_js_code := p_region.init_javascript_code;
 /*******************************************************************/
 
     -- Component settings
@@ -613,6 +622,7 @@ exception
         return l_result;
 end ajax;
 
-/**********************************************************
+--/**********************************************************
 end jk64reportmap_r1_pkg;
-**********************************************************/
+/
+--**********************************************************/
