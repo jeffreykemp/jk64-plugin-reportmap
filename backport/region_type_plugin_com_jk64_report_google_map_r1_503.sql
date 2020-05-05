@@ -37,6 +37,12 @@ wwv_flow_api.create_plugin(
 '/**********************************************************',
 'create or replace package jk64reportmap_r1_pkg as',
 '-- jk64 ReportMap v1.2 May 2020',
+'-- https://github.com/jeffreykemp/jk64-plugin-reportmap',
+'-- Copyright (c) 2016 - 2020 Jeffrey Kemp',
+'-- Released under the MIT licence: http://opensource.org/licenses/mit-license',
+'',
+'-- If you compile this on your database, make sure to edit the plugin to clear',
+'-- out the Source PL/SQL Code. This will improve the performance of the plugin.',
 '',
 'function render',
 '    (p_region in apex_plugin.t_region',
@@ -55,6 +61,9 @@ wwv_flow_api.create_plugin(
 'create or replace package body jk64reportmap_r1_pkg as',
 '**********************************************************/',
 '-- jk64 ReportMap v1.2 May 2020',
+'-- https://github.com/jeffreykemp/jk64-plugin-reportmap',
+'-- Copyright (c) 2016 - 2020 Jeffrey Kemp',
+'-- Released under the MIT licence: http://opensource.org/licenses/mit-license',
 '',
 '-- format to use to convert a lat/lng number to string for passing via javascript',
 '-- 0.0000001 is enough precision for the practical limit of commercial surveying, error up to +/- 11.132 mm at the equator',
@@ -651,6 +660,7 @@ wwv_flow_api.create_plugin(
 '',
 '/**********************************************************',
 'end jk64reportmap_r1_pkg;',
+'/',
 '**********************************************************/'))
 ,p_render_function=>'render'
 ,p_ajax_function=>'ajax'
@@ -758,6 +768,9 @@ wwv_flow_api.create_plugin_attribute(
 ,p_is_translatable=>false
 ,p_help_text=>'A Google Maps API Key is required. Refer: https://developers.google.com/maps/documentation/javascript/get-api-key#get-an-api-key'
 );
+end;
+/
+begin
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(135067770457532553)
 ,p_plugin_id=>wwv_flow_api.id(830680395535418013)
@@ -770,9 +783,6 @@ wwv_flow_api.create_plugin_attribute(
 ,p_is_translatable=>true
 ,p_help_text=>'Leave blank for default: "Address not found"'
 );
-end;
-/
-begin
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(135068224858534893)
 ,p_plugin_id=>wwv_flow_api.id(830680395535418013)
