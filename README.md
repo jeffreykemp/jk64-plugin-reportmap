@@ -51,7 +51,7 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 * Oracle Application Express **5.0.3** or later
 * Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key)**
 
-  > Google provides a free monthly credit which includes thresholds for some API requests (some are unlimited). You can use the platform to set daily quotas and email alerts to control your monthly costs. Refer to the pricing information page for details: https://cloud.google.com/maps-platform/pricing/.
+  > Google provides a free monthly credit which includes thresholds for some API requests (some are unlimited). You can use the platform to set daily quotas and email alerts to control your monthly costs. Refer to the [pricing information page](https://cloud.google.com/maps-platform/pricing/) for details.
   
   > Make sure to **[restrict your API key](https://developers.google.com/maps/documentation/javascript/get-api-key#restrict_key)** to your domain, especially if your website will be accessible on the internet. You can modify this at any time as required.
 
