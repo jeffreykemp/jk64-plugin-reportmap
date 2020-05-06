@@ -16,6 +16,12 @@ The user can click any marker to see a popup info window for it.
 
 If many pins are too close together, Marker Clustering merges them into a single cluster; the number indicates how many pins are at that location. As the user zooms in or out, the clusters will split up or merge as needed.
 
+### Visualisation: Spiderfier
+
+![spiderfier.gif](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/spiderfier.gif)
+
+If many pins are too close together or overlapping, the Spiderfier shifts them when clicked into a ring or spiral with lines pointing back to their original location.
+
 ### Visualisation: Heatmap
 
 ![plugin-reportmap-heatmap.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-heatmap.png)
