@@ -42,7 +42,9 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 
 ## DEMO
 
-[jk64_report_map demo on apex.oracle.com](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)
+[![demo_app.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/demo_app.png)](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)
+
+**[DEMO - apex.oracle.com](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)**
 
 ## PRE-REQUISITES
 
