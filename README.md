@@ -16,6 +16,12 @@ The user can click any marker to see a popup info window for it.
 
 If many pins are too close together, Marker Clustering merges them into a single cluster; the number indicates how many pins are at that location. As the user zooms in or out, the clusters will split up or merge as needed.
 
+### Visualisation: Spiderfier
+
+![spiderfier.gif](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/spiderfier.gif)
+
+If many pins are too close together or overlapping, the Spiderfier shifts them when clicked into a ring or spiral with lines pointing back to their original location.
+
 ### Visualisation: Heatmap
 
 ![plugin-reportmap-heatmap.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-heatmap.png)
@@ -36,14 +42,16 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 
 ## DEMO
 
-[jk64_report_map demo on apex.oracle.com](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)
+[![demo_app.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/demo_app.png)](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)
+
+**[DEMO - apex.oracle.com](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)**
 
 ## PRE-REQUISITES
 
 * Oracle Application Express **5.0.3** or later
 * Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key)**
 
-  > Google provides a free monthly credit which includes thresholds for some API requests (some are unlimited). You can use the platform to set daily quotas and email alerts to control your monthly costs. Refer to the pricing information page for details: https://cloud.google.com/maps-platform/pricing/.
+  > Google provides a free monthly credit which includes thresholds for some API requests (some are unlimited). You can use the platform to set daily quotas and email alerts to control your monthly costs. Refer to the [pricing information page](https://cloud.google.com/maps-platform/pricing/) for details.
   
   > Make sure to **[restrict your API key](https://developers.google.com/maps/documentation/javascript/get-api-key#restrict_key)** to your domain, especially if your website will be accessible on the internet. You can modify this at any time as required.
 
