@@ -1,4 +1,4 @@
---/**********************************************************
+/**********************************************************
 create or replace package jk64reportmap_r1_pkg as
 -- jk64 ReportMap v1.2 May 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
@@ -23,7 +23,7 @@ end jk64reportmap_r1_pkg;
 /
 
 create or replace package body jk64reportmap_r1_pkg as
---**********************************************************/
+**********************************************************/
 -- jk64 ReportMap v1.2 May 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
@@ -43,6 +43,7 @@ g_visualisation_cluster    constant varchar2(10) := 'CLUSTER';
 g_visualisation_spiderfier constant varchar2(10) := 'SPIDERFIER';
 g_visualisation_heatmap    constant varchar2(10) := 'HEATMAP';
 g_visualisation_directions constant varchar2(10) := 'DIRECTIONS';
+g_visualisation_geojson    constant varchar2(10) := 'GEOJSON';
 
 g_maptype_roadmap          constant varchar2(10) := 'ROADMAP'; -- default
 g_maptype_satellite	       constant varchar2(10) := 'SATELLITE';
@@ -54,13 +55,13 @@ g_travelmode_walking       constant varchar2(10) := 'WALKING';
 g_travelmode_bicycling     constant varchar2(10) := 'BICYCLING';
 g_travelmode_transit       constant varchar2(10) := 'TRANSIT';
 
-g_option_pan_on_click      constant varchar2(30) := ':PAN_ON_CLICK:';
+g_option_pan_on_click      constant varchar2(30) := ':PAN_ON_CLICK:'; -- default
 g_option_draggable         constant varchar2(30) := ':DRAGGABLE:';
-g_option_pan_allowed       constant varchar2(30) := ':PAN_ALLOWED:';
-g_option_zoom_allowed      constant varchar2(30) := ':ZOOM_ALLOWED:';
+g_option_pan_allowed       constant varchar2(30) := ':PAN_ALLOWED:'; -- default
+g_option_zoom_allowed      constant varchar2(30) := ':ZOOM_ALLOWED:'; -- default
 g_option_drag_drop_geojson constant varchar2(30) := ':GEOJSON_DRAGDROP:';
 g_option_disable_autofit   constant varchar2(30) := ':DISABLEFITBOUNDS:';
-g_option_spinner           constant varchar2(30) := ':SPINNER:';
+g_option_spinner           constant varchar2(30) := ':SPINNER:'; -- default
 
 subtype plugin_attr is varchar2(32767);
 
@@ -156,10 +157,12 @@ function get_markers
     l_lng                   number;
     l_weight                number;     
     l_column_value_list     apex_plugin_util.t_column_value_list;
+    l_column_value_list2    apex_plugin_util.t_column_value_list2;
     l_visualisation         plugin_attr := p_region.attribute_02;
     l_escape_special_chars  plugin_attr := p_region.attribute_24;
     l_first_row             number;
     l_max_rows              number;
+    l_geojson_clob          clob;
 
     function flex_field (attr_no in number, i in number) return varchar2 is
       d varchar2(4000);
@@ -190,7 +193,7 @@ begin
     l_max_rows := to_number(apex_application.g_x02);
     
     /*
-       For most cases, column list is as follows:
+       For most visualisations, column list is as follows:
     
        1.     lat,   - required
        2.     lng,   - required
@@ -201,15 +204,20 @@ begin
        7.     label  - optional
        8-17.  col01..col10 - optional flex fields
        
-       If the "Heatmap" option is chosen, the column list is as follows:
+       If the "Heatmap" visualisation is chosen, the column list is as follows:
        
        1.  lat,   - required
        2.  lng,   - required
        3.  weight - required
+       
+       If the "GeoJson" visualisation is chosen, the SQL only needs one column:
+       
+       1.  geojson - required
     
     */
-
-    if l_visualisation = g_visualisation_heatmap then
+    
+    case
+    when l_visualisation = g_visualisation_heatmap then
 
         l_column_value_list := apex_plugin_util.get_data
             (p_sql_statement  => p_region.source
@@ -251,7 +259,32 @@ begin
                 );
           
         end loop;
+
+    when l_visualisation = g_visualisation_geojson then
     
+        l_column_value_list2 := apex_plugin_util.get_data2
+            (p_sql_statement  => p_region.source
+            ,p_min_columns    => 1
+            ,p_max_columns    => 1
+            ,p_component_name => p_region.name
+            ,p_first_row      => l_first_row
+            ,p_max_rows       => l_max_rows
+            );
+
+        apex_debug.message('Data source column #1 data type:' || l_column_value_list2(1).data_type);
+
+        for row in 1 .. l_column_value_list2(1).value_list.count loop
+
+            l_geojson_clob := l_column_value_list2(1).value_list(row).clob_value;
+
+            if length(l_geojson_clob) > 0 then
+                for i in 0 .. floor(length(l_clob_text)/l_chunk_size) loop
+                    sys.htp.prn(substr(l_clob_text, i * l_chunk_size + 1, l_chunk_size));
+                end loop;
+            end if;
+
+        end loop;
+        
     else
   
         l_column_value_list := apex_plugin_util.get_data
@@ -304,7 +337,7 @@ begin
           
         end loop;
 
-    end if;
+    end case;
     
     apex_debug.message('data.count='||l_data.count);
 
@@ -355,14 +388,20 @@ function render
     l_heatmap_radius       number;      --p_region.attribute_14;
     l_travel_mode          plugin_attr := p_region.attribute_15;
     l_drawing_modes        plugin_attr := p_region.attribute_16;
+    -- unused              plugin_attr := p_region.attribute_17;
+    -- unused              plugin_attr := p_region.attribute_18;
+    -- unused              plugin_attr := p_region.attribute_19;
+    -- unused              plugin_attr := p_region.attribute_20;
     l_optimizewaypoints    plugin_attr := p_region.attribute_21;
     l_maptype              plugin_attr := p_region.attribute_22;
+    -- unused              plugin_attr := p_region.attribute_23;
+    -- unused              plugin_attr := p_region.attribute_24;
     l_gesture_handling     plugin_attr := p_region.attribute_25;
     
     l_opt                  varchar2(32767);
     l_js_options           varchar2(1000);
     l_dragdrop_geojson     boolean;
-    l_init_js_code         varchar2(32767);
+    l_init_js_code         plugin_attr;
     
 begin
     -- debug information will be included
@@ -386,7 +425,7 @@ begin
 
 /*******************************************************************/
 /* Remove this for apex 5.0 or earlier                             */
---    l_init_js_code := p_region.init_javascript_code;
+    l_init_js_code := p_region.init_javascript_code;
 /*******************************************************************/
 
     -- Component settings
@@ -622,7 +661,7 @@ exception
         return l_result;
 end ajax;
 
---/**********************************************************
+/**********************************************************
 end jk64reportmap_r1_pkg;
 /
---**********************************************************/
+**********************************************************/
