@@ -288,12 +288,8 @@ $( function() {
         apex.debug("reportmap._showData");		
         if (mapData.length>0) {
 
-            var marker,
-				newIdMap;
-			
-			// idMap is a map of id to the data for a pin
-			newIdMap = new Map();
-			
+            var marker;
+						
             for (var i = 0; i < mapData.length; i++) {
                 if (this.options.visualisation=="heatmap") {
                     
@@ -312,14 +308,11 @@ $( function() {
 					this.markers.push(marker);
                     
 					// also put the id into the Map
-                    newIdMap.set(mapData[i].d, i);
+                    this.newIdMap.set(mapData[i].d, i);
 
                 }
             }
 			
-			// rememember the ID map for the next refresh
-			this.idMap = newIdMap;
-
         } else if (this.totalRows == 0) {
 			
 			delete this.idMap;
@@ -1258,6 +1251,10 @@ $( function() {
                 });
                 
                 _this.maploaded = true;
+
+                // rememember the ID map for the next refresh
+                _this.idMap = _this.newIdMap;
+                delete _this.newIdMap;
             
                 _this._afterRefresh();
             }
@@ -1305,6 +1302,9 @@ $( function() {
                       _this.weightedLocations = [];
                       _this.markers = [];
                       _this.bounds = new google.maps.LatLngBounds;
+                      
+                      // idMap is a data map of id to the data for a pin
+                      _this.newIdMap = new Map();
 
                       _this._renderPage(_this, pData, 1);
                   }
