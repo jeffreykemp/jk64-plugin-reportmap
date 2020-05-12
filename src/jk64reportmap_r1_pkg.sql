@@ -1,6 +1,6 @@
 /**********************************************************
 create or replace package jk64reportmap_r1_pkg as
--- jk64 ReportMap v1.2 May 2020
+-- jk64 ReportMap v1.3 May 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -24,7 +24,7 @@ end jk64reportmap_r1_pkg;
 
 create or replace package body jk64reportmap_r1_pkg as
 **********************************************************/
--- jk64 ReportMap v1.2 May 2020
+-- jk64 ReportMap v1.3 May 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -64,21 +64,6 @@ g_option_disable_autofit   constant varchar2(30) := ':DISABLEFITBOUNDS:';
 g_option_spinner           constant varchar2(30) := ':SPINNER:'; -- default
 
 subtype plugin_attr is varchar2(32767);
-
-procedure get_map_bounds
-    (p_lat     in number
-    ,p_lng     in number
-    ,p_lat_min in out number
-    ,p_lat_max in out number
-    ,p_lng_min in out number
-    ,p_lng_max in out number
-    ) is
-begin
-    p_lat_min := least   (nvl(p_lat_min, p_lat), p_lat);
-    p_lat_max := greatest(nvl(p_lat_max, p_lat), p_lat);
-    p_lng_min := least   (nvl(p_lng_min, p_lng), p_lng);
-    p_lng_max := greatest(nvl(p_lng_max, p_lng), p_lng);
-end get_map_bounds;
 
 function latlng_literal (lat in number, lng in number) return varchar2 is
 begin
@@ -121,6 +106,8 @@ function valid_zoom_level (p_attr in varchar2, p_label in varchar2) return numbe
     n number;
 begin
     n := apex_plugin_util.get_attribute_as_number(p_attr, p_label);
+    -- note: this validation is not perfect because not all map areas necessarily have coverage at high zoom
+    -- levels; the map will only zoom as far as it can
     if not n between 0 and 23 then
         raise_application_error(-20000, p_label || ': must be in range 0..23 ("' || p_attr || '")');
     end if;
@@ -141,16 +128,8 @@ begin
                   ,g_coord_precision);
 end get_lat_lng_attr;
 
-function get_markers
-    (p_plugin  in apex_plugin.t_plugin
-    ,p_region  in apex_plugin.t_region
-    ,p_lat_min in out number
-    ,p_lat_max in out number
-    ,p_lng_min in out number
-    ,p_lng_max in out number
-    ) return apex_application_global.vc_arr2 is
+procedure prn_mapdata (p_region in apex_plugin.t_region) is
     
-    l_data                  apex_application_global.vc_arr2;
     l_flex                  varchar2(32767);
     l_buf                   varchar2(32767);
     l_lat                   number;
@@ -163,6 +142,7 @@ function get_markers
     l_first_row             number;
     l_max_rows              number;
     l_geojson_clob          clob;
+    l_chunk_size            number := 32767;
 
     function flex_field (attr_no in number, i in number) return varchar2 is
       d varchar2(4000);
@@ -244,19 +224,12 @@ begin
                   || ',' || to_char(l_lng,g_tochar_format)
                   || ',' || to_char(greatest(l_weight,1))
                   || ']';
+
             if i < 8 /*don't send the whole dataset to debug log*/ then
                 apex_debug.message('#' || i || ': ' || l_buf);
             end if;
-            l_data(nvl(l_data.last,0)+1) := l_buf;
-
-            get_map_bounds
-                (p_lat     => l_lat
-                ,p_lng     => l_lng
-                ,p_lat_min => p_lat_min
-                ,p_lat_max => p_lat_max
-                ,p_lng_min => p_lng_min
-                ,p_lng_max => p_lng_max
-                );
+            
+            sys.htp.prn(case when i>1 then ',' end || l_buf);
           
         end loop;
 
@@ -278,9 +251,15 @@ begin
             l_geojson_clob := l_column_value_list2(1).value_list(row).clob_value;
 
             if length(l_geojson_clob) > 0 then
-                for i in 0 .. floor(length(l_clob_text)/l_chunk_size) loop
-                    sys.htp.prn(substr(l_clob_text, i * l_chunk_size + 1, l_chunk_size));
+
+                if row>1 then
+                    sys.htp.prn(',');
+                end if;
+
+                for i in 0 .. floor(length(l_geojson_clob)/l_chunk_size) loop
+                    sys.htp.prn(substr(l_geojson_clob, i * l_chunk_size + 1, l_chunk_size));
                 end loop;
+
             end if;
 
         end loop;
@@ -321,35 +300,19 @@ begin
                        '"f":{' || rtrim(l_flex,',') || '}'
                      end;
             
+            l_buf := '{' || rtrim(l_buf,',') || '}';
+
             if i < 8 /*don't send the whole dataset to debug log*/ then
                 apex_debug.message('#' || i || ': ' || l_buf);
             end if;
-            l_data(nvl(l_data.last,0)+1) := '{' || rtrim(l_buf,',') || '}';
 
-            get_map_bounds
-                (p_lat     => l_lat
-                ,p_lng     => l_lng
-                ,p_lat_min => p_lat_min
-                ,p_lat_max => p_lat_max
-                ,p_lng_min => p_lng_min
-                ,p_lng_max => p_lng_max
-                );
+            sys.htp.prn(case when i>1 then ',' end || l_buf);
           
         end loop;
 
     end case;
     
-    apex_debug.message('data.count='||l_data.count);
-
-    -- handle edge case when there is exactly one row from query
-    -- (otherwise the map zooms to maximum)
-    if l_first_row = 1 and l_data.count = 1 then
-        p_lat_min := p_lat_min - g_single_row_lat_margin;
-        p_lat_max := p_lat_max + g_single_row_lat_margin;
-    end if;
-        
-    return l_data;
-end get_markers;
+end prn_mapdata;
 
 function render
     (p_region in apex_plugin.t_region
@@ -436,13 +399,16 @@ begin
     -- Plugin attributes
     l_click_zoom_level   := valid_zoom_level(p_region.attribute_03, 'Zoom Level on Click');
     l_initial_zoom_level := valid_zoom_level(p_region.attribute_05, 'Initial Zoom Level');
-    l_rows_per_batch     := apex_plugin_util.get_attribute_as_number(p_region.attribute_07, 'Rows per Batch');
     l_heatmap_opacity    := apex_plugin_util.get_attribute_as_number(p_region.attribute_13, 'Heatmap Opacity');
     l_heatmap_radius     := apex_plugin_util.get_attribute_as_number(p_region.attribute_14, 'Heatmap Radius');
     l_dragdrop_geojson   := instr(':'||l_options||':',g_option_drag_drop_geojson)>0;
     
     if l_initial_center is not null then
         parse_latlng(l_initial_center, p_label=>'Initial Map Center', p_lat=>l_lat, p_lng=>l_lng);
+    end if;
+
+    if l_visualisation not in (g_visualisation_heatmap, g_visualisation_directions) then
+        l_rows_per_batch := apex_plugin_util.get_attribute_as_number(p_region.attribute_07, 'Rows per Batch');
     end if;
     
     if l_drawing_modes is not null then
@@ -454,9 +420,6 @@ begin
     if l_visualisation = g_visualisation_heatmap then
 
         l_js_options := l_js_options || '&libraries=visualization';
-
-        -- Heatmap visualisation cannot be batched; get max rows in first batch
-        l_rows_per_batch := l_max_rows;
 
     elsif l_drawing_modes is not null then
 
@@ -584,17 +547,7 @@ function ajax
     ,p_plugin in apex_plugin.t_plugin
     ) return apex_plugin.t_region_ajax_result is
 
-    l_result   apex_plugin.t_region_ajax_result;
-    l_lat      number;
-    l_lng      number;
-    l_data     apex_application_global.vc_arr2;
-    l_lat_min  number;
-    l_lat_max  number;
-    l_lng_min  number;
-    l_lng_max  number;
-
-    -- Plugin attributes
-    l_initial_center plugin_attr := p_region.attribute_06;
+    l_result apex_plugin.t_region_ajax_result;
 
 begin
     -- debug information will be included
@@ -604,49 +557,19 @@ begin
             ,p_region => p_region);
     end if;
     apex_debug.message('ajax');
-
-    if p_region.source is not null then
-
-        l_data := get_markers
-            (p_plugin  => p_plugin
-            ,p_region  => p_region
-            ,p_lat_min => l_lat_min
-            ,p_lat_max => l_lat_max
-            ,p_lng_min => l_lng_min
-            ,p_lng_max => l_lng_max
-            );
-
-    end if;
-        
-    if l_initial_center is not null then
-        parse_latlng(l_initial_center, p_label=>'Initial Map Center', p_lat=>l_lat, p_lng=>l_lng);
-    end if;
     
-    if l_lat is not null and l_data.count > 0 then
-        get_map_bounds
-            (p_lat     => l_lat
-            ,p_lng     => l_lng
-            ,p_lat_min => l_lat_min
-            ,p_lat_max => l_lat_max
-            ,p_lng_min => l_lng_min
-            ,p_lng_max => l_lng_max);
-    end if;
-
     sys.owa_util.mime_header('text/plain', false);
     sys.htp.p('Cache-Control: no-cache');
     sys.htp.p('Pragma: no-cache');
     sys.owa_util.http_header_close;
     
-    sys.htp.p('{'
-      || '"bounds":'
-      || nvl(bounds_literal(south => l_lat_min, west => l_lng_min, north => l_lat_max, east => l_lng_max)
-            ,'null')
-      || ',"mapdata":[');
+    sys.htp.p('{"mapdata":[');
 
-    for i in 1..l_data.count loop
-        -- use prn to avoid downloading a whole lot of unnecessary \n characters
-        sys.htp.prn(case when i>1 then ',' end || l_data(i));
-    end loop;
+    if p_region.source is not null then
+
+        prn_mapdata(p_region => p_region);
+
+    end if;
 
     sys.htp.p(']}');
 

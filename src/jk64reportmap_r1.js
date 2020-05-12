@@ -1,5 +1,5 @@
 /*
-jk64 ReportMap v1.2 May 2020
+jk64 ReportMap v1.3 May 2020
 https://github.com/jeffreykemp/jk64-plugin-reportmap
 Copyright (c) 2016 - 2020 Jeffrey Kemp
 Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -283,48 +283,6 @@ $( function() {
 
     },
     
-    //put all the report pins on the map, or show the "no data found" message
-    _showData: function (mapData) {
-        apex.debug("reportmap._showData");		
-        if (mapData.length>0) {
-
-            var marker;
-						
-            for (var i = 0; i < mapData.length; i++) {
-                if (this.options.visualisation=="heatmap") {
-                    
-                    // each data point is an array [x,y,weight]
-                    this.weightedLocations.push({
-                        location:new google.maps.LatLng(mapData[i][0], mapData[i][1]),
-                        weight:mapData[i][2]
-                    });
-                    
-                } else {
-                    
-                    // each data point is a pin info structure with x, y, etc. attributes
-					marker = this._newMarker(mapData[i]);
-                    
-					// put the marker into the array of markers
-					this.markers.push(marker);
-                    
-					// also put the id into the Map
-                    this.newIdMap.set(mapData[i].d, i);
-
-                }
-            }
-			
-        } else if (this.totalRows == 0) {
-			
-			delete this.idMap;
-			
-            if (this.options.noDataMessage !== "") {
-                apex.debug("show No Data Found infowindow");
-                this._showMessage(this.options.noDataMessage);
-            }
-			
-        }
-    },
-
     _removeMarkers: function() {
         apex.debug("reportmap._removeMarkers");
         this.totalRows = 0;
@@ -862,6 +820,12 @@ $( function() {
 
     },
     
+	/*
+	 *
+	 * GEOJSON
+	 *
+	 */
+    
     /**
      * Process each point in a Geometry, regardless of how deep the points may lie.
      * @param {google.maps.Data.Geometry} geometry - structure to process
@@ -882,25 +846,30 @@ $( function() {
         }
     },
 
-	/*
-	 *
-	 * GEOJSON
-	 *
-	 */
+    _loadGeoJson : function (geojson) {
+        apex.debug("_loadGeoJson", geojson);
+        
+        // render the features on the map
+        this.map.data.addGeoJson(geojson);
+
+        //Update a map's viewport to fit each geometry in a dataset        
+        var _this = this;
+        this.map.data.forEach(function(feature) {
+            _this._processPoints(feature.getGeometry(), _this.bounds.extend, _this.bounds);
+        });
+        if (this.options.autoFitBounds) {
+            this.map.fitBounds(this.bounds);
+        }
+    },
 
     loadGeoJsonString : function (geoString) {
         apex.debug("reportmap.loadGeoJsonString", geoString);
         if (geoString) {
-            var _this = this;
             var geojson = JSON.parse(geoString);
-            this.map.data.addGeoJson(geojson);
 
-            //Update a map's viewport to fit each geometry in a dataset
-            var bounds = new google.maps.LatLngBounds();
-            this.map.data.forEach(function(feature) {
-                _this._processPoints(feature.getGeometry(), bounds.extend, bounds);
-            });
-            this.map.fitBounds(bounds);
+            this.bounds = new google.maps.LatLngBounds;
+            this._loadGeoJson(geojson);
+
             apex.jQuery("#"+this.options.regionId).trigger("loadedgeojson", {map:this.map, geoJson:geojson});
         }
     },
@@ -1145,122 +1114,170 @@ $( function() {
         this._trigger( "change" );
     },
     
-    _renderPage: function(_this, pData, startRow) {
+    _renderPage: function(pData, startRow) {
         apex.debug("_renderPage", startRow);
-        
-        if (pData.bounds) {
-            
-            _this.bounds.extend({lat:pData.bounds.south,lng:pData.bounds.west});
-            _this.bounds.extend({lat:pData.bounds.north,lng:pData.bounds.east});
-            
-            apex.debug("bounds:", _this.bounds.toJSON());
-
-            if (_this.options.autoFitBounds) {
-                _this.map.fitBounds(_this.bounds);
-            }
-        }
 
         if (pData.mapdata) {
             apex.debug("pData.mapdata length:", pData.mapdata.length);
 
-            _this._showData(pData.mapdata);
-            
-            _this.totalRows += pData.mapdata.length;
-            
-            if ((_this.totalRows < _this.options.maximumRows)
-                && (pData.mapdata.length == _this.options.rowsPerBatch)) {
-                // get the next page of data
+            // render the map data
+            if (pData.mapdata.length>0) {
+                            
+                for (var i = 0; i < pData.mapdata.length; i++) {
+                    
+                    var md = pData.mapdata[i];
+                    
+                    if (this.options.visualisation=="heatmap") {
+                        // each data point is an array [x,y,weight]
 
-                apex.jQuery("#"+_this.options.regionId).trigger(
-                    "batchloaded", {
-                    map       : _this.map,
-                    countPins : _this.totalRows,
-                    southwest : _this.bounds.getSouthWest().toJSON(),
-                    northeast : _this.bounds.getNorthEast().toJSON()
-                });
-                
-                startRow += _this.options.rowsPerBatch;
-                
-                var batchSize = _this.options.rowsPerBatch;
+                        this.bounds.extend({lat:md[0],lng:md[1]});
 
-                // don't exceed the maximum rows
-                if (_this.totalRows + batchSize > _this.options.maximumRows) {
-                    batchSize = _this.options.maximumRows - _this.totalRows;
+                        this.weightedLocations.push({
+                            location:new google.maps.LatLng(md[0], md[1]),
+                            weight:md[2]
+                        });
+
+                    } else if (this.options.visualisation=="geojson") {
+                        // the data is (should be) a GeoJson document
+                        
+                        this._loadGeoJson(md);
+                        
+                    } else {
+                        // each data point is a pin info structure with x, y, etc. attributes
+
+                        this.bounds.extend({lat:md.x,lng:md.y});
+                        
+                        var marker = this._newMarker(md);
+                        
+                        // put the marker into the array of markers
+                        this.markers.push(marker);
+                        
+                        // also put the id into the Map
+                        this.newIdMap.set(md.d, i);
+
+                    }
+                }
+                
+                if (this.options.autoFitBounds) {
+                    apex.debug("fitBounds",
+                        this.bounds.getSouthWest().toJSON(),
+                        this.bounds.getNorthEast().toJSON());
+                    this.map.fitBounds(this.bounds);
                 }
 
+                this.totalRows += pData.mapdata.length;
+            
+            }
+            
+            if ((this.totalRows < this.options.maximumRows)
+                && (pData.mapdata.length == this.options.rowsPerBatch)) {
+                // get the next page of data
+
+                apex.jQuery("#"+this.options.regionId).trigger(
+                    "batchloaded", {
+                    map       : this.map,
+                    countPins : this.totalRows,
+                    southwest : this.bounds.getSouthWest().toJSON(),
+                    northeast : this.bounds.getNorthEast().toJSON()
+                });
+                
+                startRow += this.options.rowsPerBatch;
+                
+                var batchSize = this.options.rowsPerBatch;
+
+                // don't exceed the maximum rows
+                if (this.totalRows + batchSize > this.options.maximumRows) {
+                    batchSize = this.options.maximumRows - this.totalRows;
+                }
+                
+                var _this = this;
+
                 apex.server.plugin(
-                    _this.options.ajaxIdentifier,
-                    { pageItems : _this.options.ajaxItems,
+                    this.options.ajaxIdentifier,
+                    { pageItems : this.options.ajaxItems,
                       x01       : startRow,
                       x02       : batchSize
                     },
                     { dataType : "json",
                       success: function(pData) {
                           apex.debug("next batch received");
-                          _this._renderPage(_this, pData, startRow);
+                          _this._renderPage(pData, startRow);
                       }
                     });
 
             } else {
                 // no more data to render, finish rendering
-
-                switch (this.options.visualisation) {
-                case "directions":
-                    _this._directions(pData.mapdata);
                 
-                    break;
-                case "cluster":
-                    // Add a marker clusterer to manage the markers.
-            
-                    // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
-                    var markerCluster = new MarkerClusterer(_this.map, _this.markers, {imagePath:_this.imagePrefix});
-
-                    break;
-                case "spiderfier":
-                    _this._spiderfy();
-
-                    break;
-                case "heatmap":
-
-                    if (_this.heatmapLayer) {
-                        apex.debug("remove heatmapLayer");
-                        _this.heatmapLayer.setMap(null);
-                        _this.heatmapLayer.delete;
-                        _this.heatmapLayer = null;
-                    }
-
-                    _this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
-                        data        : _this.weightedLocations,
-                        map         : _this.map,
-                        dissipating : _this.options.heatmapDissipating,
-                        opacity     : _this.options.heatmapOpacity,
-                        radius      : _this.options.heatmapRadius
-                    });
+                if (this.totalRows == 0) {
+                
+                    delete this.idMap;
                     
-                    _this.weightedLocations.delete;
+                    if (this.options.noDataMessage !== "") {
+                        apex.debug("show No Data Found infowindow");
+                        this._showMessage(this.options.noDataMessage);
+                    }
+                
+                } else {
 
-                    break;
+                    switch (this.options.visualisation) {
+                    case "directions":
+                        this._directions(pData.mapdata);
+                    
+                        break;
+                    case "cluster":
+                        // Add a marker clusterer to manage the markers.
+                
+                        // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
+                        var markerCluster = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
+
+                        break;
+                    case "spiderfier":
+                        this._spiderfy();
+
+                        break;
+                    case "heatmap":
+
+                        if (this.heatmapLayer) {
+                            apex.debug("remove heatmapLayer");
+                            this.heatmapLayer.setMap(null);
+                            this.heatmapLayer.delete;
+                            this.heatmapLayer = null;
+                        }
+
+                        this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
+                            data        : this.weightedLocations,
+                            map         : this.map,
+                            dissipating : this.options.heatmapDissipating,
+                            opacity     : this.options.heatmapOpacity,
+                            radius      : this.options.heatmapRadius
+                        });
+                        
+                        this.weightedLocations.delete;
+
+                        break;
+                    }
+                    
                 }
 
-                apex.jQuery("#"+_this.options.regionId).trigger(
-                    (_this.maploaded?"maprefreshed":"maploaded"), {
-                    map       : _this.map,
-                    countPins : _this.totalRows,
-                    southwest : _this.bounds.getSouthWest().toJSON(),
-                    northeast : _this.bounds.getNorthEast().toJSON()
+                apex.jQuery("#"+this.options.regionId).trigger(
+                    (this.maploaded?"maprefreshed":"maploaded"), {
+                    map       : this.map,
+                    countPins : this.totalRows,
+                    southwest : this.bounds.getSouthWest().toJSON(),
+                    northeast : this.bounds.getNorthEast().toJSON()
                 });
                 
-                _this.maploaded = true;
+                this.maploaded = true;
 
                 // rememember the ID map for the next refresh
-                _this.idMap = _this.newIdMap;
-                delete _this.newIdMap;
+                this.idMap = this.newIdMap;
+                delete this.newIdMap;
             
-                _this._afterRefresh();
+                this._afterRefresh();
             }
 
         } else {
-            _this._afterRefresh();
+            this._afterRefresh();
         }
 
     },
@@ -1306,7 +1323,7 @@ $( function() {
                       // idMap is a data map of id to the data for a pin
                       _this.newIdMap = new Map();
 
-                      _this._renderPage(_this, pData, 1);
+                      _this._renderPage(pData, 1);
                   }
                 });
         } else {
