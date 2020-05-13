@@ -114,29 +114,11 @@ begin
     return n;
 end valid_zoom_level;
 
-procedure get_lat_lng_attr
-    (lat_val   in varchar2
-    ,lng_val   in varchar2
-    ,record_no in number
-    ,p_lat     out number
-    ,p_lng     out number
-    ) is
-begin
-    p_lat := round(apex_plugin_util.get_attribute_as_number(lat_val,'Latitude (#'||record_no||')')
-                  ,g_coord_precision);
-    p_lng := round(apex_plugin_util.get_attribute_as_number(lng_val,'Longitude (#'||record_no||')')
-                  ,g_coord_precision);
-end get_lat_lng_attr;
-
 procedure prn_mapdata (p_region in apex_plugin.t_region) is
     
     l_flex                  varchar2(32767);
     l_buf                   varchar2(32767);
-    l_lat                   number;
-    l_lng                   number;
-    l_weight                number;     
-    l_column_value_list     apex_plugin_util.t_column_value_list;
-    l_column_value_list2    apex_plugin_util.t_column_value_list2;
+    l_column_list           apex_plugin_util.t_column_value_list2;
     l_visualisation         plugin_attr := p_region.attribute_02;
     l_escape_special_chars  plugin_attr := p_region.attribute_24;
     l_first_row             number;
@@ -144,27 +126,34 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
     l_geojson_clob          clob;
     l_chunk_size            number := 32767;
 
+    function varchar2_field (attr_no in number, i in number) return varchar2 is
+        r varchar2(4000);
+    begin
+        if l_column_list.exists(attr_no) then
+            r := sys.htf.escape_sc(
+                apex_plugin_util.get_value_as_varchar2 (
+                    p_data_type => l_column_list(attr_no).data_type,
+                    p_value     => l_column_list(attr_no).value_list(i)
+                    ));
+        end if;
+        return r;
+    end varchar2_field;
+        
     function flex_field (attr_no in number, i in number) return varchar2 is
       d varchar2(4000);
     begin
-      if l_column_value_list.exists(attr_no+7) then
-        d := l_column_value_list(attr_no+7)(i);
-        if l_escape_special_chars='Y' then
-          d := sys.htf.escape_sc(d);
+        if l_column_list.exists(attr_no+7) then
+            d := apex_plugin_util.get_value_as_varchar2 (
+                p_data_type => l_column_list(attr_no+7).data_type,
+                p_value     => l_column_list(attr_no+7).value_list(i)
+                );
+            if l_escape_special_chars='Y' then
+                d := sys.htf.escape_sc(d);
+            end if;
         end if;
-      end if;
-      return apex_javascript.add_attribute('a'||attr_no,d);
+        return apex_javascript.add_attribute('a'||attr_no,d);
     end flex_field;
     
-    function varchar2_field (attr_no in number, i in number) return varchar2 is
-      r varchar2(4000);
-    begin
-      if l_column_value_list.exists(attr_no) then
-        r := sys.htf.escape_sc(l_column_value_list(attr_no)(i));
-      end if;
-      return r;
-    end varchar2_field;
-        
 begin
     apex_debug.message('reportmap x01 (first row): ' || apex_application.g_x01);
     apex_debug.message('reportmap x02 (max rows): ' || apex_application.g_x02);
@@ -199,43 +188,36 @@ begin
     case
     when l_visualisation = g_visualisation_heatmap then
 
-        l_column_value_list := apex_plugin_util.get_data
+        l_column_list := apex_plugin_util.get_data2
             (p_sql_statement  => p_region.source
             ,p_min_columns    => 3
             ,p_max_columns    => 3
             ,p_component_name => p_region.name
             ,p_max_rows       => l_max_rows);
   
-        for i in 1..l_column_value_list(1).count loop
+        for i in 1 .. l_column_list(1).value_list.count loop
         
-            get_lat_lng_attr
-                (lat_val   => l_column_value_list(1)(i)
-                ,lng_val   => l_column_value_list(2)(i)
-                ,record_no => i
-                ,p_lat     => l_lat
-                ,p_lng     => l_lng);
-
-            l_weight := nvl(round(
-                          apex_plugin_util.get_attribute_as_number(l_column_value_list(3)(i),'Weight (#'||i||')')
-                          ),1);
-            
             -- minimise size of data to be sent by encoding it as an array of arrays
-            l_buf := '[' || to_char(l_lat,g_tochar_format)
-                  || ',' || to_char(l_lng,g_tochar_format)
-                  || ',' || to_char(greatest(l_weight,1))
+            l_buf := '[' || to_char(to_number(varchar2_field(1,i)),g_tochar_format)
+                  || ',' || to_char(to_number(varchar2_field(2,i)),g_tochar_format)
+                  || ',' || greatest(nvl(round(to_number(varchar2_field(3,i))),1),1)
                   || ']';
 
             if i < 8 /*don't send the whole dataset to debug log*/ then
                 apex_debug.message('#' || i || ': ' || l_buf);
             end if;
             
-            sys.htp.prn(case when i>1 then ',' end || l_buf);
+            if i>1 then
+                sys.htp.prn(',');
+            end if;
+
+            sys.htp.prn(l_buf);
           
         end loop;
 
     when l_visualisation = g_visualisation_geojson then
     
-        l_column_value_list2 := apex_plugin_util.get_data2
+        l_column_list := apex_plugin_util.get_data2
             (p_sql_statement  => p_region.source
             ,p_min_columns    => 1
             ,p_max_columns    => 1
@@ -244,21 +226,37 @@ begin
             ,p_max_rows       => l_max_rows
             );
 
-        apex_debug.message('Data source column #1 data type:' || l_column_value_list2(1).data_type);
+        for i in 1 .. l_column_list(1).value_list.count loop
+        
+            if i>1 then
+                sys.htp.prn(',');
+            end if;
 
-        for row in 1 .. l_column_value_list2(1).value_list.count loop
+            if l_column_list(1).data_type = apex_plugin_util.c_data_type_clob then
 
-            l_geojson_clob := l_column_value_list2(1).value_list(row).clob_value;
+                l_geojson_clob := l_column_list(1).value_list(i).clob_value;
 
-            if length(l_geojson_clob) > 0 then
+                for j in 0 .. floor(length(l_geojson_clob)/l_chunk_size) loop
 
-                if row>1 then
-                    sys.htp.prn(',');
-                end if;
+                    l_buf := substr(l_geojson_clob, j * l_chunk_size + 1, l_chunk_size);
 
-                for i in 0 .. floor(length(l_geojson_clob)/l_chunk_size) loop
-                    sys.htp.prn(substr(l_geojson_clob, i * l_chunk_size + 1, l_chunk_size));
+                    if i < 8 and j = 0 /*don't send the whole dataset to debug log*/ then
+                        apex_debug.message('#' || i || ': ' || substr(l_buf,1,1000));
+                    end if;
+
+                    sys.htp.prn(l_buf);
+
                 end loop;
+            
+            else
+            
+                l_buf := varchar2_field(1,i);
+            
+                if i < 8 /*don't send the whole dataset to debug log*/ then
+                    apex_debug.message('#' || i || ': ' || substr(l_buf,1,1000));
+                end if;
+                
+                sys.htp.prn(l_buf);
 
             end if;
 
@@ -266,7 +264,7 @@ begin
         
     else
   
-        l_column_value_list := apex_plugin_util.get_data
+        l_column_list := apex_plugin_util.get_data2
             (p_sql_statement  => p_region.source
             ,p_min_columns    => 4
             ,p_max_columns    => 17
@@ -274,28 +272,21 @@ begin
             ,p_first_row      => l_first_row
             ,p_max_rows       => l_max_rows);
     
-        for i in 1..l_column_value_list(1).count loop
+        for i in 1..l_column_list(1).value_list.count loop
 
-            get_lat_lng_attr
-                (lat_val   => l_column_value_list(1)(i)
-                ,lng_val   => l_column_value_list(2)(i)
-                ,record_no => i
-                ,p_lat     => l_lat
-                ,p_lng     => l_lng);
-        
             -- get flex fields, if any
             l_flex := null;
             for attr_no in 1..10 loop
                 l_flex := l_flex || flex_field(attr_no,i);
             end loop;
 
-            l_buf := apex_javascript.add_attribute('x',l_lat)
-                  || apex_javascript.add_attribute('y',l_lng)
-                  || apex_javascript.add_attribute('n',varchar2_field(3,i))
-                  || apex_javascript.add_attribute('d',varchar2_field(4,i))
-                  || apex_javascript.add_attribute('i',varchar2_field(5,i))
-                  || apex_javascript.add_attribute('c',varchar2_field(6,i))
-                  || apex_javascript.add_attribute('l',substr(varchar2_field(7,i),1,1))
+            l_buf := '"x":' || to_char(to_number(varchar2_field(1,i)),g_tochar_format) || ',' /*lat*/
+                  || '"y":' || to_char(to_number(varchar2_field(2,i)),g_tochar_format) || ',' /*lng*/
+                  || apex_javascript.add_attribute('n',varchar2_field(3,i)) /*name*/
+                  || apex_javascript.add_attribute('d',varchar2_field(4,i)) /*id*/
+                  || apex_javascript.add_attribute('i',varchar2_field(5,i)) /*info*/
+                  || apex_javascript.add_attribute('c',varchar2_field(6,i)) /*icon*/
+                  || apex_javascript.add_attribute('l',substr(varchar2_field(7,i),1,1)) /*label*/
                   || case when l_flex is not null then
                        '"f":{' || rtrim(l_flex,',') || '}'
                      end;
@@ -303,10 +294,14 @@ begin
             l_buf := '{' || rtrim(l_buf,',') || '}';
 
             if i < 8 /*don't send the whole dataset to debug log*/ then
-                apex_debug.message('#' || i || ': ' || l_buf);
+                apex_debug.message('#' || i || ': ' || substr(l_buf,1,1000));
             end if;
 
-            sys.htp.prn(case when i>1 then ',' end || l_buf);
+            if i>1 then
+                sys.htp.prn(',');
+            end if;
+
+            sys.htp.prn(l_buf);
           
         end loop;
 
