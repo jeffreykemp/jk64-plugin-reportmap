@@ -196,19 +196,19 @@ $( function() {
         google.maps.event.addListener(marker,
             (this.options.visualisation=="spiderfier"?"spider_click":"click"),
             function () {
-            apex.debug("marker clicked", pinData.d);
-            var pos = this.getPosition();
-            if (pinData.i) {
-				_this.showInfoWindow(this);
-            }
-            if (_this.options.panOnClick) {
-                _this.map.panTo(pos);
-            }
-            if (_this.options.clickZoomLevel) {
-                _this.map.setZoom(_this.options.clickZoomLevel);
-            }
-            apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._pinData(pinData, marker));	
-        });
+                apex.debug("marker clicked", pinData.d);
+                var pos = this.getPosition();
+                if (pinData.i) {
+                    _this.showInfoWindow(this);
+                }
+                if (_this.options.panOnClick) {
+                    _this.map.panTo(pos);
+                }
+                if (_this.options.clickZoomLevel) {
+                    _this.map.setZoom(_this.options.clickZoomLevel);
+                }
+                apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._pinData(pinData, marker));	
+            });
 
         google.maps.event.addListener(marker, "dragend", function () {
             var pos = this.getPosition();
@@ -231,22 +231,15 @@ $( function() {
         // refer to: https://github.com/jawj/OverlappingMarkerSpiderfier
         
         var _this = this,
-            opt = this.options.spiderfier;
-            
-        opt.markersWontMove = !this.options.isDraggable;
-        
-        // allow the developer to set other spiderfy options, e.g. nearbyDistance, circleSpiralSwitchover, etc.
-        // if the developer has set these options, don't overwrite them
+            opt = {
+                keepSpiderfied    : true,
+                basicFormatEvents : true,
+                markersWontMove   : !this.options.isDraggable,
+                markersWontHide   : true
+            };
 
-        if (!('keepSpiderfied' in opt)) {
-            // don't unspiderfy when the user clicks a pin
-            opt.keepSpiderfied = true;
-        }
-        
-        if (!('basicFormatEvents' in opt)) {
-            // we aren't changing the format of the pins when spiderfying
-            opt.basicFormatEvents = true;
-        }
+        // allow the developer to set / override spiderfy options
+        $.extend(opt, this.options.spiderfier);
         
         this.oms = new OverlappingMarkerSpiderfier(this.map, opt);
         
