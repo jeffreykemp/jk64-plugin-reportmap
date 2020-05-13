@@ -328,7 +328,22 @@ $( function() {
                     this.userpin.setPosition(pos);
                 } else {
                     apex.debug("create userpin",pos);
-                    this.userpin = new google.maps.Marker({map: this.map, position: pos});
+                    this.userpin = new google.maps.Marker({
+                        map       : this.map,
+                        position  : pos,
+                        draggable : this.options.isDraggable
+                    });
+                    var _this = this;
+                    google.maps.event.addListener(this.userpin, "dragend", function () {
+                        var pos = this.getPosition();
+                        apex.debug("userpin moved", JSON.stringify(pos));
+                        apex.jQuery("#"+_this.options.regionId).trigger("markerdrag",{
+                            map    : _this.map,
+                            lat    : pos.lat(),
+                            lng    : pos.lng(),
+                            marker : this
+                        })
+                    });                        
                 }
             }
         } else if (this.userpin) {
