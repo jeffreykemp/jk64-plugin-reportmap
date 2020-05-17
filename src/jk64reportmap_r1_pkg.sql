@@ -31,37 +31,37 @@ create or replace package body jk64reportmap_r1_pkg as
 
 -- format to use to convert a lat/lng number to string for passing via javascript
 -- 0.0000001 is enough precision for the practical limit of commercial surveying, error up to +/- 11.132 mm at the equator
-g_tochar_format            constant varchar2(100) := 'fm990.0999999';
-g_coord_precision          constant number := 6;
+g_tochar_format                constant varchar2(100) := 'fm990.0999999';
+g_coord_precision              constant number := 6;
 
 -- if only one row is returned by the query, add this +/- to the latitude extents so it
 -- shows the neighbourhood instead of zooming to the max
-g_single_row_lat_margin    constant number := 0.005;
+g_single_row_lat_margin        constant number := 0.005;
 
-g_visualisation_pins       constant varchar2(10) := 'PINS'; -- default
-g_visualisation_cluster    constant varchar2(10) := 'CLUSTER';
-g_visualisation_spiderfier constant varchar2(10) := 'SPIDERFIER';
-g_visualisation_heatmap    constant varchar2(10) := 'HEATMAP';
-g_visualisation_directions constant varchar2(10) := 'DIRECTIONS';
-g_visualisation_geojson    constant varchar2(10) := 'GEOJSON';
+g_visualisation_pins           constant varchar2(10) := 'PINS';               -- default
+g_visualisation_cluster        constant varchar2(10) := 'CLUSTER';
+g_visualisation_spiderfier     constant varchar2(10) := 'SPIDERFIER';
+g_visualisation_heatmap        constant varchar2(10) := 'HEATMAP';
+g_visualisation_directions     constant varchar2(10) := 'DIRECTIONS';
+g_visualisation_geojson        constant varchar2(10) := 'GEOJSON';
 
-g_maptype_roadmap          constant varchar2(10) := 'ROADMAP'; -- default
-g_maptype_satellite	       constant varchar2(10) := 'SATELLITE';
-g_maptype_hybrid           constant varchar2(10) := 'HYBRID';
-g_maptype_terrain          constant varchar2(10) := 'TERRAIN';
+g_maptype_roadmap              constant varchar2(10) := 'ROADMAP';            -- default
+g_maptype_satellite	           constant varchar2(10) := 'SATELLITE';
+g_maptype_hybrid               constant varchar2(10) := 'HYBRID';
+g_maptype_terrain              constant varchar2(10) := 'TERRAIN';
 
-g_travelmode_driving       constant varchar2(10) := 'DRIVING'; -- default
-g_travelmode_walking       constant varchar2(10) := 'WALKING';
-g_travelmode_bicycling     constant varchar2(10) := 'BICYCLING';
-g_travelmode_transit       constant varchar2(10) := 'TRANSIT';
+g_travelmode_driving           constant varchar2(10) := 'DRIVING';            -- default
+g_travelmode_walking           constant varchar2(10) := 'WALKING';
+g_travelmode_bicycling         constant varchar2(10) := 'BICYCLING';
+g_travelmode_transit           constant varchar2(10) := 'TRANSIT';
 
-g_option_pan_on_click      constant varchar2(30) := ':PAN_ON_CLICK:'; -- default
-g_option_draggable         constant varchar2(30) := ':DRAGGABLE:';
-g_option_pan_allowed       constant varchar2(30) := ':PAN_ALLOWED:'; -- default
-g_option_zoom_allowed      constant varchar2(30) := ':ZOOM_ALLOWED:'; -- default
-g_option_drag_drop_geojson constant varchar2(30) := ':GEOJSON_DRAGDROP:';
-g_option_disable_autofit   constant varchar2(30) := ':DISABLEFITBOUNDS:';
-g_option_spinner           constant varchar2(30) := ':SPINNER:'; -- default
+g_option_pan_on_click          constant varchar2(30) := ':PAN_ON_CLICK:';     -- default
+g_option_draggable             constant varchar2(30) := ':DRAGGABLE:';
+g_option_pan_allowed           constant varchar2(30) := ':PAN_ALLOWED:';      -- default
+g_option_zoom_allowed          constant varchar2(30) := ':ZOOM_ALLOWED:';     -- default
+g_option_drag_drop_geojson     constant varchar2(30) := ':GEOJSON_DRAGDROP:';
+g_option_disable_autofit       constant varchar2(30) := ':DISABLEFITBOUNDS:';
+g_option_spinner               constant varchar2(30) := ':SPINNER:';          -- default
 
 subtype plugin_attr is varchar2(32767);
 
@@ -80,10 +80,10 @@ function bounds_literal (south in number, west in number, north in number, east 
 begin
     return case when south is not null and west is not null and north is not null and east is not null then
         '{'
-        || apex_javascript.add_attribute('south', round(south,g_coord_precision))
-        || apex_javascript.add_attribute('west', round(west,g_coord_precision))
-        || apex_javascript.add_attribute('north', round(north,g_coord_precision))
-        || apex_javascript.add_attribute('east', round(east,g_coord_precision)
+        || apex_javascript.add_attribute('south', round(south, g_coord_precision))
+        || apex_javascript.add_attribute('west',  round(west,  g_coord_precision))
+        || apex_javascript.add_attribute('north', round(north, g_coord_precision))
+        || apex_javascript.add_attribute('east',  round(east,  g_coord_precision)
            , false, false)
         || '}'
         end;
@@ -99,7 +99,7 @@ begin
         delim_pos := instr(p_val,',');
     end if;
     p_lat := apex_plugin_util.get_attribute_as_number(substr(p_val,1,delim_pos-1), p_label || ' latitude');
-    p_lng := apex_plugin_util.get_attribute_as_number(substr(p_val,delim_pos+1), p_label || ' longitude');
+    p_lng := apex_plugin_util.get_attribute_as_number(substr(p_val,delim_pos+1),   p_label || ' longitude');
 end parse_latlng;
 
 function valid_zoom_level (p_attr in varchar2, p_label in varchar2) return number is
@@ -130,6 +130,7 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
         r varchar2(4000);
     begin
         if l_column_list.exists(attr_no) then
+            -- whatever data type was in the original source, get it as a string
             r := sys.htf.escape_sc(
                 apex_plugin_util.get_value_as_varchar2 (
                     p_data_type => l_column_list(attr_no).data_type,
@@ -138,6 +139,27 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
         end if;
         return r;
     end varchar2_field;
+    
+    function number_field (attr_no in number, i in number) return number is
+        r varchar2(4000);
+    begin
+        r := varchar2_field(attr_no, i);
+        return to_number(r);
+    exception
+        when value_error then
+            raise_application_error(-20000, 'Unable to convert data to number "' || r || '"');
+    end number_field;
+    
+    -- return a lat/long data as a number formatted as a string suitable for embedding in json
+    function lat_lng_field (attr_no in number, i in number) return varchar2 is
+        r varchar2(4000);
+    begin
+        r := varchar2_field(attr_no, i);
+        return to_char(to_number(r),g_tochar_format);
+    exception
+        when value_error then
+            raise_application_error(-20000, 'Unable to convert data to lat/long "' || r || '"');
+    end lat_lng_field;
         
     function flex_field (attr_no in number, i in number) return varchar2 is
       d varchar2(4000);
@@ -162,7 +184,7 @@ begin
     l_max_rows := to_number(apex_application.g_x02);
     
     /*
-       For most visualisations, column list is as follows:
+       For the "pin" type visualisations, column list is as follows:
     
        1.     lat,   - required
        2.     lng,   - required
@@ -173,13 +195,13 @@ begin
        7.     label  - optional
        8-17.  col01..col10 - optional flex fields
        
-       If the "Heatmap" visualisation is chosen, the column list is as follows:
+       For the "Heatmap" visualisation, the column list is as follows:
        
        1.  lat,   - required
        2.  lng,   - required
        3.  weight - required
        
-       If the "GeoJson" visualisation is chosen, the SQL only needs one column:
+       For the "GeoJson" visualisation, the SQL only needs one column:
        
        1.  geojson - required
     
@@ -198,9 +220,9 @@ begin
         for i in 1 .. l_column_list(1).value_list.count loop
         
             -- minimise size of data to be sent by encoding it as an array of arrays
-            l_buf := '[' || to_char(to_number(varchar2_field(1,i)),g_tochar_format)
-                  || ',' || to_char(to_number(varchar2_field(2,i)),g_tochar_format)
-                  || ',' || greatest(nvl(round(to_number(varchar2_field(3,i))),1),1)
+            l_buf := '[' || lat_lng_field(1,i)
+                  || ',' || lat_lng_field(2,i)
+                  || ',' || greatest(nvl(round(number_field(3,i)),1),1)
                   || ']';
 
             if i < 8 /*don't send the whole dataset to debug log*/ then
@@ -235,6 +257,8 @@ begin
             if l_column_list(1).data_type = apex_plugin_util.c_data_type_clob then
 
                 l_geojson_clob := l_column_list(1).value_list(i).clob_value;
+                
+                -- send the clob down in chunks
 
                 for j in 0 .. floor(length(l_geojson_clob)/l_chunk_size) loop
 
@@ -263,6 +287,7 @@ begin
         end loop;
         
     else
+        -- "pin" type visualisations
   
         l_column_list := apex_plugin_util.get_data2
             (p_sql_statement  => p_region.source
@@ -280,8 +305,8 @@ begin
                 l_flex := l_flex || flex_field(attr_no,i);
             end loop;
 
-            l_buf := '"x":' || to_char(to_number(varchar2_field(1,i)),g_tochar_format) || ',' /*lat*/
-                  || '"y":' || to_char(to_number(varchar2_field(2,i)),g_tochar_format) || ',' /*lng*/
+            l_buf := '"x":' || lat_lng_field(1,i) || ',' /*lat*/
+                  || '"y":' || lat_lng_field(2,i) || ',' /*lng*/
                   || apex_javascript.add_attribute('n',varchar2_field(3,i)) /*name*/
                   || apex_javascript.add_attribute('d',varchar2_field(4,i)) /*id*/
                   || apex_javascript.add_attribute('i',varchar2_field(5,i)) /*info*/
@@ -315,10 +340,7 @@ function render
     ,p_is_printer_friendly in boolean
     ) return apex_plugin.t_region_render_result is
     
-    l_result     apex_plugin.t_region_render_result;
-    l_lat        number;
-    l_lng        number;
-    l_region_id  varchar2(100);
+    l_result                       apex_plugin.t_region_render_result;
 
     -- Component settings
     l_api_key                      plugin_attr := p_plugin.attribute_01;
@@ -330,39 +352,41 @@ function render
     l_max_rows                     number;      --p_plugin.attribute_07;
 
     -- Plugin attributes
-    l_map_height           plugin_attr := p_region.attribute_01;
-    l_visualisation        plugin_attr := p_region.attribute_02;
-    l_click_zoom_level     number;      --p_region.attribute_03;
-    l_options              plugin_attr := p_region.attribute_04;
-    l_initial_zoom_level   number;      --p_region.attribute_05;
-    l_initial_center       plugin_attr := p_region.attribute_06;
-    l_rows_per_batch       number;      --p_region.attribute_07;
-    l_language             plugin_attr := p_region.attribute_08;
-    l_region               plugin_attr := p_region.attribute_09;
-    l_restrict_country     plugin_attr := p_region.attribute_10;
-    l_mapstyle             plugin_attr := p_region.attribute_11;
-    l_heatmap_dissipating  plugin_attr := p_region.attribute_12;
-    l_heatmap_opacity      number;      --p_region.attribute_13;
-    l_heatmap_radius       number;      --p_region.attribute_14;
-    l_travel_mode          plugin_attr := p_region.attribute_15;
-    l_drawing_modes        plugin_attr := p_region.attribute_16;
-    -- unused              plugin_attr := p_region.attribute_17;
-    -- unused              plugin_attr := p_region.attribute_18;
-    -- unused              plugin_attr := p_region.attribute_19;
-    -- unused              plugin_attr := p_region.attribute_20;
-    l_optimizewaypoints    plugin_attr := p_region.attribute_21;
-    l_maptype              plugin_attr := p_region.attribute_22;
-    -- unused              plugin_attr := p_region.attribute_23;
-    -- unused              plugin_attr := p_region.attribute_24;
-    l_gesture_handling     plugin_attr := p_region.attribute_25;
+    l_map_height                   plugin_attr := p_region.attribute_01;
+    l_visualisation                plugin_attr := p_region.attribute_02;
+    l_click_zoom_level             number;      --p_region.attribute_03;
+    l_options                      plugin_attr := p_region.attribute_04;
+    l_initial_zoom_level           number;      --p_region.attribute_05;
+    l_initial_center               plugin_attr := p_region.attribute_06;
+    l_rows_per_batch               number;      --p_region.attribute_07;
+    l_language                     plugin_attr := p_region.attribute_08;
+    l_region                       plugin_attr := p_region.attribute_09;
+    l_restrict_country             plugin_attr := p_region.attribute_10;
+    l_mapstyle                     plugin_attr := p_region.attribute_11;
+    l_heatmap_dissipating          plugin_attr := p_region.attribute_12;
+    l_heatmap_opacity              number;      --p_region.attribute_13;
+    l_heatmap_radius               number;      --p_region.attribute_14;
+    l_travel_mode                  plugin_attr := p_region.attribute_15;
+    l_drawing_modes                plugin_attr := p_region.attribute_16;
+    -- unused                      plugin_attr := p_region.attribute_17;
+    -- unused                      plugin_attr := p_region.attribute_18;
+    -- unused                      plugin_attr := p_region.attribute_19;
+    -- unused                      plugin_attr := p_region.attribute_20;
+    l_optimizewaypoints            plugin_attr := p_region.attribute_21;
+    l_maptype                      plugin_attr := p_region.attribute_22;
+    -- unused                      plugin_attr := p_region.attribute_23;
+    -- unused                      plugin_attr := p_region.attribute_24;
+    l_gesture_handling             plugin_attr := p_region.attribute_25;
     
-    l_opt                  varchar2(32767);
-    l_js_options           varchar2(1000);
-    l_dragdrop_geojson     boolean;
-    l_init_js_code         plugin_attr;
+    l_region_id                    varchar2(100);
+    l_lat                          number;
+    l_lng                          number;
+    l_opt                          varchar2(32767);
+    l_js_options                   varchar2(1000);
+    l_dragdrop_geojson             boolean;
+    l_init_js_code                 plugin_attr;
     
 begin
-    -- debug information will be included
     if apex_application.g_debug then
         apex_plugin_util.debug_region
             (p_plugin => p_plugin
@@ -443,21 +467,28 @@ begin
         ,p_check_to_add_minified => true );
 
     if l_visualisation = g_visualisation_cluster then
+
         -- MarkerClustererPlus for Google Maps V3
         apex_javascript.add_library
             (p_name      => 'markerclusterer.min'
             ,p_directory => p_plugin.file_prefix);
+
     elsif l_visualisation = g_visualisation_spiderfier then
+
         -- OverlappingMarkerSpiderfier
         apex_javascript.add_library
             (p_name      => 'oms.min'
             ,p_directory => p_plugin.file_prefix);
+
     end if;
     
     if l_dragdrop_geojson then
+        -- at this stage, the CSS file only contains styles used by the drag/drop geojson feature
+
         apex_css.add_file
             (p_name      => 'jk64reportmap_r1'
             ,p_directory => p_plugin.file_prefix);
+
     end if;
     
     -- use nullif to convert default values to null; this reduces the footprint of the generated code
@@ -545,7 +576,6 @@ function ajax
     l_result apex_plugin.t_region_ajax_result;
 
 begin
-    -- debug information will be included
     if apex_application.g_debug then
         apex_plugin_util.debug_region
             (p_plugin => p_plugin
