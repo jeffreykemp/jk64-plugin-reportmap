@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   12:24 Monday May 18, 2020
+--   Date and Time:   14:53 Monday May 18, 2020
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -115,7 +115,7 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20200518122408'
+,p_last_upd_yyyymmddhh24miss=>'20200518145257'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>19
 ,p_ui_type_name => null
@@ -22500,7 +22500,11 @@ wwv_flow_api.create_page(
 'The Visualisation on this map is set to "GeoJson" and the SQL Query loads 10 countries selected at random.',
 '<p>',
 '<code>',
-'select ''{"type":"Feature","geometry":'' || geometry || ''}'' as geojson',
+'select json_object(',
+'           ''type'' is ''Feature'',',
+'           ''geometry'' is geometry',
+'           returning clob',
+'       ) as geojson',
 '      ,country as name',
 '      ,rownum as id',
 '      ,country||''-flex1'' as flex1',
@@ -22508,10 +22512,27 @@ wwv_flow_api.create_page(
 'from (',
 '    select * ',
 '    from   jk64demo_countries',
-'    where  country != ''Antarctica''',
-'    and    geometry is not null',
+'    where  geometry is not null',
 '    order by dbms_random.value',
 ') where rownum <= 10',
+'</code>',
+'<p>',
+'<hr>',
+'Alternatively, a similar outcome could have been produced by embedding the',
+'properties in the geoJson document; this allows the developer to include any',
+'arbitrary properties while avoiding using "flex" fields:',
+'<code>',
+'select json_object(',
+'           ''type'' is ''Feature'',',
+'           ''geometry'' is c.geometry,',
+'           ''properties'' is json_object(',
+'               ''id'' is c.id,',
+'               ''name'' is c.country,',
+'               ''population'' is c.pop',
+'           )',
+'           returning clob',
+'       ) as geojson',
+'from   country_borders c',
 '</code>',
 '<hr>',
 'A Dynamic Action on the <b>mouseoverFeature</b> event sets <code>P27_NAME</code> to:',
@@ -22556,7 +22577,7 @@ wwv_flow_api.create_page(
 'A custom style hides all the labels and roads from the map.'))
 ,p_page_comment=>'This page requires the table jk64demo_countries.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20200518114201'
+,p_last_upd_yyyymmddhh24miss=>'20200518143700'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(108624573787901255)
@@ -22598,7 +22619,11 @@ wwv_flow_api.create_page_plug(
 ,p_plug_item_display_point=>'BELOW'
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select ''{"type":"Feature","geometry":'' || geometry || ''}'' as geojson',
+'select json_object(',
+'           ''type'' is ''Feature'',',
+'           ''geometry'' is geometry',
+'           returning clob',
+'       ) as geojson',
 '      ,country as name',
 '      ,rownum as id',
 '      ,country||''-flex1'' as flex1',
