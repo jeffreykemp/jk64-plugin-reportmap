@@ -111,6 +111,7 @@ $( function() {
     
     _showMessage: function (msg) {
         apex.debug("reportmap._showMessage", msg);
+        //TODO: Improve message window #111
         if (!this.infoWindow) {
             this.infoWindow = new google.maps.InfoWindow();
         }
@@ -132,24 +133,15 @@ $( function() {
 	 *
 	 */
     
-    _pinData: function (pData, marker) {
+    _eventPinData: function (marker) {
         //get pin data for passing to an event handler
         var d = {
             map    : this.map,
-            id     : pData.d,
-            name   : pData.n,
             lat    : marker.position.lat(),
             lng    : marker.position.lng(),
 			marker : marker
         };
-        if (pData.f) {
-            for (var i = 1; i <= 10; i++) {
-                if (pData.f["a"+i]) {
-                    //attr01..attr10
-                    d["attr"+('0'+i).slice(-2)] = pdata.f["a"+i];
-                }
-            }
-        }
+        $.extend(d, marker.data);
         return d;
     },
 	
@@ -161,7 +153,7 @@ $( function() {
 			this.infoWindow = new google.maps.InfoWindow();
 		}
 		//unescape the html for the info window contents
-		var ht = new DOMParser().parseFromString(marker.info, "text/html");
+		var ht = new DOMParser().parseFromString(marker.data.info, "text/html");
 		this.infoWindow.setContent(ht.documentElement.textContent);
 		//associate the info window with the marker and show on the map
 		this.infoWindow.open(this.map, marker);
@@ -179,22 +171,31 @@ $( function() {
               label     : pinData.l,
               draggable : this.options.isDraggable
             });
-
+        
         //load our own data into the marker
-        marker.reportmapId = pinData.d;
-		marker.info = pinData.i;
+        marker.data = {
+            id   : pinData.d,
+            info : pinData.i,
+            name : pinData.n
+		};
+        for (var i = 1; i <= 10; i++) {
+            if (pinData.f&&pinData.f["a"+i]) {
+                //f.a1, f.a2, ... f.a10 converted to marker.data.attr01, marker.data.attr02, ... marker.data.attr10
+                marker.data["attr"+('0'+i).slice(-2)] = pinData.f["a"+i];
+            }
+        }
         
         //if a marker formatting function has been supplied, call it
         if (this.options.markerFormatFn) {
-            this.options.markerFormatFn(marker, pinData.f);
+            this.options.markerFormatFn(marker);
         }
 
         google.maps.event.addListener(marker,
             (this.options.visualisation=="spiderfier"?"spider_click":"click"),
             function () {
-                apex.debug("marker clicked", pinData.d);
+                apex.debug("marker clicked", marker.data.id);
                 var pos = this.getPosition();
-                if (pinData.i) {
+                if (marker.data.info) {
                     _this.showInfoWindow(this);
                 }
                 if (_this.options.panOnClick) {
@@ -203,19 +204,19 @@ $( function() {
                 if (_this.options.clickZoomLevel) {
                     _this.map.setZoom(_this.options.clickZoomLevel);
                 }
-                apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._pinData(pinData, marker));	
+                apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._eventPinData(marker));	
             });
 
         google.maps.event.addListener(marker, "dragend", function () {
             var pos = this.getPosition();
-            apex.debug("marker moved", pinData.d, JSON.stringify(pos));
-            apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", _this._pinData(pinData, marker));
+            apex.debug("marker moved", marker.data.id, JSON.stringify(pos));
+            apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", _this._eventPinData(marker));
         });
 
 		if (["pins","cluster","spiderfier"].indexOf(this.options.visualisation) > -1) {
 			// if the marker was not previously shown in the last refresh, raise the marker added event
-			if (!this.idMap||!this.idMap.has(pinData.d)) {
-				apex.jQuery("#"+_this.options.regionId).trigger("markeradded", _this._pinData(pinData, marker));
+			if (!this.idMap||!this.idMap.has(marker.data.id)) {
+				apex.jQuery("#"+_this.options.regionId).trigger("markeradded", _this._eventPinData(marker));
 			}
 		}
         return marker;
@@ -288,7 +289,7 @@ $( function() {
     //e.g. this will show the info window for the given marker and trigger the markerclick event
     click: function (id) {
         apex.debug("reportmap.click");
-        var marker = this.markers.find( function(p){ return p.reportmapId==id; });
+        var marker = this.markers.find( function(p){ return p.data.id==id; });
         if (marker) {
             new google.maps.event.trigger(marker,"click");
         } else {
@@ -512,11 +513,9 @@ $( function() {
     },
     
     //directions visualisation based on query data
-    _directions: function (mapData) {
-        apex.debug("reportmap._directions "+mapData.length+" waypoints");
-        if (mapData.length>1) {
-            var origin
-               ,dest;
+    _directions: function () {
+        apex.debug("reportmap._directions "+this.markers.length+" waypoints");
+        if (this.markers.length>1) {
             if (!this.directionsDisplay) {
                 this.directionsDisplay = new google.maps.DirectionsRenderer;
                 this.directionsService = new google.maps.DirectionsService;
@@ -525,19 +524,14 @@ $( function() {
                     this.directionsDisplay.setPanel(document.getElementById(this.options.directionsPanel));
                 }
             }
-            var waypoints = [], latLng;
-            for (var i = 0; i < mapData.length; i++) {
-                latLng = new google.maps.LatLng(mapData[i].x, mapData[i].y);
-                if (i == 0) {
-                    origin = latLng;
-                } else if (i == mapData.length-1) {
-                    dest = latLng;
-                } else {
-                    waypoints.push({
-                        location : latLng,
-                        stopover : true
-                    });
-                }
+            var origin = this.markers[0].position,
+                dest = this.markers[this.markers.length-1].position,
+                waypoints = [];
+            for (var i = 1; i < this.markers.length-1; i++) {
+                waypoints.push({
+                    location : this.markers[i].position,
+                    stopover : true
+                });
             }
             apex.debug(origin, dest, waypoints, this.options.travelMode);
             var _this = this;
@@ -1064,7 +1058,7 @@ $( function() {
         };
         
         if (this.options.mapStyle) {
-            mapOptions["styles"] = this.options.mapStyle;
+            mapOptions.styles = this.options.mapStyle;
         }
 
         this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),mapOptions);
@@ -1203,12 +1197,12 @@ $( function() {
 
                         this.bounds.extend({lat:row.x,lng:row.y});
                         
-                        var marker = this._newMarker(md);
+                        var marker = this._newMarker(row);
                         
                         // put the marker into the array of markers
                         this.markers.push(marker);
                         
-                        // also put the id into the Map
+                        // also put the id into the ID Map
                         this.newIdMap.set(row.d, i);
 
                     }
@@ -1280,7 +1274,7 @@ $( function() {
 
                     switch (this.options.visualisation) {
                     case "directions":
-                        this._directions(pData.mapdata);
+                        this._directions();
                     
                         break;
                     case "cluster":
@@ -1300,7 +1294,6 @@ $( function() {
                             apex.debug("remove heatmapLayer");
                             this.heatmapLayer.setMap(null);
                             this.heatmapLayer.delete;
-                            this.heatmapLayer = null;
                         }
 
                         this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
@@ -1328,7 +1321,7 @@ $( function() {
                 
                 this.maploaded = true;
 
-                // rememember the ID map for the next refresh
+                // rememember the ID Map for the next refresh
                 this.idMap = this.newIdMap;
                 delete this.newIdMap;
             
