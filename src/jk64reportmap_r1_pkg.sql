@@ -161,13 +161,13 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
             raise_application_error(-20000, 'Unable to convert data to lat/long "' || r || '"');
     end lat_lng_field;
         
-    function flex_field (attr_no in number, i in number) return varchar2 is
+    function flex_field (attr_no in number, i in number, offset in number) return varchar2 is
       d varchar2(4000);
     begin
-        if l_column_list.exists(attr_no+7) then
+        if l_column_list.exists(attr_no+offset) then
             d := apex_plugin_util.get_value_as_varchar2 (
-                p_data_type => l_column_list(attr_no+7).data_type,
-                p_value     => l_column_list(attr_no+7).value_list(i)
+                p_data_type => l_column_list(attr_no+offset).data_type,
+                p_value     => l_column_list(attr_no+offset).value_list(i)
                 );
             if l_escape_special_chars='Y' then
                 d := sys.htf.escape_sc(d);
@@ -186,24 +186,27 @@ begin
     /*
        For the "pin" type visualisations, column list is as follows:
     
-       1.     lat,   - required
-       2.     lng,   - required
-       3.     name,  - required
-       4.     id,    - required
-       5.     info,  - optional
-       6.     icon,  - optional
-       7.     label  - optional
-       8-17.  col01..col10 - optional flex fields
+       1.     lat            -- required
+       2.     lng            -- required
+       3.     name           -- required
+       4.     id             -- required
+       5.     info           -- optional
+       6.     icon           -- optional
+       7.     label          -- optional
+       8-17.  flex01..flex10 -- optional flex fields
        
-       For the "Heatmap" visualisation, the column list is as follows:
+       For the "Heatmap" visualisation:
        
-       1.  lat,   - required
-       2.  lng,   - required
-       3.  weight - required
+       1.     lat            -- required
+       2.     lng            -- required
+       3.     weight         -- required
        
-       For the "GeoJson" visualisation, the SQL only needs one column:
+       For the "GeoJson" visualisation:
        
-       1.  geojson - required
+       1.     geojson        -- required
+       2.     name           -- optional
+       3.     id             -- optional
+       4-13.  flex01..flex10 -- optional flex fields
     
     */
     
@@ -242,7 +245,7 @@ begin
         l_column_list := apex_plugin_util.get_data2
             (p_sql_statement  => p_region.source
             ,p_min_columns    => 1
-            ,p_max_columns    => 1
+            ,p_max_columns    => 12
             ,p_component_name => p_region.name
             ,p_first_row      => l_first_row
             ,p_max_rows       => l_max_rows
@@ -253,6 +256,8 @@ begin
             if i>1 then
                 sys.htp.prn(',');
             end if;
+            
+            sys.htp.prn('{"geojson":');
 
             if l_column_list(1).data_type = apex_plugin_util.c_data_type_clob then
 
@@ -284,6 +289,21 @@ begin
 
             end if;
 
+            -- get flex fields, if any
+            l_flex := null;
+            for attr_no in 1..10 loop
+                l_flex := l_flex || flex_field(attr_no, i, offset => 3);
+            end loop;
+            
+            l_buf := ','
+                  || apex_javascript.add_attribute('n',varchar2_field(2,i)) /*name*/
+                  || apex_javascript.add_attribute('d',varchar2_field(3,i)) /*id*/
+                  || case when l_flex is not null then
+                       '"f":{' || rtrim(l_flex,',') || '}'
+                     end;
+            
+            sys.htp.prn(l_buf || '}');
+
         end loop;
         
     else
@@ -302,7 +322,7 @@ begin
             -- get flex fields, if any
             l_flex := null;
             for attr_no in 1..10 loop
-                l_flex := l_flex || flex_field(attr_no,i);
+                l_flex := l_flex || flex_field(attr_no, i, offset => 7);
             end loop;
 
             l_buf := '"x":' || lat_lng_field(1,i) || ',' /*lat*/

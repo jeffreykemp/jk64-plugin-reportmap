@@ -143,16 +143,12 @@ $( function() {
 			marker : marker
         };
         if (pData.f) {
-            if (pData.f.a1) { d["attr01"] = pData.f.a1; }
-            if (pData.f.a2) { d["attr02"] = pData.f.a2; }
-            if (pData.f.a3) { d["attr03"] = pData.f.a3; }
-            if (pData.f.a4) { d["attr04"] = pData.f.a4; }
-            if (pData.f.a5) { d["attr05"] = pData.f.a5; }
-            if (pData.f.a6) { d["attr06"] = pData.f.a6; }
-            if (pData.f.a7) { d["attr07"] = pData.f.a7; }
-            if (pData.f.a8) { d["attr08"] = pData.f.a8; }
-            if (pData.f.a9) { d["attr09"] = pData.f.a9; }
-            if (pData.f.a10) { d["attr10"] = pData.f.a10; }
+            for (var i = 1; i <= 10; i++) {
+                if (pData.f["a"+i]) {
+                    //attr01..attr10
+                    d["attr"+('0'+i).slice(-2)] = pdata.f["a"+i];
+                }
+            }
         }
         return d;
     },
@@ -680,9 +676,64 @@ $( function() {
         }
     },
     
+    // initialisation for data layer when not in drawing mode
+    _initFeatures: function() {
+        apex.debug("reportmap._initFeatures");
+
+        var _this = this,
+            dataLayer = this.map.data;
+        
+        // Change the color when the isSelected property is set to true.
+        dataLayer.setStyle(function(feature) {
+            var color = _this.options.featureColor;
+            if (feature.getProperty('isSelected')) {
+                color = _this.options.featureColorSelected;
+            }
+            return /** @type {!google.maps.Data.StyleOptions} */({
+                fillColor    : color,
+                strokeColor  : color,
+                strokeWeight : 1,
+                draggable    : _this.options.isDraggable,
+                editable     : false
+            });
+        });
+        
+        // When the user clicks, set 'isSelected', changing the color of the shape.
+        dataLayer.addListener('click', function(event) {
+            apex.debug("reportmap.map.data - click",event);
+            if (event.feature.getProperty('isSelected')) {
+                apex.debug("isSelected","false");
+                event.feature.removeProperty('isSelected');
+                apex.jQuery("#"+_this.options.regionId).trigger("unselectfeature", {map:_this.map, feature:event.feature});
+            } else {
+                apex.debug("isSelected","true");
+                event.feature.setProperty('isSelected', true);
+                apex.jQuery("#"+_this.options.regionId).trigger("selectfeature", {map:_this.map, feature:event.feature});
+            }
+        });
+
+        // When the user hovers, tempt them to click by outlining the shape.
+        // Call revertStyle() to remove all overrides. This will use the style rules
+        // defined in the function passed to setStyle()
+        dataLayer.addListener('mouseover', function(event) {
+            apex.debug("reportmap.map.data","mouseover",event);
+            dataLayer.revertStyle();
+            dataLayer.overrideStyle(event.feature, {strokeWeight: 4});
+            apex.jQuery("#"+_this.options.regionId).trigger("mouseoverfeature", {map:_this.map, feature:event.feature});
+        });
+
+        dataLayer.addListener('mouseout', function(event) {
+            apex.debug("reportmap.map.data","mouseout",event);
+            dataLayer.revertStyle();
+            apex.jQuery("#"+_this.options.regionId).trigger("mouseoutfeature", {map:_this.map, feature:event.feature});
+        });
+    },
+
+    // initialisation for data layer when in drawing mode
     _initDrawing: function() {
         apex.debug("reportmap._initDrawing",this.options.drawingModes);
-        var _this = this;
+        var _this = this,
+            dataLayer = this.map.data;
         
         if (this.options.drawingModes.indexOf("polygon")>-1) {        
             this._addCheckbox(
@@ -710,8 +761,7 @@ $( function() {
             }
         });
         drawingManager.setMap(this.map);
-        var dataLayer = this.map.data;
-
+        
         // from http://stackoverflow.com/questions/25072069/export-geojson-data-from-google-maps
         // from http://jsfiddle.net/doktormolle/5F88D/
         google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
@@ -772,34 +822,6 @@ $( function() {
             });
         });
         
-        // When the user clicks, set 'isSelected', changing the color of the shape.
-        dataLayer.addListener('click', function(event) {
-            apex.debug("reportmap.map.data - click",event);
-            if (event.feature.getProperty('isSelected')) {
-                apex.debug("isSelected","false");
-                event.feature.removeProperty('isSelected');
-                apex.jQuery("#"+_this.options.regionId).trigger("unselectfeature", {map:_this.map, feature:event.feature});
-            } else {
-                apex.debug("isSelected","true");
-                event.feature.setProperty('isSelected', true);
-                apex.jQuery("#"+_this.options.regionId).trigger("selectfeature", {map:_this.map, feature:event.feature});
-            }
-        });
-
-        // When the user hovers, tempt them to click by outlining the shape.
-        // Call revertStyle() to remove all overrides. This will use the style rules
-        // defined in the function passed to setStyle()
-        dataLayer.addListener('mouseover', function(event) {
-            apex.debug("reportmap.map.data","mouseover",event);
-            dataLayer.revertStyle();
-            dataLayer.overrideStyle(event.feature, {strokeWeight: 4});
-        });
-
-        dataLayer.addListener('mouseout', function(event) {
-            apex.debug("reportmap.map.data","mouseout",event);
-            dataLayer.revertStyle();
-        });
-
         dataLayer.addListener('addfeature', function(event) {
             apex.debug("reportmap.map.data","addfeature",event);
             apex.jQuery("#"+_this.options.regionId).trigger("addfeature", {map:_this.map, feature:event.feature});
@@ -825,7 +847,7 @@ $( function() {
                 _this.deleteSelectedFeatures();
             }
         });
-
+        
     },
     
 	/*
@@ -854,11 +876,11 @@ $( function() {
         }
     },
 
-    _loadGeoJson : function (geojson) {
+    _loadGeoJson : function (geojson, options) {
         apex.debug("_loadGeoJson", geojson);
         
         // render the features on the map
-        this.map.data.addGeoJson(geojson);
+        features = this.map.data.addGeoJson(geojson, options);
 
         //Update a map's viewport to fit each geometry in a dataset        
         var _this = this;
@@ -868,6 +890,8 @@ $( function() {
         if (this.options.autoFitBounds) {
             this.map.fitBounds(this.bounds);
         }
+        
+        apex.jQuery("#"+this.options.regionId).trigger("loadedgeojson", {map:this.map, geoJson:geojson, features:features});
     },
 
     loadGeoJsonString : function (geoString) {
@@ -876,9 +900,8 @@ $( function() {
             var geojson = JSON.parse(geoString);
 
             this.bounds = new google.maps.LatLngBounds;
+            
             this._loadGeoJson(geojson);
-
-            apex.jQuery("#"+this.options.regionId).trigger("loadedgeojson", {map:this.map, geoJson:geojson});
         }
     },
 
@@ -1046,6 +1069,8 @@ $( function() {
 
         this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),mapOptions);
 
+        this._initFeatures();
+
         if (this.options.drawingModes) {
             this._initDrawing();
         }
@@ -1133,27 +1158,50 @@ $( function() {
                             
                 for (var i = 0; i < pData.mapdata.length; i++) {
                     
-                    var md = pData.mapdata[i];
+                    var row = pData.mapdata[i];
                     
                     if (this.options.visualisation=="heatmap") {
-                        // each data point is an array [x,y,weight]
+                        // each row is an array [x,y,weight]
 
-                        this.bounds.extend({lat:md[0],lng:md[1]});
+                        this.bounds.extend({lat:row[0],lng:row[1]});
 
                         this.weightedLocations.push({
-                            location:new google.maps.LatLng(md[0], md[1]),
-                            weight:md[2]
+                            location:new google.maps.LatLng(row[0], row[1]),
+                            weight:row[2]
                         });
 
                     } else if (this.options.visualisation=="geojson") {
-                        // the data is (should be) a GeoJson document
+                        // the data should have a GeoJson document, along with optional name, id and flex fields
+                        // the name, id and flex fields will be added to the geoJson properties
+                        // (alternatively, the geojson might already have the properties embedded in it)
                         
-                        this._loadGeoJson(md);
+                        var properties = {};
+                        
+                        if (row.n) {
+                            properties.name = row.n;
+                        }
+                        
+                        if (row.d) {
+                            properties.id = row.d;
+                        }
+
+                        if (row.f) {
+                            for (var j = 1; j <= 10; j++) {
+                                if (row.f["a"+j]) {
+                                    //attr01..attr10
+                                    properties["attr"+('0'+j).slice(-2)] = row.f["a"+j];
+                                }
+                            }
+                        }
+                        
+                        $.extend(row.geojson, {"properties":properties});
+                        
+                        this._loadGeoJson(row.geojson, {"idPropertyName":"id"});
                         
                     } else {
-                        // each data point is a pin info structure with x, y, etc. attributes
+                        // each row is a pin info structure with x, y, etc. attributes
 
-                        this.bounds.extend({lat:md.x,lng:md.y});
+                        this.bounds.extend({lat:row.x,lng:row.y});
                         
                         var marker = this._newMarker(md);
                         
@@ -1161,16 +1209,19 @@ $( function() {
                         this.markers.push(marker);
                         
                         // also put the id into the Map
-                        this.newIdMap.set(md.d, i);
+                        this.newIdMap.set(row.d, i);
 
                     }
                 }
                 
                 if (this.options.autoFitBounds) {
+
                     apex.debug("fitBounds",
                         this.bounds.getSouthWest().toJSON(),
                         this.bounds.getNorthEast().toJSON());
+
                     this.map.fitBounds(this.bounds);
+
                 }
 
                 this.totalRows += pData.mapdata.length;
