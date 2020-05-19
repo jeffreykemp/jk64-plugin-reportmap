@@ -57,6 +57,7 @@ $( function() {
         click                  : null, //simulate a click on a marker
         deleteAllFeatures      : null, //delete all features (drawing manager)
         deleteSelectedFeatures : null, //delete selected features (drawing manager)
+        hideMessage            : null, //hide the warning/error message
         geolocate              : null, //find the user's device location
         getAddressByPos        : null, //get closest address to the given location
         gotoAddress            : null, //search by address and place the pin there
@@ -66,7 +67,8 @@ $( function() {
         parseLatLng            : null, //parse a lat,lng string into a google.maps.LatLng
         refresh                : null, //refresh the map (re-run the query)
         showDirections         : null, //show route between two locations
-		showInfoWindow         : null  //set and show info window (popup) for a pin
+		showInfoWindow         : null, //set and show info window (popup) for a pin
+        showMessage            : null  //show a warning/error message
     },
     
     //return google maps LatLng based on parsing the given string
@@ -108,22 +110,29 @@ $( function() {
 	 * MESSAGE POPUP
 	 *
 	 */
-    
-    _showMessage: function (msg) {
-        apex.debug("reportmap._showMessage", msg);
-        //TODO: Improve message window #111
-        if (!this.infoWindow) {
-            this.infoWindow = new google.maps.InfoWindow();
-        }
-		this.infoWindow.setContent(msg);
-		this.infoWindow.setPosition(this.map.getCenter());
-        this.infoWindow.open(this.map);
+    showMessage: function (msg) {
+        apex.debug("reportmap.showMessage", msg);
+        
+        this.hideMessage();
+        
+        this.msgDiv = document.createElement('div');
+
+        var messageUI = document.createElement('div');
+        messageUI.className = 'reportmap-messageUI';
+        this.msgDiv.appendChild(messageUI);
+
+        var messageInner = document.createElement('div');
+        messageInner.className = 'reportmap-messageInner';
+        messageInner.innerHTML = msg;
+        messageUI.appendChild(messageInner);
+        
+        this.map.controls[google.maps.ControlPosition.LEFT_CENTER].push(this.msgDiv);
     },
     
-    _hideMessage: function() {
-        apex.debug("reportmap._hideMessage");
-        if (this.infoWindow) {
-            this.infoWindow.close();
+    hideMessage: function() {
+        apex.debug("reportmap.hideMessage");
+        if (this.msgDiv) {
+            this.msgDiv.remove();
         }
     },
 
@@ -361,7 +370,7 @@ $( function() {
     gotoAddress: function (addressText) {
         apex.debug("reportmap.gotoAddress", addressText);
         var geocoder = new google.maps.Geocoder;
-        this._hideMessage();
+        this.hideMessage();
         var _this = this;
         geocoder.geocode({
             address               : addressText,
@@ -393,7 +402,7 @@ $( function() {
     getAddressByPos: function (lat,lng) {
         apex.debug("reportmap.getAddressByPos", lat,lng);
         var geocoder = new google.maps.Geocoder;
-        this._hideMessage();
+        this.hideMessage();
         var _this = this;
         geocoder.geocode({'location': {lat: lat, lng: lng}}, function(results, status) {
             if (status === google.maps.GeocoderStatus.OK) {
@@ -407,7 +416,7 @@ $( function() {
                   });
                 } else {
                     apex.debug("getAddressByPos: No results found");
-                    _this._showMessage(_this.options.noAddressResults);
+                    _this.showMessage(_this.options.noAddressResults);
                 }
             } else {
                 apex.debug("Geocoder failed", status);
@@ -467,10 +476,10 @@ $( function() {
             });
             break;
         case google.maps.DirectionsStatus.NOT_FOUND:
-            this._showMessage(this.options.directionsNotFound);
+            this.showMessage(this.options.directionsNotFound);
             break;
         case google.maps.DirectionsStatus.ZERO_RESULTS:
-            this._showMessage(this.options.directionsZeroResults);
+            this.showMessage(this.options.directionsZeroResults);
             break;
         default:
             apex.debug("Directions request failed", status);
@@ -482,7 +491,7 @@ $( function() {
         apex.debug("reportmap.showDirections", origin, destination, travelMode);
         this.origin = origin;
         this.destination = destination;
-        this._hideMessage();
+        this.hideMessage();
         if (this.origin&&this.destination) {
             if (!this.directionsDisplay) {
                 this.directionsDisplay = new google.maps.DirectionsRenderer;
@@ -1267,7 +1276,7 @@ $( function() {
                     
                     if (this.options.noDataMessage !== "") {
                         apex.debug("show No Data Found infowindow");
-                        this._showMessage(this.options.noDataMessage);
+                        this.showMessage(this.options.noDataMessage);
                     }
                 
                 } else {
@@ -1337,7 +1346,7 @@ $( function() {
     // Called when created, and later when changing options
     refresh: function() {
         apex.debug("reportmap.refresh");
-        this._hideMessage();
+        this.hideMessage();
         if (this.options.expectData) {
             apex.jQuery("#"+this.options.regionId).trigger("apexbeforerefresh");
 
@@ -1392,7 +1401,7 @@ $( function() {
         if (this.directionsDisplay) { delete this.directionsDisplay; }
         if (this.directionsService) { delete this.directionsService; }
         this._removeMarkers();
-        this._hideMessage();
+        this.hideMessage();
         this.map.remove();
     },
 

@@ -45,9 +45,27 @@
 }
 .reportmap-controlCheckboxLabel {
 }
+.reportmap-messageUI {
+    background-color: #fff8a6;
+    border-radius: 2px;
+    box-shadow: 4px 4px 6px 1px rgba(0,0,0,.3);
+    margin: 10px;
+    text-align: center;
+    min-height: 36px;
+}
+.reportmap-messageInner {
+    color: #707070;
+    font-family: Roboto,Arial,sans-serif;
+    font-size: 16px;
+    min-width: 24px;
+    min-height: 24px;
+    line-height: 24px;
+    padding: 7px 12px 7px 12px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
 .reportmap-debugPanel {
-    background-color: #eee;
-    border: 2px solid #fff;
+    background-color: #f3f3f37d;
     margin-top: 2px;
     margin-bottom: 0px;
     margin-left: 2px;

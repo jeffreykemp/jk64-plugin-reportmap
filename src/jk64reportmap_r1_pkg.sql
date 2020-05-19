@@ -502,14 +502,9 @@ begin
 
     end if;
     
-    if l_dragdrop_geojson then
-        -- at this stage, the CSS file only contains styles used by the drag/drop geojson feature
-
-        apex_css.add_file
-            (p_name      => 'jk64reportmap_r1'
-            ,p_directory => p_plugin.file_prefix);
-
-    end if;
+    apex_css.add_file
+        (p_name      => 'jk64reportmap_r1'
+        ,p_directory => p_plugin.file_prefix);
     
     -- use nullif to convert default values to null; this reduces the footprint of the generated code
     l_opt := '{'
