@@ -1,5 +1,6 @@
 rem INSERTING into JK64DEMO_EARTHQUAKES
 set define off;
+truncate table jk64demo_earthquakes;
 insert into jk64demo_earthquakes values(33.5556667,-116.539,0.15);
 insert into jk64demo_earthquakes values(34.032,-117.5196667,0.86);
 insert into jk64demo_earthquakes values(63.5228,-148.9646,1.5);

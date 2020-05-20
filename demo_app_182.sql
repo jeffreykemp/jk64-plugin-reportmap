@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   08:39 Wednesday May 20, 2020
+--   Date and Time:   09:18 Wednesday May 20, 2020
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -115,7 +115,7 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20200520083930'
+,p_last_upd_yyyymmddhh24miss=>'20200520091835'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>19
 ,p_ui_type_name => null
@@ -21765,7 +21765,7 @@ wwv_flow_api.create_page(
 'Alternatively, you can load GeoJSON onto the map via the SQL Query.'))
 ,p_page_comment=>'This page requires the table jk64demo_countries.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20200520083038'
+,p_last_upd_yyyymmddhh24miss=>'20200520091053'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(53976929483556324)
@@ -21778,7 +21778,7 @@ wwv_flow_api.create_page_plug(
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'This page requires the country border geometry loaded into the jk64demo_countries table.',
 '<p>',
-'To load this data, run <code>jk64demo_countries_geometry.sql</code>. You can download this script from <a href="https://github.com/jeffreykemp/jk64-plugin-reportmap/tree/master/src" target=_blank>here</a>.'))
+'To load this data, run <code>jk64demo_countries_geometry.sql</code>. You can download this script from <a href="https://github.com/jeffreykemp/jk64-plugin-reportmap/tree/master/demo_src" target=_blank>here</a>.'))
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 ,p_plug_display_condition_type=>'NOT_EXISTS'
 ,p_plug_display_when_condition=>'select 1 from jk64demo_countries where geometry is not null'
@@ -22965,7 +22965,7 @@ wwv_flow_api.create_page(
 'A custom style hides all the labels and roads from the map.'))
 ,p_page_comment=>'This page requires the table jk64demo_countries.'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20200520083038'
+,p_last_upd_yyyymmddhh24miss=>'20200520091135'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(108624573787901255)
@@ -22978,7 +22978,7 @@ wwv_flow_api.create_page_plug(
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'This page requires the country border geometry loaded into the jk64demo_countries table.',
 '<p>',
-'To load this data, run <code>jk64demo_countries_geometry.sql</code>. You can download this script from <a href="https://github.com/jeffreykemp/jk64-plugin-reportmap/tree/master/src" target=_blank>here</a>.'))
+'To load this data, run <code>jk64demo_countries_geometry.sql</code>. You can download this script from <a href="https://github.com/jeffreykemp/jk64-plugin-reportmap/tree/master/demo_src" target=_blank>here</a>.'))
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 ,p_plug_display_condition_type=>'NOT_EXISTS'
 ,p_plug_display_when_condition=>'select 1 from jk64demo_countries where geometry is not null'
@@ -23361,7 +23361,7 @@ prompt --application/deployment/definition
 begin
 wwv_flow_api.create_install(
  p_id=>wwv_flow_api.id(54431867465452579)
-,p_welcome_message=>'This application installer will guide you through the process of creating your database objects and seed data.'
+,p_welcome_message=>'This application installer will guide you through the process of creating your database objects and seed data. This creates the tables JK64DEMO_COUNTRIES and JK64DEMO_EARTHQUAKES.'
 ,p_configuration_message=>'You can configure the following attributes of your application.'
 ,p_build_options_message=>'You can choose to include the following build options.'
 ,p_validation_message=>'The following validations will be performed to ensure your system is compatible with this application.'
@@ -23369,7 +23369,7 @@ wwv_flow_api.create_install(
 ,p_install_success_message=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'Your next step is to set the Google API Key. This is in Shared Components / Component Settings / JK64 Report Google Map R1 [Plug-in].',
 '',
-'The jk64demo tables have been created and populated with data, except for the country border geometry. To load the country border geometry, run the script src/jk64demo_countries_geometry.sql'))
+'The jk64demo tables have been created and populated with data, except for the country border geometry. To load the country border geometry, run the script demo_src/jk64demo_countries_geometry.sql'))
 ,p_upgrade_message=>'The application installer has detected that this application''s supporting objects were previously installed.  This wizard will guide you through the process of upgrading these supporting objects.'
 ,p_upgrade_confirm_message=>'Please confirm that you would like to install this application''s supporting objects.'
 ,p_upgrade_success_message=>'Your application''s supporting objects have been installed.'
@@ -23699,6 +23699,7 @@ wwv_flow_api.create_install_script(
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'rem INSERTING into JK64DEMO_EARTHQUAKES',
 'set define off;',
+'truncate table jk64demo_earthquakes;',
 'insert into jk64demo_earthquakes values(33.5556667,-116.539,0.15);',
 'insert into jk64demo_earthquakes values(34.032,-117.5196667,0.86);',
 'insert into jk64demo_earthquakes values(63.5228,-148.9646,1.5);',
@@ -24146,13 +24147,13 @@ wwv_flow_api.create_install_script(
 'insert into jk64demo_earthquakes values(61.0682,-149.3054,1.5);',
 'insert into jk64demo_earthquakes values(34.9265,-118.9873333,1.92);',
 'insert into jk64demo_earthquakes values(34.9213333,-118.9858333,1.16);',
-'insert into jk64demo_earthquakes values(54.9192,-159.9624,3.4);',
-'insert into '))
+'insert into jk64demo_earthquakes values'))
 );
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'jk64demo_earthquakes values(18.9179,-64.4038,3.1);',
+'(54.9192,-159.9624,3.4);',
+'insert into jk64demo_earthquakes values(18.9179,-64.4038,3.1);',
 'insert into jk64demo_earthquakes values(18.593,-67.4735,2.5);',
 'insert into jk64demo_earthquakes values(65.6109,-149.9196,1.4);',
 'insert into jk64demo_earthquakes values(35.7533333,-120.3001667,0.78);',
@@ -24601,8 +24602,7 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(63.2412,-151.67,1.3);',
 'insert into jk64demo_earthquakes values(38.4294,-118.2808,0.5);',
 'insert into jk64demo_earthquakes values(38.8355,-122.801,0.69);',
-'insert into jk64demo_earthquakes values(61.5594,-146.2929,1.5);',
-'insert into jk64demo_earthquakes '))
+'insert into jk64demo_earthquakes values(61.5594,-146.2929,1.'))
 );
 end;
 /
@@ -24610,7 +24610,8 @@ begin
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'values(18.9731,-65.3545,3.2);',
+'5);',
+'insert into jk64demo_earthquakes values(18.9731,-65.3545,3.2);',
 'insert into jk64demo_earthquakes values(19.4060001,-155.2788391,1.82);',
 'insert into jk64demo_earthquakes values(35.5536667,-118.3386667,1.21);',
 'insert into jk64demo_earthquakes values(18.523,-68.4535,4.3);',
@@ -25061,13 +25062,13 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(38.7944984,-122.7458344,0.42);',
 'insert into jk64demo_earthquakes values(63.2245,-150.6976,1.8);',
 'insert into jk64demo_earthquakes values(37.099,-117.8848,1.6);',
-'insert into jk64demo_earthquakes values(51.5496,-173.9207,5.4);',
-'insert into'))
+'insert into jk64demo_earthquakes value'))
 );
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-' jk64demo_earthquakes values(61.5857,-146.5126,1.3);',
+'s(51.5496,-173.9207,5.4);',
+'insert into jk64demo_earthquakes values(61.5857,-146.5126,1.3);',
 'insert into jk64demo_earthquakes values(33.4533333,-116.5856667,0.84);',
 'insert into jk64demo_earthquakes values(39.2228333,-110.4613333,1.55);',
 'insert into jk64demo_earthquakes values(44.3386667,-110.5358333,0.94);',
@@ -25511,8 +25512,7 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(38.8245,-122.8261667,1.08);',
 'insert into jk64demo_earthquakes values(59.9445,-153.6775,3.2);',
 'insert into jk64demo_earthquakes values(37.9708,-118.7054,0.9);',
-'insert into jk64demo_earthquakes values(60.2158,-152.8698,0.7);',
-'insert into jk6'))
+'insert into jk64demo_earthquakes values(60'))
 );
 end;
 /
@@ -25520,7 +25520,8 @@ begin
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'4demo_earthquakes values(61.5706,-140.9968,1.2);',
+'.2158,-152.8698,0.7);',
+'insert into jk64demo_earthquakes values(61.5706,-140.9968,1.2);',
 'insert into jk64demo_earthquakes values(63.0667,-148.3679,0.9);',
 'insert into jk64demo_earthquakes values(33.5058333,-116.457,2.13);',
 'insert into jk64demo_earthquakes values(33.8883333,-116.2333333,1.13);',
@@ -25967,12 +25968,12 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(63.5272,-147.1798,1.7);',
 'insert into jk64demo_earthquakes values(38.7866667,-122.9061667,0.62);',
 'insert into jk64demo_earthquakes values(52.1098,-173.3694,1.8);',
-'insert into jk64demo_earthquakes values(36'))
+'inse'))
 );
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'.9604,-116.1149,-0.2);',
+'rt into jk64demo_earthquakes values(36.9604,-116.1149,-0.2);',
 'insert into jk64demo_earthquakes values(41.8717,-119.6629,1);',
 'insert into jk64demo_earthquakes values(35.9815,-120.5418333,1.2);',
 'insert into jk64demo_earthquakes values(19.3993333,-155.6183333,0.67);',
@@ -26419,7 +26420,7 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(59.9584,-140.1527,1.2);',
 'insert into jk64demo_earthquakes values(61.6535,-151.6671,1.7);',
 'insert into jk64demo_earthquakes values(36.0038333,-117.892,0.87);',
-'insert into jk64demo_earthquakes values(53.4219,-'))
+'insert into'))
 );
 end;
 /
@@ -26427,7 +26428,7 @@ begin
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'165.6088,3.3);',
+' jk64demo_earthquakes values(53.4219,-165.6088,3.3);',
 'insert into jk64demo_earthquakes values(59.8336,-152.8742,1.9);',
 'insert into jk64demo_earthquakes values(38.8409996,-122.8398361,0.18);',
 'insert into jk64demo_earthquakes values(38.8418333,-122.8385,2.59);',
@@ -26876,13 +26877,13 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(37.7808333,-121.9675,1.83);',
 'insert into jk64demo_earthquakes values(38.806,-122.7916667,1.11);',
 'insert into jk64demo_earthquakes values(33.9265,-117.9325,1.33);',
-'insert into jk64demo_earthquakes values(33.0256667,-116.4313333,1.39);',
-'insert into jk64'))
+'insert into jk64demo_earthquakes values(33.0256667'))
 );
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'demo_earthquakes values(60.3194,-153.0599,1.6);',
+',-116.4313333,1.39);',
+'insert into jk64demo_earthquakes values(60.3194,-153.0599,1.6);',
 'insert into jk64demo_earthquakes values(61.569,-141.2646,0.8);',
 'insert into jk64demo_earthquakes values(38.044,-118.5889,1.2);',
 'insert into jk64demo_earthquakes values(36.0225,-117.796,0.55);',
@@ -27331,8 +27332,7 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(38.825,-122.824,0.46);',
 'insert into jk64demo_earthquakes values(37.1685,-117.3597,0.4);',
 'insert into jk64demo_earthquakes values(-38.2012,176.6941,4.2);',
-'insert into jk64demo_earthquakes values(36.1641667,-119.9773333,1.84);',
-'insert into jk64demo_ea'))
+'insert into jk64demo_earthquakes values(36.1641667,-119.9'))
 );
 end;
 /
@@ -27340,7 +27340,8 @@ begin
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'rthquakes values(60.2769,-138.6853,1.6);',
+'773333,1.84);',
+'insert into jk64demo_earthquakes values(60.2769,-138.6853,1.6);',
 'insert into jk64demo_earthquakes values(38.7916,-119.7,1.2);',
 'insert into jk64demo_earthquakes values(38.2286667,-112.324,0.91);',
 'insert into jk64demo_earthquakes values(38.6556,-118.7878,0.8);',
@@ -27789,13 +27790,13 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(36.361,-120.407,2.28);',
 'insert into jk64demo_earthquakes values(36.014,-120.575,0.42);',
 'insert into jk64demo_earthquakes values(63.8303,-147.6146,1.3);',
-'insert into jk64demo_earthquakes values(60.2944,-153.0351,1.6);',
-'insert into jk64'))
+'insert into jk64demo_earthquakes values(60.'))
 );
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'demo_earthquakes values(38.8161659,-122.8184967,0.69);',
+'2944,-153.0351,1.6);',
+'insert into jk64demo_earthquakes values(38.8161659,-122.8184967,0.69);',
 'insert into jk64demo_earthquakes values(61.4379,-150.9865,1.1);',
 'insert into jk64demo_earthquakes values(34.6183333,-116.6411667,1.34);',
 'insert into jk64demo_earthquakes values(19.3764992,-155.553833,1.71);',
@@ -28243,7 +28244,7 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(38.8166656,-122.8311691,0.64);',
 'insert into jk64demo_earthquakes values(38.8276672,-122.7994995,0.88);',
 'insert into jk64demo_earthquakes values(59.5817,-152.9894,1.9);',
-'insert into jk64demo_earthquakes values(33.988,-117.141166'))
+'insert into jk64demo'))
 );
 end;
 /
@@ -28251,7 +28252,7 @@ begin
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'7,0.82);',
+'_earthquakes values(33.988,-117.1411667,0.82);',
 'insert into jk64demo_earthquakes values(-8.923,108.1165,4.2);',
 'insert into jk64demo_earthquakes values(51.7416,178.6777,3.9);',
 'insert into jk64demo_earthquakes values(39.6074,-116.9651,1.9);',
@@ -28699,12 +28700,12 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(37.4628,-116.5479,-0.3);',
 'insert into jk64demo_earthquakes values(37.5596667,-118.869,0.13);',
 'insert into jk64demo_earthquakes values(37.6131667,-118.8666667,-0.19);',
-'insert into jk64demo_earthquakes values(33.8198333,-116.9846667,0.'))
+'insert into jk64demo_earthqu'))
 );
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'81);',
+'akes values(33.8198333,-116.9846667,0.81);',
 'insert into jk64demo_earthquakes values(44.6923333,-111.8486667,0.97);',
 'insert into jk64demo_earthquakes values(38.8246667,-122.8475,0.14);',
 'insert into jk64demo_earthquakes values(44.6938333,-111.8201667,1.26);',
@@ -29154,7 +29155,7 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(60.9873,-147.7693,1.4);',
 'insert into jk64demo_earthquakes values(-8.2311,120.6248,4);',
 'insert into jk64demo_earthquakes values(0.3521,98.6182,4);',
-'insert into jk64demo_earthquakes value'))
+''))
 );
 end;
 /
@@ -29162,7 +29163,7 @@ begin
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'s(41.8773,-119.622,1.2);',
+'insert into jk64demo_earthquakes values(41.8773,-119.622,1.2);',
 'insert into jk64demo_earthquakes values(18.8283,-64.6695,3.1);',
 'insert into jk64demo_earthquakes values(49.0178333,-125.607,1.93);',
 'insert into jk64demo_earthquakes values(45.6305,-118.8786667,1.85);',
@@ -29613,12 +29614,12 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(36.4701,-98.7444,2.4);',
 'insert into jk64demo_earthquakes values(38.8233337,-122.7798309,0.53);',
 'insert into jk64demo_earthquakes values(64.8627,-148.6977,0.3);',
-'insert into jk64demo_earthquakes values(19.0312,-66.341,2.7)'))
+'insert into jk64demo_e'))
 );
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-';',
+'arthquakes values(19.0312,-66.341,2.7);',
 'insert into jk64demo_earthquakes values(-21.4311,-68.515,3.9);',
 'insert into jk64demo_earthquakes values(19.1644,-64.8414,3.4);',
 'insert into jk64demo_earthquakes values(34.0398333,-117.2431667,0.74);',
@@ -30064,7 +30065,7 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(19.3651667,-155.1933333,1.99);',
 'insert into jk64demo_earthquakes values(59.7075,-153.2584,2);',
 'insert into jk64demo_earthquakes values(19.0058,-66.8312,2.7);',
-'insert into jk64demo_earthquakes values(37.6683,-11'))
+'insert into j'))
 );
 end;
 /
@@ -30072,7 +30073,7 @@ begin
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'8.0447,0.8);',
+'k64demo_earthquakes values(37.6683,-118.0447,0.8);',
 'insert into jk64demo_earthquakes values(37.0972,-117.1205,-0.2);',
 'insert into jk64demo_earthquakes values(47.7673333,-122.1495,1.34);',
 'insert into jk64demo_earthquakes values(52.143,-175.7494,1.8);',
@@ -30520,12 +30521,12 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(38.8216667,-122.84,1.04);',
 'insert into jk64demo_earthquakes values(38.8198333,-122.8431667,0.77);',
 'insert into jk64demo_earthquakes values(37.575,-118.864,0.47);',
-'insert into jk64demo_earthquakes values'))
+'i'))
 );
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'(38.8230019,-122.8268356,0.43);',
+'nsert into jk64demo_earthquakes values(38.8230019,-122.8268356,0.43);',
 'insert into jk64demo_earthquakes values(33.7231667,-116.8255,0.88);',
 'insert into jk64demo_earthquakes values(59.9896,-151.7169,1.3);',
 'insert into jk64demo_earthquakes values(44.736,-111.1473333,0.45);',
@@ -30974,7 +30975,7 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(37.3292,-116.3772,0);',
 'insert into jk64demo_earthquakes values(3.2761,125.2463,4);',
 'insert into jk64demo_earthquakes values(53.7254,-163.0034,2.8);',
-'insert into jk64demo_earthquakes values(34.447,-'))
+'insert int'))
 );
 end;
 /
@@ -30982,7 +30983,7 @@ begin
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'117.941,0.84);',
+'o jk64demo_earthquakes values(34.447,-117.941,0.84);',
 'insert into jk64demo_earthquakes values(38.6599,-118.7921,1.1);',
 'insert into jk64demo_earthquakes values(60.3928,-139.4396,1.5);',
 'insert into jk64demo_earthquakes values(37.568,-118.8555,0.12);',
@@ -31431,12 +31432,12 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(62.4312,-149.7817,1.2);',
 'insert into jk64demo_earthquakes values(37.7887,-117.7313,1.4);',
 'insert into jk64demo_earthquakes values(64.1898,-147.5662,2.4);',
-'insert into jk64demo_earthquakes values(61.4924,-149.873'))
+'insert into jk64de'))
 );
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'6,2.1);',
+'mo_earthquakes values(61.4924,-149.8736,2.1);',
 'insert into jk64demo_earthquakes values(60.219,-141.1477,1.2);',
 'insert into jk64demo_earthquakes values(41.8978,-119.595,2.2);',
 'insert into jk64demo_earthquakes values(60.2485,-141.1375,1.2);',
@@ -31885,7 +31886,7 @@ wwv_flow_api.append_to_install_script(
 'insert into jk64demo_earthquakes values(61.7509,-149.4278,1.3);',
 'insert into jk64demo_earthquakes values(37.5851667,-118.8608333,0.11);',
 'insert into jk64demo_earthquakes values(66.9091,-149.7532,1.2);',
-'insert into jk64demo_earthquakes values(51.90'))
+'insert '))
 );
 end;
 /
@@ -31893,7 +31894,7 @@ begin
 wwv_flow_api.append_to_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'54,-169.6714,4.4);',
+'into jk64demo_earthquakes values(51.9054,-169.6714,4.4);',
 'insert into jk64demo_earthquakes values(38.8156662,-122.762001,1);',
 'insert into jk64demo_earthquakes values(37.2803,-114.6454,1.8);',
 'insert into jk64demo_earthquakes values(37.5886667,-118.8598333,-0.09);',
