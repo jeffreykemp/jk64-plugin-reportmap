@@ -6,43 +6,43 @@
 
 The plugin provides a rich array of built-in declarative features, dynamic actions and associated API routines, and gives access to the underlying Google Maps object so you can customise it with any other behaviour you need.
 
-![plugin-reportmap-markers.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-markers.png)
+![plugin-reportmap-markers.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/demo_src/images/plugin-reportmap-markers.png)
 
 The user can click any marker to see a popup info window for it.
 
 ### Visualisation: Marker Clustering
 
-![plugin-reportmap-clustering.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-clustering.png)
+![plugin-reportmap-clustering.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/demo_src/images/plugin-reportmap-clustering.png)
 
 If many pins are too close together, Marker Clustering merges them into a single cluster; the number indicates how many pins are at that location. As the user zooms in or out, the clusters will split up or merge as needed.
 
 ### Visualisation: Spiderfier
 
-![spiderfier.gif](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/spiderfier.gif)
+![spiderfier.gif](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/demo_src/images/spiderfier.gif)
 
 If many pins are too close together or overlapping, the Spiderfier shifts them when clicked into a ring or spiral with lines pointing back to their original location.
 
 ### Visualisation: Heatmap
 
-![plugin-reportmap-heatmap.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-heatmap.png)
+![plugin-reportmap-heatmap.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/demo_src/images/plugin-reportmap-heatmap.png)
 
 This is suitable for a large volume of data points. Each data point can have a "weight" which indicates the magnitude of some measure.
 
 ### Visualisation: Directions
 
-![plugin-reportmap-route.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-route.png)
+![plugin-reportmap-route.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/demo_src/images/plugin-reportmap-route.png)
 
 Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to derive a route. Google Maps can generate a route for Driving, Walking, Bicycling, or Transit (public transport). The plugin can also get the calculated total Distance and Time for the route.
 
 ### Drawing & GeoJSON
 
-![plugin-reportmap-drawing.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/plugin-reportmap-drawing.png)
+![plugin-reportmap-drawing.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/demo_src/images/plugin-reportmap-drawing.png)
 
 Allow users to interactively draw shapes (points, lines, polygons, and holes in polygons) onto the map. Export the shapes as a GeoJSON document. Load shapes from a GeoJSON document.
 
 ## DEMO
 
-[![demo_app.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/images/demo_app.png)](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)
+[![demo_app.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/demo_src/images/demo_app.png)](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)
 
 **[DEMO - apex.oracle.com](https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map/home)**
 
