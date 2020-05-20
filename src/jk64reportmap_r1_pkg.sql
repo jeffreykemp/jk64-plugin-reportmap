@@ -1,4 +1,4 @@
-/**********************************************************
+--/**********************************************************
 create or replace package jk64reportmap_r1_pkg as
 -- jk64 ReportMap v1.3 May 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
@@ -23,7 +23,7 @@ end jk64reportmap_r1_pkg;
 /
 
 create or replace package body jk64reportmap_r1_pkg as
-**********************************************************/
+--**********************************************************/
 -- jk64 ReportMap v1.3 May 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
@@ -504,7 +504,9 @@ begin
     
     apex_css.add_file
         (p_name      => 'jk64reportmap_r1'
-        ,p_directory => p_plugin.file_prefix);
+                     || case when not apex_application.g_debug then '.min' end
+        ,p_directory => p_plugin.file_prefix
+        );
     
     -- use nullif to convert default values to null; this reduces the footprint of the generated code
     l_opt := '{'
@@ -624,7 +626,7 @@ exception
         return l_result;
 end ajax;
 
-/**********************************************************
+--/**********************************************************
 end jk64reportmap_r1_pkg;
 /
-**********************************************************/
+--**********************************************************/
