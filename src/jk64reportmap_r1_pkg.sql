@@ -1,6 +1,6 @@
---/**********************************************************
+/**********************************************************
 create or replace package jk64reportmap_r1_pkg as
--- jk64 ReportMap v1.3 May 2020
+-- jk64 ReportMap v1.4 May 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -23,8 +23,8 @@ end jk64reportmap_r1_pkg;
 /
 
 create or replace package body jk64reportmap_r1_pkg as
---**********************************************************/
--- jk64 ReportMap v1.3 May 2020
+**********************************************************/
+-- jk64 ReportMap v1.4 May 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -480,11 +480,6 @@ begin
         ,p_skip_extension => true
         ,p_key            => 'https://maps.googleapis.com/maps/api/js' -- don't load multiple google maps APIs on same page
         );
-    
-    apex_javascript.add_library
-        (p_name                  => 'jk64reportmap_r1'
-        ,p_directory             => p_plugin.file_prefix
-        ,p_check_to_add_minified => true );
 
     if l_visualisation = g_visualisation_cluster then
 
@@ -501,12 +496,6 @@ begin
             ,p_directory => p_plugin.file_prefix);
 
     end if;
-    
-    apex_css.add_file
-        (p_name      => 'jk64reportmap_r1'
-                     || case when not apex_application.g_debug then '.min' end
-        ,p_directory => p_plugin.file_prefix
-        );
     
     -- use nullif to convert default values to null; this reduces the footprint of the generated code
     l_opt := '{'
@@ -626,7 +615,7 @@ exception
         return l_result;
 end ajax;
 
---/**********************************************************
+/**********************************************************
 end jk64reportmap_r1_pkg;
 /
---**********************************************************/
+**********************************************************/

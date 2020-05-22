@@ -1,5 +1,5 @@
 /*
-jk64 ReportMap v1.3 May 2020
+jk64 ReportMap v1.4 May 2020
 https://github.com/jeffreykemp/jk64-plugin-reportmap
 Copyright (c) 2016 - 2020 Jeffrey Kemp
 Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -392,6 +392,9 @@ $( function() {
                     lng    : pos.lng(),
                     result : results[0]
                 });
+            } else if (status === google.maps.GeocoderStatus.ZERO_RESULTS) {
+                apex.debug("getAddressByPos: ZERO_RESULTS");
+                _this.showMessage(_this.options.noAddressResults);
             } else {
                 apex.debug("Geocoder failed", status);
             }
@@ -415,9 +418,12 @@ $( function() {
                       result : results[0]
                   });
                 } else {
-                    apex.debug("getAddressByPos: No results found");
+                    apex.debug("getAddressByPos: No results returned");
                     _this.showMessage(_this.options.noAddressResults);
                 }
+            } else if (status === google.maps.GeocoderStatus.ZERO_RESULTS) {
+                apex.debug("getAddressByPos: ZERO_RESULTS");
+                _this.showMessage(_this.options.noAddressResults);
             } else {
                 apex.debug("Geocoder failed", status);
             }
