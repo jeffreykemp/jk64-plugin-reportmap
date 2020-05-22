@@ -48,6 +48,7 @@ wwv_flow_api.create_plugin(
 '    l_page_item      plugin_attr := p_dynamic_action.attribute_03;',
 '    l_selector       plugin_attr := p_dynamic_action.attribute_04;',
 '    l_static_value   plugin_attr := p_dynamic_action.attribute_05;',
+'    l_js_expression  plugin_attr := p_dynamic_action.attribute_06;',
 '    ',
 '    l_action_js      varchar2(1000);',
 '    l_val_js         varchar2(1000);',
@@ -61,16 +62,21 @@ wwv_flow_api.create_plugin(
 '    end if;',
 '    ',
 '    l_action_js := case l_action',
+'        when ''geolocate'' then',
+'            ''$("#map_"+e.id).reportmap("geolocate");''',
 '        when ''gotoAddress'' then',
 '            ''$("#map_"+e.id).reportmap("gotoAddress",#VAL#);''',
 '        when ''gotoPosByString'' then',
 '            ''$("#map_"+e.id).reportmap("gotoPosByString",#VAL#);''',
-'        when ''geolocate'' then',
-'            ''$("#map_"+e.id).reportmap("geolocate");''',
 '        when ''hideMessage'' then',
 '            ''$("#map_"+e.id).reportmap("hideMessage");''',
+'        when ''panTo'' then',
+'            ''var r = $("#map_"+e.id).reportmap("instance");''',
+'         || ''r.map.panTo(r.parseLatLng(#VAL#));''',
+'        when ''setMapType'' then',
+'            ''$("#map_"+e.id).reportmap("instance").map.setMapTypeId(#VAL#);''',
 '        when ''setTilt'' then',
-'            ''$("#map_"+e.id).reportmap("instance").map.setTilt(#VAL#);''',
+'            ''$("#map_"+e.id).reportmap("instance").map.setTilt(parseInt(#VAL#));''',
 '        when ''setZoom'' then',
 '            ''$("#map_"+e.id).reportmap("instance").map.setZoom(parseInt(#VAL#));''',
 '        when ''showMessage'' then',
@@ -93,6 +99,8 @@ wwv_flow_api.create_plugin(
 '                ''var val=$v("'' || apex_javascript.escape(l_page_item) || ''");''',
 '            when ''jquerySelector'' then',
 '                ''var val=$("'' || apex_javascript.escape(l_selector) || ''").val();''',
+'            when ''javascriptExpression'' then',
+'                ''var val='' || l_js_expression || '';''',
 '            when ''static'' then',
 '                ''var val="'' || apex_javascript.escape(l_static_value) || ''";''',
 '            end;',
@@ -118,7 +126,7 @@ wwv_flow_api.create_plugin(
 'end render;'))
 ,p_api_version=>2
 ,p_render_function=>'render'
-,p_standard_attributes=>'REGION:REQUIRED:STOP_EXECUTION_ON_ERROR:WAIT_FOR_RESULT'
+,p_standard_attributes=>'REGION:REQUIRED'
 ,p_substitute_attributes=>true
 ,p_subscribe_plugin_settings=>true
 ,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -182,9 +190,25 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_help_text=>'Zoom the map to a particular level (0..23)'
 );
 wwv_flow_api.create_plugin_attr_value(
- p_id=>wwv_flow_api.id(57817147523510779)
+ p_id=>wwv_flow_api.id(57894251405928111)
 ,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
 ,p_display_sequence=>50
+,p_display_value=>'Pan To'
+,p_return_value=>'panTo'
+,p_help_text=>'Move the map centered on the given point. Value must be a Lat,Long (e.g. "27.1751448 78.0421422").'
+);
+wwv_flow_api.create_plugin_attr_value(
+ p_id=>wwv_flow_api.id(57907078940170846)
+,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
+,p_display_sequence=>60
+,p_display_value=>'Set Map Type'
+,p_return_value=>'setMapType'
+,p_help_text=>'Set the map type. Value must be one of ''hybrid'', ''roadmap'', ''satellite'' or ''terrain''.'
+);
+wwv_flow_api.create_plugin_attr_value(
+ p_id=>wwv_flow_api.id(57817147523510779)
+,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
+,p_display_sequence=>70
 ,p_display_value=>'Set the map Tilt'
 ,p_return_value=>'setTilt'
 ,p_help_text=>unistr('Controls the automatic switching behavior for the angle of incidence of the map. The only allowed values are 0 and 45. setTilt(0) causes the map to always use a 0\00B0 overhead view regardless of the zoom level and viewport. setTilt(45) causes the tilt a')
@@ -194,7 +218,7 @@ wwv_flow_api.create_plugin_attr_value(
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(57817500656515247)
 ,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
-,p_display_sequence=>60
+,p_display_sequence=>90
 ,p_display_value=>'Show Message'
 ,p_return_value=>'showMessage'
 ,p_help_text=>'Show a Warning/Error message. The message is shown in a light yellow box centered left in the viewing window.'
@@ -202,7 +226,7 @@ wwv_flow_api.create_plugin_attr_value(
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(57817916181517142)
 ,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
-,p_display_sequence=>70
+,p_display_sequence=>95
 ,p_display_value=>'Hide Message'
 ,p_return_value=>'hideMessage'
 ,p_help_text=>'Hide the Warning/Error message.'
@@ -221,7 +245,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_depending_on_attribute_id=>wwv_flow_api.id(57802829130296320)
 ,p_depending_on_has_to_exist=>true
 ,p_depending_on_condition_type=>'IN_LIST'
-,p_depending_on_expression=>'gotoAddress,gotoPosByString,setTilt,setZoom,showMessage'
+,p_depending_on_expression=>'gotoAddress,gotoPosByString,panTo,setMapType,setTilt,setZoom,showMessage'
 ,p_lov_type=>'STATIC'
 );
 wwv_flow_api.create_plugin_attr_value(
@@ -233,14 +257,6 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_help_text=>'Get the value from the item that the Dynamic Action is on.'
 );
 wwv_flow_api.create_plugin_attr_value(
- p_id=>wwv_flow_api.id(57806470419573588)
-,p_plugin_attribute_id=>wwv_flow_api.id(57805029860565721)
-,p_display_sequence=>20
-,p_display_value=>'jQuery Selector'
-,p_return_value=>'jquerySelector'
-,p_help_text=>'Specify a jQuery Selector to provide the source value for the action'
-);
-wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(57808035065593405)
 ,p_plugin_attribute_id=>wwv_flow_api.id(57805029860565721)
 ,p_display_sequence=>30
@@ -249,9 +265,25 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_help_text=>'Specify an item on the page to provide the source value for the action.'
 );
 wwv_flow_api.create_plugin_attr_value(
- p_id=>wwv_flow_api.id(57821955593589586)
+ p_id=>wwv_flow_api.id(57806470419573588)
 ,p_plugin_attribute_id=>wwv_flow_api.id(57805029860565721)
 ,p_display_sequence=>40
+,p_display_value=>'jQuery Selector'
+,p_return_value=>'jquerySelector'
+,p_help_text=>'Specify a jQuery Selector to provide the source value for the action'
+);
+wwv_flow_api.create_plugin_attr_value(
+ p_id=>wwv_flow_api.id(57867355839554570)
+,p_plugin_attribute_id=>wwv_flow_api.id(57805029860565721)
+,p_display_sequence=>50
+,p_display_value=>'JavaScript Expression'
+,p_return_value=>'javascriptExpression'
+,p_help_text=>'Set the value using a JavaScript expression.'
+);
+wwv_flow_api.create_plugin_attr_value(
+ p_id=>wwv_flow_api.id(57821955593589586)
+,p_plugin_attribute_id=>wwv_flow_api.id(57805029860565721)
+,p_display_sequence=>60
 ,p_display_value=>'Static Value'
 ,p_return_value=>'static'
 ,p_help_text=>'Set a single static value.'
@@ -309,6 +341,22 @@ wwv_flow_api.create_plugin_attribute(
 ,p_depending_on_condition_type=>'EQUALS'
 ,p_depending_on_expression=>'static'
 ,p_help_text=>'Enter the value to be used. Substitution syntax allowed.'
+);
+wwv_flow_api.create_plugin_attribute(
+ p_id=>wwv_flow_api.id(57875320723568809)
+,p_plugin_id=>wwv_flow_api.id(57800177599111254)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>6
+,p_display_sequence=>60
+,p_prompt=>'JavaScript Expression'
+,p_attribute_type=>'JAVASCRIPT'
+,p_is_required=>true
+,p_is_translatable=>false
+,p_depending_on_attribute_id=>wwv_flow_api.id(57805029860565721)
+,p_depending_on_has_to_exist=>true
+,p_depending_on_condition_type=>'EQUALS'
+,p_depending_on_expression=>'javascriptExpression'
+,p_help_text=>'Specify the JavaScript expression to use to set the value for the action.'
 );
 end;
 /
