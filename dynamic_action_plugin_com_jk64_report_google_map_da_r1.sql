@@ -62,14 +62,25 @@ wwv_flow_api.create_plugin(
 '    end if;',
 '    ',
 '    l_action_js := case l_action',
+'        when ''deleteAllFeatures'' then',
+'            ''$("#map_"+e.id).reportmap("deleteAllFeatures");''',
+'        when ''deleteSelectedFeatures'' then',
+'            ''$("#map_"+e.id).reportmap("deleteSelectedFeatures");''',
+'        when ''fitBounds'' then',
+'            ''$("#map_"+e.id).reportmap("fitBounds",#VAL#);''',
 '        when ''geolocate'' then',
 '            ''$("#map_"+e.id).reportmap("geolocate");''',
+'        when ''getAddressByPos'' then',
+'            ''var pos = $("#map_"+e.id).reportmap("instance").parseLatLng(#VAL#);''',
+'         || ''$("#map_"+e.id).reportmap("getAddressByPos",pos.lat(),pos.lng());''',
 '        when ''gotoAddress'' then',
 '            ''$("#map_"+e.id).reportmap("gotoAddress",#VAL#);''',
 '        when ''gotoPosByString'' then',
 '            ''$("#map_"+e.id).reportmap("gotoPosByString",#VAL#);''',
 '        when ''hideMessage'' then',
 '            ''$("#map_"+e.id).reportmap("hideMessage");''',
+'        when ''loadGeoJsonString'' then',
+'            ''$("#map_"+e.id).reportmap("loadGeoJsonString",#VAL#);''',
 '        when ''panTo'' then',
 '            ''var r = $("#map_"+e.id).reportmap("instance");''',
 '         || ''r.map.panTo(r.parseLatLng(#VAL#));''',
@@ -104,6 +115,10 @@ wwv_flow_api.create_plugin(
 '            when ''static'' then',
 '                ''var val="'' || apex_javascript.escape(l_static_value) || ''";''',
 '            end;',
+'        ',
+'        if l_val_js is null then',
+'            raise_application_error(-20000, ''Plugin error: unrecognised source type ('' || l_source_type || '')'');',
+'        end if;',
 '',
 '    end if;',
 '',
@@ -166,12 +181,20 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_help_text=>'Search the map for the given address (e.g. "Koombana Drive, Bunbury, Western Australia"), point of interest ("Fern Pool, Karijini, Western Australia"), or lat/long (e.g. "-33.64392 115.34432").'
 );
 wwv_flow_api.create_plugin_attr_value(
- p_id=>wwv_flow_api.id(57814589884382172)
+ p_id=>wwv_flow_api.id(58152257519322076)
 ,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
 ,p_display_sequence=>20
+,p_display_value=>'Get Address at Location'
+,p_return_value=>'getAddressByPos'
+,p_help_text=>'Find the closest address to a given location by lat/long. When this action is executed, the address is returned via the addressFound event.'
+);
+wwv_flow_api.create_plugin_attr_value(
+ p_id=>wwv_flow_api.id(57814589884382172)
+,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
+,p_display_sequence=>25
 ,p_display_value=>'Place Marker'
 ,p_return_value=>'gotoPosByString'
-,p_help_text=>'Move or place the marker at a given position (lat, long).'
+,p_help_text=>'Move or place the marker at a given position (lat, long). Position may be provided as a LatLngLiteral, e.g. {"lat":-34, "lng":151}'
 );
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(57816364090492387)
@@ -198,9 +221,17 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_help_text=>'Move the map centered on the given point. Value must be a Lat,Long (e.g. "27.1751448 78.0421422").'
 );
 wwv_flow_api.create_plugin_attr_value(
- p_id=>wwv_flow_api.id(57907078940170846)
+ p_id=>wwv_flow_api.id(58093029966826147)
 ,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
 ,p_display_sequence=>60
+,p_display_value=>'Fit Bounds'
+,p_return_value=>'fitBounds'
+,p_help_text=>'Pan/Zoom the map so that it fits the specified bounds. The value must be provided as a LatLngBounds object or a LatLngBoundsLiteral, e.g. {"south":-37.71010, "west":87.56120, "north":-9.95828, "east":150.66667}'
+);
+wwv_flow_api.create_plugin_attr_value(
+ p_id=>wwv_flow_api.id(57907078940170846)
+,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
+,p_display_sequence=>80
 ,p_display_value=>'Set Map Type'
 ,p_return_value=>'setMapType'
 ,p_help_text=>'Set the map type. Value must be one of ''hybrid'', ''roadmap'', ''satellite'' or ''terrain''.'
@@ -208,7 +239,7 @@ wwv_flow_api.create_plugin_attr_value(
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(57817147523510779)
 ,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
-,p_display_sequence=>70
+,p_display_sequence=>90
 ,p_display_value=>'Set the map Tilt'
 ,p_return_value=>'setTilt'
 ,p_help_text=>unistr('Controls the automatic switching behavior for the angle of incidence of the map. The only allowed values are 0 and 45. setTilt(0) causes the map to always use a 0\00B0 overhead view regardless of the zoom level and viewport. setTilt(45) causes the tilt a')
@@ -216,9 +247,33 @@ wwv_flow_api.create_plugin_attr_value(
 ||'ybrid map types, within some locations, and at some zoom levels.'
 );
 wwv_flow_api.create_plugin_attr_value(
+ p_id=>wwv_flow_api.id(58065082370762244)
+,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
+,p_display_sequence=>100
+,p_display_value=>'Load GeoJSON'
+,p_return_value=>'loadGeoJsonString'
+,p_help_text=>'Load one or more features specified in a GeoJSON document.'
+);
+wwv_flow_api.create_plugin_attr_value(
+ p_id=>wwv_flow_api.id(58127610056506475)
+,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
+,p_display_sequence=>110
+,p_display_value=>'Delete All Features'
+,p_return_value=>'deleteAllFeatures'
+,p_help_text=>'Remove all features (e.g. those loaded via GeoJson, or drawn by the user).'
+);
+wwv_flow_api.create_plugin_attr_value(
+ p_id=>wwv_flow_api.id(58128069027507644)
+,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
+,p_display_sequence=>120
+,p_display_value=>'Delete Selected Features'
+,p_return_value=>'deleteSelectedFeatures'
+,p_help_text=>'Remove selected features (e.g. those loaded via GeoJson, or drawn by the user).'
+);
+wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(57817500656515247)
 ,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
-,p_display_sequence=>90
+,p_display_sequence=>200
 ,p_display_value=>'Show Message'
 ,p_return_value=>'showMessage'
 ,p_help_text=>'Show a Warning/Error message. The message is shown in a light yellow box centered left in the viewing window.'
@@ -226,7 +281,7 @@ wwv_flow_api.create_plugin_attr_value(
 wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(57817916181517142)
 ,p_plugin_attribute_id=>wwv_flow_api.id(57802829130296320)
-,p_display_sequence=>95
+,p_display_sequence=>210
 ,p_display_value=>'Hide Message'
 ,p_return_value=>'hideMessage'
 ,p_help_text=>'Hide the Warning/Error message.'
@@ -245,7 +300,7 @@ wwv_flow_api.create_plugin_attribute(
 ,p_depending_on_attribute_id=>wwv_flow_api.id(57802829130296320)
 ,p_depending_on_has_to_exist=>true
 ,p_depending_on_condition_type=>'IN_LIST'
-,p_depending_on_expression=>'gotoAddress,gotoPosByString,panTo,setMapType,setTilt,setZoom,showMessage'
+,p_depending_on_expression=>'fitBounds,getAddressByPos,gotoAddress,gotoPosByString,loadGeoJsonString,panTo,setMapType,setTilt,setZoom,showMessage'
 ,p_lov_type=>'STATIC'
 );
 wwv_flow_api.create_plugin_attr_value(

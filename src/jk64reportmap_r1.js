@@ -80,26 +80,33 @@ $( function() {
     //    -17.9609;122.2122
     //    -17,9609 122,2122
     //    -17,9609;122,2122
+    //Also accepts and parses a LatLngLiteral, e.g.
+    //    {"lat":-17.9609, "lng":122.2122}
     parseLatLng: function (v) {
         apex.debug("reportmap.parseLatLng", v);
         var pos;
         if (v !== null && v !== undefined) {
-            var arr;
-            if (v.indexOf(";")>-1) {
-                arr = v.split(";");
-            } else if (v.indexOf(" ")>-1) {
-                arr = v.split(" ");
-            } else if (v.indexOf(",")>-1) {
-                arr = v.split(",");
-            }
-            if (arr && arr.length==2) {
-                //convert to use period (.) for decimal point
-                arr[0] = arr[0].replace(/,/g, ".");
-                arr[1] = arr[1].replace(/,/g, ".");
-                apex.debug("parsed", arr);
-                pos = new google.maps.LatLng(parseFloat(arr[0]),parseFloat(arr[1]));
+            if (v.hasOwnProperty("lat")&&v.hasOwnProperty("lng")) {
+                // parse as google.maps.LatLngLiteral
+                pos = new google.maps.LatLng(v);
             } else {
-                apex.debug('no LatLng found', v);
+                var arr;
+                if (v.indexOf(";")>-1) {
+                    arr = v.split(";");
+                } else if (v.indexOf(" ")>-1) {
+                    arr = v.split(" ");
+                } else if (v.indexOf(",")>-1) {
+                    arr = v.split(",");
+                }
+                if (arr && arr.length==2) {
+                    //convert to use period (.) for decimal point
+                    arr[0] = arr[0].replace(/,/g, ".");
+                    arr[1] = arr[1].replace(/,/g, ".");
+                    apex.debug("parsed", arr);
+                    pos = new google.maps.LatLng(parseFloat(arr[0]),parseFloat(arr[1]));
+                } else {
+                    apex.debug('no LatLng found', v);
+                }
             }
         }
         return pos;
