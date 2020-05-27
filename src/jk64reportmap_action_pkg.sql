@@ -16,6 +16,7 @@ function render
     l_selector       plugin_attr := p_dynamic_action.attribute_04;
     l_static_value   plugin_attr := p_dynamic_action.attribute_05;
     l_js_expression  plugin_attr := p_dynamic_action.attribute_06;
+    l_option         plugin_attr := p_dynamic_action.attribute_07;
     
     l_action_js      varchar2(1000);
     l_val_js         varchar2(1000);
@@ -49,14 +50,13 @@ begin
         when 'loadGeoJsonString' then
             '$("#map_"+e.id).reportmap("loadGeoJsonString",#VAL#);'
         when 'panTo' then
-            'var r = $("#map_"+e.id).reportmap("instance");'
-         || 'r.map.panTo(r.parseLatLng(#VAL#));'
-        when 'setMapType' then
-            '$("#map_"+e.id).reportmap("instance").map.setMapTypeId(#VAL#);'
-        when 'setTilt' then
-            '$("#map_"+e.id).reportmap("instance").map.setTilt(parseInt(#VAL#));'
-        when 'setZoom' then
-            '$("#map_"+e.id).reportmap("instance").map.setZoom(parseInt(#VAL#));'
+            '$("#map_"+e.id).reportmap("panToByString",#VAL#);'
+        when 'restrictTo' then
+            '$("#map_"+e.id).reportmap("instance").map.setOptions({restriction:{latLngBounds:#VAL#}});'        
+        when 'restrictToStrict' then
+            '$("#map_"+e.id).reportmap("instance").map.setOptions({restriction:{latLngBounds:#VAL#,strictBounds:true}});'  
+        when 'setOption' then
+            '$("#map_"+e.id).reportmap("option","' || l_option || '",#VAL#);'
         when 'showMessage' then
             '$("#map_"+e.id).reportmap("showMessage",#VAL#);'
         end;

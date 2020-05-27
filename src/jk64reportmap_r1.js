@@ -62,8 +62,10 @@ $( function() {
         getAddressByPos        : null, //get closest address to the given location
         gotoAddress            : null, //search by address and place the pin there
         gotoPos                : null, //place the pin at a given position {lat,lng}
-        gotoPosByString        : null, //place the pin at a given position (lat,lng provided as a string)
+        gotoPosByString        : null, //place the pin at a given position (lat,lng provided as a string or LatLngLiteral)
         loadGeoJsonString      : null, //load features from a GeoJSON document
+        panTo                  : null, //pan map to given location (lat,lng)
+        panToByString          : null, //pan map to given position (lat,lng provided as a string or LatLngLiteral)
         parseLatLng            : null, //parse a lat,lng string into a google.maps.LatLng
         refresh                : null, //refresh the map (re-run the query)
         showDirections         : null, //show route between two locations
@@ -364,6 +366,24 @@ $( function() {
         var latlng = this.parseLatLng(v);
         if (latlng) {
             this.gotoPos(latlng.lat(),latlng.lng());
+        }
+    },
+
+    //place or move the user pin to the given location
+    panTo: function (lat,lng) {
+        apex.debug("reportmap.panTo",lat,lng);
+        if (lat!==null && lng!==null) {
+            var pos = new google.maps.LatLng(lat,lng);
+            this.map.panTo(pos);
+        }
+    },
+
+    //parse the given string as a lat,long pair, pan to that location
+    panToByString: function (v) {
+        apex.debug("reportmap.panToByString", v);
+        var latlng = this.parseLatLng(v);
+        if (latlng) {
+            this.panTo(latlng.lat(),latlng.lng());
         }
     },
 
@@ -1429,7 +1449,81 @@ $( function() {
     // _setOption is called for each individual option that is changing
     _setOption: function( key, value ) {
         apex.debug(key, value);
-        this._super( key, value );
+        
+        // dev note: to get a boolean from a value which might be a string
+        // ("true" or "false") or already a boolean, we use value+''=='true'
+        switch (key) {
+        case "clickableIcons":
+            this.map.setOptions({clickableIcons:(value+''=='true')});
+            
+            break;
+        case "disableDefaultUI":
+            this.map.setOptions({disableDefaultUI:(value+''=='true')});
+            
+            break;
+        case "fullscreenControl":
+            this.map.setOptions({fullscreenControl:(value+''=='true')});
+            
+            break;
+        case "heading":
+            this.map.setOptions({heading:parseInt(value)});
+            
+            break;
+        case "keyboardShortcuts":
+            this.map.setOptions({keyboardShortcuts:(value+''=='true')});
+            
+            break;
+        case "mapType":
+            this.map.setMapTypeId(value.toLowerCase());
+            this._super( key, value );
+        
+            break;
+        case "mapTypeControl":
+            this.map.setOptions({mapTypeControl:(value+''=='true')});
+            
+            break;
+        case "maxZoom":
+            this.map.setOptions({maxZoom:parseInt(value)});
+            this._super( key, value );
+            
+            break;
+        case "minZoom":
+            this.map.setOptions({minZoom:parseInt(value)});
+            this._super( key, value );
+            
+            break;
+        case "rotateControl":
+            this.map.setOptions({rotateControl:(value+''=='true')});
+            
+            break;
+        case "scaleControl":
+            this.map.setOptions({scaleControl:(value+''=='true')});
+            
+            break;
+        case "streetViewControl":
+            this.map.setOptions({streetViewControl:(value+''=='true')});
+            
+            break;
+        case "styles":
+            this.map.setOptions({styles:value});
+            this._super( "mapStyle", value );
+            
+            break;
+        case "zoomControl":
+            this.map.setOptions({zoomControl:(value+''=='true')});
+            
+            break;
+        case "tilt":
+            this.map.setTilt(parseInt(value));
+            
+            break;
+        case "zoom":
+            this.map.setZoom(parseInt(value));
+            
+            break;
+        default:
+            this._super( key, value );
+        }
     }      
 
   });
