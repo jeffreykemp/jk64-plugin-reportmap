@@ -1,5 +1,5 @@
 /*
-jk64 ReportMap v1.4 May 2020
+jk64 ReportMap v1.4 Jun 2020
 https://github.com/jeffreykemp/jk64-plugin-reportmap
 Copyright (c) 2016 - 2020 Jeffrey Kemp
 Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -1191,7 +1191,7 @@ $( function() {
 
             // render the map data
             if (pData.mapdata.length>0) {
-                            
+                
                 for (var i = 0; i < pData.mapdata.length; i++) {
                     
                     var row = pData.mapdata[i];
@@ -1261,7 +1261,7 @@ $( function() {
                 }
 
                 this.totalRows += pData.mapdata.length;
-            
+
             }
             
             if ((this.totalRows < this.options.maximumRows)
@@ -1417,7 +1417,16 @@ $( function() {
                       // idMap is a data map of id to the data for a pin
                       _this.newIdMap = new Map();
 
-                      _this._renderPage(pData, 1);
+                        if (pData.mapdata&&pData.mapdata[0]&&pData.mapdata[0].error) {
+                            
+                            _this.showMessage(pData.mapdata[0].error);
+                            _this._afterRefresh();
+                            
+                        } else {
+                                    
+                            _this._renderPage(pData, 1);
+                            
+                        }
                   }
                 });
         } else {

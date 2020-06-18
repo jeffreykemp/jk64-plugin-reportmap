@@ -1,6 +1,6 @@
 /**********************************************************
 create or replace package jk64reportmap_r1_pkg as
--- jk64 ReportMap v1.4 May 2020
+-- jk64 ReportMap v1.4 Jun 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -24,7 +24,7 @@ end jk64reportmap_r1_pkg;
 
 create or replace package body jk64reportmap_r1_pkg as
 **********************************************************/
--- jk64 ReportMap v1.4 May 2020
+-- jk64 ReportMap v1.4 Jun 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -126,15 +126,16 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
     l_geojson_clob          clob;
     l_chunk_size            number := 32767;
 
-    function varchar2_field (attr_no in number, i in number) return varchar2 is
+    function varchar2_field (attr_no in number, i in number, fmt in varchar2 := null) return varchar2 is
         r varchar2(4000);
     begin
         if l_column_list.exists(attr_no) then
             -- whatever data type was in the original source, get it as a string
             r := sys.htf.escape_sc(
                 apex_plugin_util.get_value_as_varchar2 (
-                    p_data_type => l_column_list(attr_no).data_type,
-                    p_value     => l_column_list(attr_no).value_list(i)
+                    p_data_type   => l_column_list(attr_no).data_type,
+                    p_value       => l_column_list(attr_no).value_list(i),
+                    p_format_mask => fmt
                     ));
         end if;
         return r;
@@ -143,8 +144,8 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
     function number_field (attr_no in number, i in number) return number is
         r varchar2(4000);
     begin
-        r := varchar2_field(attr_no, i);
-        return to_number(r);
+        r := varchar2_field(attr_no, i, '99999999999999999999.99999999999999999999');
+        return to_number(r,'99999999999999999999.99999999999999999999');
     exception
         when value_error then
             raise_application_error(-20000, 'Unable to convert data to number "' || r || '"');
@@ -154,11 +155,12 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
     function lat_lng_field (attr_no in number, i in number) return varchar2 is
         r varchar2(4000);
     begin
-        r := varchar2_field(attr_no, i);
-        return to_char(to_number(r),g_tochar_format);
+        r := varchar2_field(attr_no, i, g_tochar_format);
+        -- handle edge case where original data was already a varchar and client NLS settings are incompatible with js numbers
+        return to_char(to_number(r, g_tochar_format), g_tochar_format);
     exception
         when value_error then
-            raise_application_error(-20000, 'Unable to convert data to lat/long "' || r || '"');
+            raise_application_error(-20000, 'Unable to convert data to lat or long "' || r || '"');
     end lat_lng_field;
         
     function flex_field (attr_no in number, i in number, offset in number) return varchar2 is
@@ -352,6 +354,12 @@ begin
 
     end case;
     
+exception
+    when others then
+        apex_debug.error(sqlerrm);
+        apex_debug.message(dbms_utility.format_error_stack);
+        apex_debug.message(dbms_utility.format_call_stack);
+        sys.htp.p('{"error":' || apex_escape.js_literal(sqlerrm,'"') || '}');
 end prn_mapdata;
 
 function render
@@ -611,8 +619,7 @@ exception
         apex_debug.error(sqlerrm);
         apex_debug.message(dbms_utility.format_error_stack);
         apex_debug.message(dbms_utility.format_call_stack);
-        sys.htp.p('{"error":' || apex_escape.js_literal(sqlerrm,'"') || '}');
-        return l_result;
+        raise;
 end ajax;
 
 /**********************************************************
