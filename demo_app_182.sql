@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   10:37 Thursday June 18, 2020
+--   Date and Time:   16:58 Friday June 19, 2020
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -36,10 +36,10 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 --
 
 -- Application Statistics:
---   Pages:                     28
+--   Pages:                     30
 --     Items:                   50
 --     Computations:             1
---     Regions:                 84
+--     Regions:                 88
 --     Buttons:                 16
 --     Dynamic Actions:         68
 --   Shared Components:
@@ -115,7 +115,7 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20200618103651'
+,p_last_upd_yyyymmddhh24miss=>'20200619165816'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>19
 ,p_ui_type_name => null
@@ -392,6 +392,25 @@ wwv_flow_api.create_list_item(
 ,p_list_item_icon=>'fa-map-marker'
 ,p_parent_list_item_id=>wwv_flow_api.id(33281403869456829)
 ,p_list_item_current_type=>'TARGET_PAGE'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(62794524053119047)
+,p_list_item_display_sequence=>320
+,p_list_item_link_text=>'PL/SQL Function returning SQL Query'
+,p_list_item_link_target=>'f?p=&APP_ID.:29:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-code'
+,p_parent_list_item_id=>wwv_flow_api.id(25186305489555505552)
+,p_list_item_current_type=>'TARGET_PAGE'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(62795350781126751)
+,p_list_item_display_sequence=>330
+,p_list_item_link_text=>'Table or View'
+,p_list_item_link_target=>'f?p=&APP_ID.:30:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-database'
+,p_parent_list_item_id=>wwv_flow_api.id(25186305489555505552)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'30'
 );
 wwv_flow_api.create_list_item(
  p_id=>wwv_flow_api.id(110569494406744322)
@@ -1433,7 +1452,7 @@ wwv_flow_api.create_plugin_setting(
  p_id=>wwv_flow_api.id(44658048572715472)
 ,p_plugin_type=>'REGION TYPE'
 ,p_plugin=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
-,p_attribute_01=>'AIzaSyDN1n03b7SUyRZAn0hYFqIG5tHcDoy1RQI'
+,p_attribute_01=>'(enter your api key here)'
 ,p_attribute_05=>'1'
 ,p_attribute_06=>'18'
 ,p_attribute_07=>'10000'
@@ -13394,8 +13413,58 @@ wwv_flow_api.create_plugin(
 '    return n;',
 'end valid_zoom_level;',
 '',
+'function get_source (p_region in apex_plugin.t_region) return varchar2 is',
+'    l_region                apex_application_page_regions%rowtype;',
+'    l_visualisation         plugin_attr := p_region.attribute_02;',
+'    l_result                varchar2(32767);',
+'begin',
+'    select r.*',
+'    into   l_region',
+'    from   apex_application_page_regions r',
+'    where  r.region_id = p_region.id;',
+'',
+'    apex_debug.message(''source type: '' || l_region.query_type_code || '' ('' || l_region.location || '' - '' || l_region.query_type || '')'');',
+'    ',
+'    if l_region.location_code = ''LOCAL'' then',
+'        ',
+'        l_result := case l_region.query_type_code',
+'                    when ''SQL''',
+'                        then p_region.source',
+'                    when ''FUNC_BODY_RETURNING_SQL''',
+'                        then apex_plugin_util.get_plsql_function_result(p_region.source)',
+'                    when ''TABLE''',
+'                        then ''select ''',
+'                          || case l_visualisation',
+'                             when g_visualisation_heatmap then ''lat,lng,weight''',
+'                             when g_visualisation_geojson then ''geojson''',
+'                             else case when l_region.include_rowid_column = ''Yes''',
+'                                  then ''lat,lng,name,rowid as id''',
+'                                  else ''lat,lng,name,id''',
+'                                  end',
+'                             end',
+'                          || '' from ''',
+'                          || case when l_region.table_owner is not null then ''"'' || l_region.table_owner || ''".'' end',
+'                          || ''"'' || l_region.table_name || ''" "'' || l_region.table_name || ''"''',
+'                          || case when l_region.where_clause is not null then '' where ('' || l_region.where_clause || '')'' end',
+'                          || case when l_region.order_by_clause is not null then '' order by '' || l_region.order_by_clause end',
+'                    end;',
+'        ',
+'        if l_result is null then',
+'            raise_application_error(-20001, ''Unsupported region source ('' || l_region.query_type || ''); must be Table/View, SQL Query or PL/SQL Function Body returning SQL'');',
+'        end if;',
+'',
+'    elsif l_region.location is not null then',
+'        raise_application_error(-20001, ''Unsupported source location ('' || l_region.location || ''); must be Local Database'');',
+'    end if;',
+'',
+'    apex_debug.message(''source: '' || l_result);',
+'',
+'    return l_result;',
+'end get_source;',
+'',
 'procedure prn_mapdata (p_region in apex_plugin.t_region) is',
 '    ',
+'    l_source                varchar2(32767);',
 '    l_flex                  varchar2(32767);',
 '    l_buf                   varchar2(32767);',
 '    l_column_list           apex_plugin_util.t_column_value_list2;',
@@ -13464,175 +13533,181 @@ wwv_flow_api.create_plugin(
 '    ',
 '    l_first_row := to_number(apex_application.g_x01);',
 '    l_max_rows := to_number(apex_application.g_x02);',
-'    ',
-'    /*',
-'       For the "pin" type visualisations, column list is as follows:',
-'    ',
-'       1.     lat            -- required',
-'       2.     lng            -- required',
-'       3.     name           -- required',
-'       4.     id             -- required',
-'       5.     info           -- optional',
-'       6.     icon           -- optional',
-'       7.     label          -- optional',
-'       8-17.  flex01..flex10 -- optional flex fields',
-'       ',
-'       For the "Heatmap" visualisation:',
-'       ',
-'       1.     lat            -- required',
-'       2.     lng            -- required',
-'       3.     weight         -- required',
-'       ',
-'       For the "GeoJson" visualisation:',
-'       ',
-'       1.     geojson        -- required',
-'       2.     name           -- optional',
-'       3.     id             -- optional',
-'       4-13.  flex01..flex10 -- optional flex fields',
-'    ',
-'    */',
-'    ',
-'    case',
-'    when l_visualisation = g_visualisation_heatmap then',
 '',
-'        l_column_list := apex_plugin_util.get_data2',
-'            (p_sql_statement  => p_region.source',
-'            ,p_min_columns    => 3',
-'            ,p_max_columns    => 3',
-'            ,p_component_name => p_region.name',
-'            ,p_max_rows       => l_max_rows);',
-'  ',
-'        for i in 1 .. l_column_list(1).value_list.count loop',
+'    l_source := get_source(p_region);',
+'    ',
+'    if l_source is not null then',
 '        ',
-'            -- minimise size of data to be sent by encoding it as an array of arrays',
-'            l_buf := ''['' || lat_lng_field(1,i)',
-'                  || '','' || lat_lng_field(2,i)',
-'                  || '','' || greatest(nvl(round(number_field(3,i)),1),1)',
-'                  || '']'';',
-'',
-'            if i < 8 /*don''t send the whole dataset to debug log*/ then',
-'                apex_debug.message(''#'' || i || '': '' || l_buf);',
-'            end if;',
-'            ',
-'            if i>1 then',
-'                sys.htp.prn('','');',
-'            end if;',
-'',
-'            sys.htp.prn(l_buf);',
-'          ',
-'        end loop;',
-'',
-'    when l_visualisation = g_visualisation_geojson then',
-'    ',
-'        l_column_list := apex_plugin_util.get_data2',
-'            (p_sql_statement  => p_region.source',
-'            ,p_min_columns    => 1',
-'            ,p_max_columns    => 12',
-'            ,p_component_name => p_region.name',
-'            ,p_first_row      => l_first_row',
-'            ,p_max_rows       => l_max_rows',
-'            );',
-'',
-'        for i in 1 .. l_column_list(1).value_list.count loop',
+'        /*',
+'           For the "pin" type visualisations, column list is as follows:',
 '        ',
-'            if i>1 then',
-'                sys.htp.prn('','');',
-'            end if;',
+'           1.     lat            -- required',
+'           2.     lng            -- required',
+'           3.     name           -- required',
+'           4.     id             -- required',
+'           5.     info           -- optional',
+'           6.     icon           -- optional',
+'           7.     label          -- optional',
+'           8-17.  flex01..flex10 -- optional flex fields',
+'           ',
+'           For the "Heatmap" visualisation:',
+'           ',
+'           1.     lat            -- required',
+'           2.     lng            -- required',
+'           3.     weight         -- required',
+'           ',
+'           For the "GeoJson" visualisation:',
+'           ',
+'           1.     geojson        -- required',
+'           2.     name           -- optional',
+'           3.     id             -- optional',
+'           4-13.  flex01..flex10 -- optional flex fields',
+'        ',
+'        */',
+'        ',
+'        case',
+'        when l_visualisation = g_visualisation_heatmap then',
+'',
+'            l_column_list := apex_plugin_util.get_data2',
+'                (p_sql_statement  => l_source',
+'                ,p_min_columns    => 3',
+'                ,p_max_columns    => 3',
+'                ,p_component_name => p_region.name',
+'                ,p_max_rows       => l_max_rows);',
+'      ',
+'            for i in 1 .. l_column_list(1).value_list.count loop',
 '            ',
-'            sys.htp.prn(''{"geojson":'');',
+'                -- minimise size of data to be sent by encoding it as an array of arrays',
+'                l_buf := ''['' || lat_lng_field(1,i)',
+'                      || '','' || lat_lng_field(2,i)',
+'                      || '','' || greatest(nvl(round(number_field(3,i)),1),1)',
+'                      || '']'';',
 '',
-'            if l_column_list(1).data_type = apex_plugin_util.c_data_type_clob then',
-'',
-'                l_geojson_clob := l_column_list(1).value_list(i).clob_value;',
+'                if i < 8 /*don''t send the whole dataset to debug log*/ then',
+'                    apex_debug.message(''#'' || i || '': '' || l_buf);',
+'                end if;',
 '                ',
-'                -- send the clob down in chunks',
+'                if i>1 then',
+'                    sys.htp.prn('','');',
+'                end if;',
 '',
-'                for j in 0 .. floor(length(l_geojson_clob)/l_chunk_size) loop',
+'                sys.htp.prn(l_buf);',
+'              ',
+'            end loop;',
 '',
-'                    l_buf := substr(l_geojson_clob, j * l_chunk_size + 1, l_chunk_size);',
+'        when l_visualisation = g_visualisation_geojson then',
+'        ',
+'            l_column_list := apex_plugin_util.get_data2',
+'                (p_sql_statement  => l_source',
+'                ,p_min_columns    => 1',
+'                ,p_max_columns    => 12',
+'                ,p_component_name => p_region.name',
+'                ,p_first_row      => l_first_row',
+'                ,p_max_rows       => l_max_rows',
+'                );',
 '',
-'                    if i < 8 and j = 0 /*don''t send the whole dataset to debug log*/ then',
+'            for i in 1 .. l_column_list(1).value_list.count loop',
+'            ',
+'                if i>1 then',
+'                    sys.htp.prn('','');',
+'                end if;',
+'                ',
+'                sys.htp.prn(''{"geojson":'');',
+'',
+'                if l_column_list(1).data_type = apex_plugin_util.c_data_type_clob then',
+'',
+'                    l_geojson_clob := l_column_list(1).value_list(i).clob_value;',
+'                    ',
+'                    -- send the clob down in chunks',
+'',
+'                    for j in 0 .. floor(length(l_geojson_clob)/l_chunk_size) loop',
+'',
+'                        l_buf := substr(l_geojson_clob, j * l_chunk_size + 1, l_chunk_size);',
+'',
+'                        if i < 8 and j = 0 /*don''t send the whole dataset to debug log*/ then',
+'                            apex_debug.message(''#'' || i || '': '' || substr(l_buf,1,1000));',
+'                        end if;',
+'',
+'                        sys.htp.prn(l_buf);',
+'',
+'                    end loop;',
+'                ',
+'                else',
+'                ',
+'                    l_buf := varchar2_field(1,i);',
+'                ',
+'                    if i < 8 /*don''t send the whole dataset to debug log*/ then',
 '                        apex_debug.message(''#'' || i || '': '' || substr(l_buf,1,1000));',
 '                    end if;',
-'',
+'                    ',
 '                    sys.htp.prn(l_buf);',
 '',
+'                end if;',
+'',
+'                -- get flex fields, if any',
+'                l_flex := null;',
+'                for attr_no in 1..10 loop',
+'                    l_flex := l_flex || flex_field(attr_no, i, offset => 3);',
 '                end loop;',
+'                ',
+'                l_buf := '',''',
+'                      || apex_javascript.add_attribute(''n'',varchar2_field(2,i)) /*name*/',
+'                      || apex_javascript.add_attribute(''d'',varchar2_field(3,i)) /*id*/',
+'                      || case when l_flex is not null then',
+'                           ''"f":{'' || rtrim(l_flex,'','') || ''}''',
+'                         end;',
+'                ',
+'                sys.htp.prn(l_buf || ''}'');',
+'',
+'            end loop;',
 '            ',
-'            else',
-'            ',
-'                l_buf := varchar2_field(1,i);',
-'            ',
+'        else',
+'            -- "pin" type visualisations',
+'      ',
+'            l_column_list := apex_plugin_util.get_data2',
+'                (p_sql_statement  => l_source',
+'                ,p_min_columns    => 4',
+'                ,p_max_columns    => 17',
+'                ,p_component_name => p_region.name',
+'                ,p_first_row      => l_first_row',
+'                ,p_max_rows       => l_max_rows);',
+'        ',
+'            for i in 1..l_column_list(1).value_list.count loop',
+'',
+'                -- get flex fields, if any',
+'                l_flex := null;',
+'                for attr_no in 1..10 loop',
+'                    l_flex := l_flex || flex_field(attr_no, i, offset => 7);',
+'                end loop;',
+'',
+'                l_buf := ''"x":'' || lat_lng_field(1,i) || '','' /*lat*/',
+'                      || ''"y":'' || lat_lng_field(2,i) || '','' /*lng*/',
+'                      || apex_javascript.add_attribute(''n'',varchar2_field(3,i)) /*name*/',
+'                      || apex_javascript.add_attribute(''d'',varchar2_field(4,i)) /*id*/',
+'                      || apex_javascript.add_attribute(''i'',varchar2_field(5,i)) /*info*/',
+'                      || apex_javascript.add_attribute(''c'',varchar2_field(6,i)) /*icon*/',
+'                      || apex_javascript.add_attribute(''l'',substr(varchar2_field(7,i),1,1)) /*label*/',
+'                      || case when l_flex is not null then',
+'                           ''"f":{'' || rtrim(l_flex,'','') || ''}''',
+'                         end;',
+'                ',
+'                l_buf := ''{'' || rtrim(l_buf,'','') || ''}'';',
+'',
 '                if i < 8 /*don''t send the whole dataset to debug log*/ then',
 '                    apex_debug.message(''#'' || i || '': '' || substr(l_buf,1,1000));',
 '                end if;',
-'                ',
+'',
+'                if i>1 then',
+'                    sys.htp.prn('','');',
+'                end if;',
+'',
 '                sys.htp.prn(l_buf);',
-'',
-'            end if;',
-'',
-'            -- get flex fields, if any',
-'            l_flex := null;',
-'            for attr_no in 1..10 loop',
-'                l_flex := l_flex || flex_field(attr_no, i, offset => 3);',
+'              ',
 '            end loop;',
-'            ',
-'            l_buf := '',''',
-'                  || apex_javascript.add_attribute(''n'',varchar2_field(2,i)) /*name*/',
-'                  || apex_javascript.add_attribute(''d'',varchar2_field(3,i)) /*id*/',
-'                  || case when l_flex is not null then',
-'                       ''"f":{'' || rtrim(l_flex,'','') || ''}''',
-'                     end;',
-'            ',
-'            sys.htp.prn(l_buf || ''}'');',
 '',
-'        end loop;',
-'        ',
-'    else',
-'        -- "pin" type visualisations',
-'  ',
-'        l_column_list := apex_plugin_util.get_data2',
-'            (p_sql_statement  => p_region.source',
-'            ,p_min_columns    => 4',
-'            ,p_max_columns    => 17',
-'            ,p_component_name => p_region.name',
-'            ,p_first_row      => l_first_row',
-'            ,p_max_rows       => l_max_rows);',
+'        end case;',
 '    ',
-'        for i in 1..l_column_list(1).value_list.count loop',
-'',
-'            -- get flex fields, if any',
-'            l_flex := null;',
-'            for attr_no in 1..10 loop',
-'                l_flex := l_flex || flex_field(attr_no, i, offset => 7);',
-'            end loop;',
-'',
-'            l_buf := ''"x":'' || lat_lng_field(1,i) || '','' /*lat*/',
-'                  || ''"y":'' || lat_lng_field(2,i) || '','' /*lng*/',
-'                  || apex_javascript.add_attribute(''n'',varchar2_field(3,i)) /*name*/',
-'                  || apex_javascript.add_attribute(''d'',varchar2_field(4,i)) /*id*/',
-'                  || apex_javascript.add_attribute(''i'',varchar2_field(5,i)) /*info*/',
-'                  || apex_javascript.add_attribute(''c'',varchar2_field(6,i)) /*icon*/',
-'                  || apex_javascript.add_attribute(''l'',substr(varchar2_field(7,i),1,1)) /*label*/',
-'                  || case when l_flex is not null then',
-'                       ''"f":{'' || rtrim(l_flex,'','') || ''}''',
-'                     end;',
-'            ',
-'            l_buf := ''{'' || rtrim(l_buf,'','') || ''}'';',
-'',
-'            if i < 8 /*don''t send the whole dataset to debug log*/ then',
-'                apex_debug.message(''#'' || i || '': '' || substr(l_buf,1,1000));',
-'            end if;',
-'',
-'            if i>1 then',
-'                sys.htp.prn('','');',
-'            end if;',
-'',
-'            sys.htp.prn(l_buf);',
-'          ',
-'        end loop;',
-'',
-'    end case;',
+'    end if;',
 '    ',
 'exception',
 '    when others then',
@@ -13686,6 +13761,7 @@ wwv_flow_api.create_plugin(
 '    -- unused                      plugin_attr := p_region.attribute_24;',
 '    l_gesture_handling             plugin_attr := p_region.attribute_25;',
 '    ',
+'    l_source                       varchar2(32767);',
 '    l_region_id                    varchar2(100);',
 '    l_lat                          number;',
 '    l_lng                          number;',
@@ -13712,6 +13788,8 @@ wwv_flow_api.create_plugin(
 '                   else ''R''||p_region.id',
 '                   end;',
 '    apex_debug.message(''map region: '' || l_region_id);',
+'    ',
+'    l_source := get_source(p_region);',
 '',
 '/*******************************************************************/',
 '/* Remove this for apex 5.0 or earlier                             */',
@@ -13788,7 +13866,7 @@ wwv_flow_api.create_plugin(
 '    -- use nullif to convert default values to null; this reduces the footprint of the generated code',
 '    l_opt := ''{''',
 '      || apex_javascript.add_attribute(''regionId'', l_region_id)',
-'      || apex_javascript.add_attribute(''expectData'', nullif(p_region.source is not null,true))',
+'      || apex_javascript.add_attribute(''expectData'', nullif(l_source is not null,true))',
 '      || apex_javascript.add_attribute(''maximumRows'', l_max_rows)',
 '      || apex_javascript.add_attribute(''rowsPerBatch'', l_rows_per_batch)',
 '      || apex_javascript.add_attribute(''visualisation'', lower(nullif(l_visualisation,g_visualisation_pins)))',
@@ -13884,11 +13962,7 @@ wwv_flow_api.create_plugin(
 '    ',
 '    sys.htp.p(''{"mapdata":['');',
 '',
-'    if p_region.source is not null then',
-'',
-'        prn_mapdata(p_region => p_region);',
-'',
-'    end if;',
+'    prn_mapdata(p_region => p_region);',
 '',
 '    sys.htp.p('']}'');',
 '',
@@ -13927,6 +14001,9 @@ wwv_flow_api.create_plugin(
 'Released under the MIT licence: http://opensource.org/licenses/mit-license'))
 ,p_files_version=>609
 );
+end;
+/
+begin
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(196436287268656050)
 ,p_plugin_id=>wwv_flow_api.id(184856223301707224)
@@ -13964,9 +14041,6 @@ wwv_flow_api.create_plugin_attribute(
 ,p_is_translatable=>true
 ,p_help_text=>'Leave blank for default: "At least one of the origin, destination, or waypoints could not be geocoded."'
 );
-end;
-/
-begin
 wwv_flow_api.create_plugin_attribute(
  p_id=>wwv_flow_api.id(196437540290656049)
 ,p_plugin_id=>wwv_flow_api.id(184856223301707224)
@@ -14638,78 +14712,56 @@ wwv_flow_api.create_plugin_std_attribute(
 ,p_is_required=>false
 ,p_depending_on_has_to_exist=>true
 ,p_examples=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<p>',
+'<em>Pin visualisations (including Route Map, Marker Clustering, Spiderfier):</em>',
 '<pre>SELECT lat, lng, name, id FROM mydata;</pre>',
 '<p>',
-'<em>Show a popup info window when a marker is clicked:</em>',
+'<em>Show a popup info window when a pin is clicked:</em>',
 '<p>',
 '<pre>SELECT lat, lng, name, id, info FROM mydata;</pre>',
 '<p>',
-'<em>Show each point with a selected icon:</em>',
+'<em>Show each pin with a selected icon:</em>',
 '<p>',
 '<pre>SELECT lat, lng, name, id, info, icon FROM mydata;</pre>',
 '<p>',
-'<em>Get only the data within a certain distance from a chosen point:</em>',
+'<em>Show marker labels on the pins:</em>',
 '<p>',
 '<pre>',
-'SELECT t.lat AS lat',
-'      ,t.lng AS lng',
-'      ,t.name',
-'      ,t.id AS id',
-'      ,t.info',
-'      ,'''' AS icon',
-'FROM   mytable t',
-'WHERE  t.lat IS NOT NULL',
-'AND    t.lng IS NOT NULL',
-'AND    (:P1_LATLNG IS NULL',
-'     OR :P1_RADIUS IS NULL',
-'     OR SDO_GEOM.sdo_distance',
-'          (geom1 => SDO_GEOMETRY',
-'            (sdo_gtype     => 2001 /* 2-dimensional point */',
-'            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
-'            ,sdo_point     => SDO_POINT_TYPE(t.lng, t.lat, NULL)',
-'            ,sdo_elem_info => NULL',
-'            ,sdo_ordinates => NULL)',
-'          ,geom2 => SDO_GEOMETRY',
-'            (sdo_gtype     => 2001 /* 2-dimensional point */',
-'            ,sdo_srid      => 8307 /* Longitude / Latitude (WGS 84) */',
-'            ,sdo_point     => SDO_POINT_TYPE',
-'               (TO_NUMBER(SUBSTR(:P1_LATLNG,INSTR(:P1_LATLNG,'','')+1))',
-'               ,TO_NUMBER(SUBSTR(:P1_LATLNG,1,INSTR(:P1_LATLNG,'','')-1)), NULL)',
-'            ,sdo_elem_info => NULL',
-'            ,sdo_ordinates => NULL)',
-'          ,tol   => 0.0001 /*metres*/',
-'          ,unit  => ''unit=KM'') < :P1_RADIUS)',
+'SELECT lat, lng, name, id, '''' AS info, '''' AS icon, label as lbl FROM mydata;',
 '</pre>',
 '<p>',
-'<em>Marker labels:</em>',
+'<em>Heatmap visualisation:</em>',
 '<p>',
 '<pre>',
-'SELECT lat, lng, name, id, '''' AS info, '''' AS icon,',
-'       label as lbl',
-'FROM mydata;',
+'SELECT lat, lng, count(*) as weight FROM mydata GROUP BY lat, lng;',
 '</pre>',
 '<p>',
-'<em>Heatmap:</em>',
+'<em>GeoJson visualisation:</em>',
 '<p>',
 '<pre>',
-'SELECT lat, lng, count(*) as weight',
-'FROM mydata',
-'group by lat, lng;',
-'</pre>'))
+'SELECT geojson FROM mydata;',
+'</pre>',
+'<p>',
+'Refer also to <b>https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/SQL-Query-Examples</b>'))
 ,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'Optional.',
-'',
-'Example (first 4 columns are required):',
-'',
-'<pre>SELECT lat, lng, name, id, info, icon, label, flex1, flex2, ... flex10',
-'FROM mydata;</pre>',
-'',
-'Exception - when using the <b>Heatmap</b> visualisation:',
-'',
-'<pre>SELECT lat, lng, weight',
-'FROM mydata;</pre>'))
+'<p>',
+'If source data is used, Source Type must be Table / View, SQL Query or PL/SQL Function Body returning SQL.',
+'<p>',
+'If Source Type is <b>Table / View</b>, it must provide the columns required by the chosen Visualisation. They don''t need to appear in any particular order but do need to be named exactly as indicated below:',
+'<ul><li>',
+'For the Heatmap visualisation, the source must provide the columns LAT, LNG, and WEIGHT.',
+'</li><li>',
+'For the GeoJson visualisation, the source must provide the column GEOJSON.',
+'</li><li>',
+'For the other Pin-type visualisations, the source must provide the columns LAT, LNG, NAME, ID. If the source has no ID column, you may instead set <b>Include ROWID Column</b> to Yes to use ROWID as a unique identifier.',
+'</li></ul>',
+'Any other columns in the source table or view are ignored.',
+'<p><p>',
+'If Source Type is <b>SQL Query</b> or <b>PL/SQL Function returning SQL Query</b>, the query must provide the columns in the right order (refer to examples). The column names are not important, however.'))
 );
+end;
+/
+begin
 wwv_flow_api.create_plugin_event(
  p_id=>wwv_flow_api.id(196474822729656016)
 ,p_plugin_id=>wwv_flow_api.id(184856223301707224)
@@ -14722,9 +14774,6 @@ wwv_flow_api.create_plugin_event(
 ,p_name=>'addressfound'
 ,p_display_name=>'addressFound'
 );
-end;
-/
-begin
 wwv_flow_api.create_plugin_event(
  p_id=>wwv_flow_api.id(109287348796009874)
 ,p_plugin_id=>wwv_flow_api.id(184856223301707224)
@@ -24551,6 +24600,140 @@ wwv_flow_api.create_page_da_action(
 );
 end;
 /
+prompt --application/pages/page_00029
+begin
+wwv_flow_api.create_page(
+ p_id=>29
+,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
+,p_name=>'PLSQL Function'
+,p_step_title=>'Report on SQL Function'
+,p_reload_on_submit=>'A'
+,p_warn_on_unsaved_changes=>'N'
+,p_step_sub_title=>'Report on SQL Function'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_autocomplete_on_off=>'ON'
+,p_page_template_options=>'#DEFAULT#'
+,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'The map region has Source Type set to <b>PL/SQL Function returning SQL Query</b>, with the source set to:',
+'',
+'<pre>',
+'return q''~',
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'~'';',
+'</pre>'))
+,p_last_updated_by=>'JEFF'
+,p_last_upd_yyyymmddhh24miss=>'20200619145250'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(136275346806017810)
+,p_plug_name=>'PL/SQL Function returning SQL Query'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>20
+,p_plug_display_point=>'BODY'
+,p_plug_source_type=>'NATIVE_HELP_TEXT'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(3277241765380586990)
+,p_plug_name=>'Report Map'
+,p_region_name=>'mymap'
+,p_region_template_options=>'#DEFAULT#:t-Region--noPadding:t-Region--hideHeader:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>10
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_item_display_point=>'BELOW'
+,p_query_type=>'FUNC_BODY_RETURNING_SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'return q''~',
+'select c003 as lat, c004 as lng, c002 as name, c001 as id, c002 || '' (id='' || c001 || '')'' as info',
+'from apex_collections',
+'where collection_name = ''MAP''',
+'~'';'))
+,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_plugin_init_javascript_code=>'apex.debug("javascript init code");'
+,p_attribute_01=>'350'
+,p_attribute_02=>'PINS'
+,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED:SPINNER'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
+,p_attribute_22=>'ROADMAP'
+,p_attribute_24=>'Y'
+,p_attribute_25=>'auto'
+);
+end;
+/
+prompt --application/pages/page_00030
+begin
+wwv_flow_api.create_page(
+ p_id=>30
+,p_user_interface_id=>wwv_flow_api.id(25186303948932505463)
+,p_name=>'Source is Table or View'
+,p_step_title=>'Source is Table or View'
+,p_reload_on_submit=>'A'
+,p_warn_on_unsaved_changes=>'N'
+,p_step_sub_title=>'Source is Table or View'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_autocomplete_on_off=>'ON'
+,p_page_template_options=>'#DEFAULT#'
+,p_help_text=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'The map region has Source Type set to <b>Table / View</b>, with the source table <b>JK64DEMO_COUNTRIES_VW</b>.',
+'<p><p>',
+'The view is defined on the database as:',
+'<pre>',
+'create view jk64demo_countries_vw as',
+'select lat, lng, country as name, rowid as id',
+'from jk64demo_countries sample(10)',
+'where lat is not null and lng is not null',
+'</pre>',
+'<p>',
+'Using this source type requires that the source table or view provide columns with the right names. The columns required depend on what Visualisation is chosen. Look at the Source Help within APEX for more information.',
+'<p>',
+'Not all features, such as popup info windows and pin labels, are supported in this mode; for additional features, use the <b>SQL Query</b> or <b>PL/SQL Function returning SQL Query</b> source type instead.'))
+,p_last_updated_by=>'JEFF'
+,p_last_upd_yyyymmddhh24miss=>'20200619165255'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(199070283000144548)
+,p_plug_name=>'Table or View'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>20
+,p_plug_display_point=>'BODY'
+,p_plug_source_type=>'NATIVE_HELP_TEXT'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(3340036701574713728)
+,p_plug_name=>'Report Map'
+,p_region_name=>'mymap'
+,p_region_template_options=>'#DEFAULT#:t-Region--noPadding:t-Region--hideHeader:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_api.id(25186277719855505424)
+,p_plug_display_sequence=>10
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_item_display_point=>'BELOW'
+,p_query_type=>'TABLE'
+,p_query_table=>'JK64DEMO_COUNTRIES_VW'
+,p_include_rowid_column=>false
+,p_plug_source_type=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_plugin_init_javascript_code=>'apex.debug("javascript init code");'
+,p_attribute_01=>'350'
+,p_attribute_02=>'PINS'
+,p_attribute_04=>'PAN_ON_CLICK:PAN_ALLOWED:ZOOM_ALLOWED:SPINNER'
+,p_attribute_12=>'N'
+,p_attribute_21=>'N'
+,p_attribute_22=>'ROADMAP'
+,p_attribute_24=>'Y'
+,p_attribute_25=>'auto'
+);
+end;
+/
 prompt --application/deployment/definition
 begin
 wwv_flow_api.create_install(
@@ -24568,21 +24751,72 @@ wwv_flow_api.create_install(
 ,p_upgrade_confirm_message=>'Please confirm that you would like to install this application''s supporting objects.'
 ,p_upgrade_success_message=>'Your application''s supporting objects have been installed.'
 ,p_upgrade_failure_message=>'Installation of database objects and seed data has failed.'
+,p_get_version_sql_query=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select object_name',
+'from user_objects',
+'where object_name in (''JK64DEMO_COUNTRIES'',''JK64DEMO_COUNTRIES_VW'',''JK64DEMO_EARTHQUAKES'')'))
 ,p_deinstall_success_message=>'Deinstallation complete.'
 ,p_deinstall_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'drop table jk64demo_countries;',
-'drop table jk64demo_earthquakes;'))
+'drop table jk64demo_earthquakes;',
+'drop view jk64demo_countries_vw;'))
 ,p_required_free_kb=>700
 ,p_required_sys_privs=>'CREATE TABLE'
 );
 end;
 /
-prompt --application/deployment/install/install_jk64demo_countries_table_sql
+prompt --application/deployment/install/upgrade_jk64demo_objects_sql
 begin
 wwv_flow_api.create_install_script(
- p_id=>wwv_flow_api.id(54436174521698930)
+ p_id=>wwv_flow_api.id(62827921009686073)
 ,p_install_id=>wwv_flow_api.id(54431867465452579)
-,p_name=>'jk64demo_countries_table.sql'
+,p_name=>'jk64demo_objects.sql'
+,p_sequence=>10
+,p_script_type=>'UPGRADE'
+,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'execute immediate q''[',
+'create table jk64demo_countries',
+'( country varchar2(255) not null',
+', iso_a2 varchar2(2)',
+', iso_a3 varchar2(3)',
+', lat number',
+', lng number',
+', geometry clob',
+', constraint country_name_uk unique (country)',
+', constraint iso_a2_uk unique (iso_a2)',
+', constraint iso_a3_uk unique (iso_a3)',
+', constraint geometry_is_json check (geometry is json)',
+')',
+']'';',
+'exception',
+'when others then if sqlcode!=-955 then raise; end if;',
+'end;',
+'/',
+'',
+'create or replace force view jk64demo_countries_vw as',
+'select lat, lng, country as name, rowid as id',
+'from jk64demo_countries sample(10)',
+'where lat is not null and lng is not null;',
+'',
+'begin',
+'execute immediate q''[',
+'create table jk64demo_earthquakes (	lat number not null, lng number not null, mag number not null )',
+']'';',
+'exception',
+'when others then if sqlcode!=-955 then raise; end if;',
+'end;',
+'/',
+''))
+);
+end;
+/
+prompt --application/deployment/install/install_jk64demo_objects_sql
+begin
+wwv_flow_api.create_install_script(
+ p_id=>wwv_flow_api.id(62828389830702833)
+,p_install_id=>wwv_flow_api.id(54431867465452579)
+,p_name=>'jk64demo_objects.sql'
 ,p_sequence=>10
 ,p_script_type=>'INSTALL'
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -24598,19 +24832,12 @@ wwv_flow_api.create_install_script(
 ', constraint iso_a3_uk unique (iso_a3)',
 ', constraint geometry_is_json check (geometry is json)',
 ');',
-''))
-);
-end;
-/
-prompt --application/deployment/install/install_jk64demo_earthquakes_table_sql
-begin
-wwv_flow_api.create_install_script(
- p_id=>wwv_flow_api.id(54436322207701194)
-,p_install_id=>wwv_flow_api.id(54431867465452579)
-,p_name=>'jk64demo_earthquakes_table.sql'
-,p_sequence=>20
-,p_script_type=>'INSTALL'
-,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'',
+'create or replace force view jk64demo_countries_vw as',
+'select lat, lng, country as name, rowid as id',
+'from jk64demo_countries sample(10)',
+'where lat is not null and lng is not null;',
+'',
 'create table jk64demo_earthquakes (	lat number not null, lng number not null, mag number not null );',
 ''))
 );
@@ -24622,7 +24849,7 @@ wwv_flow_api.create_install_script(
  p_id=>wwv_flow_api.id(54436584110704985)
 ,p_install_id=>wwv_flow_api.id(54431867465452579)
 ,p_name=>'jk64demo_countries_data.sql'
-,p_sequence=>30
+,p_sequence=>20
 ,p_script_type=>'INSTALL'
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'rem INSERTING into JK64DEMO_COUNTRIES',
@@ -24888,7 +25115,7 @@ wwv_flow_api.create_install_script(
  p_id=>wwv_flow_api.id(54436733225707788)
 ,p_install_id=>wwv_flow_api.id(54431867465452579)
 ,p_name=>'jk64demo_earthquakes_data.sql'
-,p_sequence=>40
+,p_sequence=>30
 ,p_script_type=>'INSTALL'
 ,p_script_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'rem INSERTING into JK64DEMO_EARTHQUAKES',
