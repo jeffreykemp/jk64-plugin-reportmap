@@ -1,5 +1,5 @@
 /*
-jk64 ReportMap v1.4 Jun 2020
+jk64 ReportMap v1.4 Aug 2020
 https://github.com/jeffreykemp/jk64-plugin-reportmap
 Copyright (c) 2016 - 2020 Jeffrey Kemp
 Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -41,6 +41,9 @@ $( function() {
         drawingModes           : null,
         featureColor           : '#cc66ff',
         featureColorSelected   : '#ff6600',
+        featureSelectable      : true,
+        featureHoverable       : true,
+        featureStyleFn         : null,
         dragDropGeoJSON        : false,
 		autoFitBounds          : true,
         directionsPanel        : null,
@@ -720,7 +723,7 @@ $( function() {
             dataLayer = this.map.data;
         
         // Change the color when the isSelected property is set to true.
-        dataLayer.setStyle(function(feature) {
+        dataLayer.setStyle(this.options.featureStyleFn||function(feature) {
             var color = _this.options.featureColor;
             if (feature.getProperty('isSelected')) {
                 color = _this.options.featureColorSelected;
@@ -734,35 +737,42 @@ $( function() {
             });
         });
         
-        // When the user clicks, set 'isSelected', changing the color of the shape.
-        dataLayer.addListener('click', function(event) {
-            apex.debug("reportmap.map.data - click",event);
-            if (event.feature.getProperty('isSelected')) {
-                apex.debug("isSelected","false");
-                event.feature.removeProperty('isSelected');
-                apex.jQuery("#"+_this.options.regionId).trigger("unselectfeature", {map:_this.map, feature:event.feature});
-            } else {
-                apex.debug("isSelected","true");
-                event.feature.setProperty('isSelected', true);
-                apex.jQuery("#"+_this.options.regionId).trigger("selectfeature", {map:_this.map, feature:event.feature});
-            }
-        });
+        if (this.options.featureSelectable) {
+            // When the user clicks, set 'isSelected', changing the color of the shape.
+            dataLayer.addListener('click', function(event) {
+                apex.debug("reportmap.map.data - click",event);
+                if (event.feature.getProperty('isSelected')) {
+                    apex.debug("isSelected","false");
+                    event.feature.removeProperty('isSelected');
+                    apex.jQuery("#"+_this.options.regionId).trigger("unselectfeature", {map:_this.map, feature:event.feature});
+                } else {
+                    apex.debug("isSelected","true");
+                    event.feature.setProperty('isSelected', true);
+                    apex.jQuery("#"+_this.options.regionId).trigger("selectfeature", {map:_this.map, feature:event.feature});
+                }
+            });
+        }
 
-        // When the user hovers, tempt them to click by outlining the shape.
-        // Call revertStyle() to remove all overrides. This will use the style rules
-        // defined in the function passed to setStyle()
-        dataLayer.addListener('mouseover', function(event) {
-            apex.debug("reportmap.map.data","mouseover",event);
-            dataLayer.revertStyle();
-            dataLayer.overrideStyle(event.feature, {strokeWeight: 4});
-            apex.jQuery("#"+_this.options.regionId).trigger("mouseoverfeature", {map:_this.map, feature:event.feature});
-        });
+        if (this.options.featureHoverable) {
 
-        dataLayer.addListener('mouseout', function(event) {
-            apex.debug("reportmap.map.data","mouseout",event);
-            dataLayer.revertStyle();
-            apex.jQuery("#"+_this.options.regionId).trigger("mouseoutfeature", {map:_this.map, feature:event.feature});
-        });
+            // When the user hovers, tempt them to click by outlining the shape.
+            // Call revertStyle() to remove all overrides. This will use the style rules
+            // defined in the function passed to setStyle()
+
+            dataLayer.addListener('mouseover', function(event) {
+                apex.debug("reportmap.map.data","mouseover",event);
+                dataLayer.revertStyle();
+                dataLayer.overrideStyle(event.feature, {strokeWeight: 4});
+                apex.jQuery("#"+_this.options.regionId).trigger("mouseoverfeature", {map:_this.map, feature:event.feature});
+            });
+
+            dataLayer.addListener('mouseout', function(event) {
+                apex.debug("reportmap.map.data","mouseout",event);
+                dataLayer.revertStyle();
+                apex.jQuery("#"+_this.options.regionId).trigger("mouseoutfeature", {map:_this.map, feature:event.feature});
+            });
+        }
+
     },
 
     // initialisation for data layer when in drawing mode
@@ -843,19 +853,22 @@ $( function() {
         // Change the color when the isSelected property is set to true.
         dataLayer.setStyle(function(feature) {
             var color = _this.options.featureColor,
-                editable = false;
+                editable = false,
+                styleOptions;
             if (feature.getProperty('isSelected')) {
                 color = _this.options.featureColorSelected;
                 // if we're drawing a hole, we don't want to drag/edit the existing feature
                 editable = !($("#hole_"+_this.options.regionId).prop("checked"));
             }
-            return /** @type {!google.maps.Data.StyleOptions} */({
+            styleOptions = /** @type {!google.maps.Data.StyleOptions} */{
                 fillColor    : color,
                 strokeColor  : color,
-                strokeWeight : 1,
-                draggable    : editable,
-                editable     : editable
-            });
+                strokeWeight : 1
+            };
+            if (_this.options.featureStyleFn) {
+                $.extend(styleOptions, _this.options.featureStyleFn(feature));
+            }
+            return $.extend(styleOptions, {draggable:editable, editable:editable});
         });
         
         dataLayer.addListener('addfeature', function(event) {
@@ -1188,11 +1201,18 @@ $( function() {
 
         if (pData.mapdata) {
             apex.debug("pData.mapdata length:", pData.mapdata.length);
+            
+            var errorMsg;
 
             // render the map data
             if (pData.mapdata.length>0) {
                 
                 for (var i = 0; i < pData.mapdata.length; i++) {
+                    
+                    if (pData.mapdata[i].error) {
+                        errorMsg = pData.mapdata[i].error;
+                        break;
+                    }
                     
                     var row = pData.mapdata[i];
                     
@@ -1264,7 +1284,15 @@ $( function() {
 
             }
             
-            if ((this.totalRows < this.options.maximumRows)
+            if (errorMsg) {
+
+                apex.debug.error(errorMsg);
+                this.showMessage(errorMsg);
+
+                delete this.newIdMap;
+                this._afterRefresh();
+
+            } else if ((this.totalRows < this.options.maximumRows)
                 && (pData.mapdata.length == this.options.rowsPerBatch)) {
                 // get the next page of data
 

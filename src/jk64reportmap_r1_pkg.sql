@@ -1,6 +1,6 @@
 /**********************************************************
 create or replace package jk64reportmap_r1_pkg as
--- jk64 ReportMap v1.4 Jun 2020
+-- jk64 ReportMap v1.4 Aug 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -24,7 +24,7 @@ end jk64reportmap_r1_pkg;
 
 create or replace package body jk64reportmap_r1_pkg as
 **********************************************************/
--- jk64 ReportMap v1.4 Jun 2020
+-- jk64 ReportMap v1.4 Aug 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -175,44 +175,53 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
     l_max_rows              number;
     l_geojson_clob          clob;
     l_chunk_size            number := 32767;
+    l_rows_emitted          number := 0;
 
-    function varchar2_field (attr_no in number, i in number, fmt in varchar2 := null) return varchar2 is
+    function varchar2_field (attr_no in number, i in number) return varchar2 is
         r varchar2(4000);
     begin
         if l_column_list.exists(attr_no) then
             -- whatever data type was in the original source, get it as a string
             r := sys.htf.escape_sc(
                 apex_plugin_util.get_value_as_varchar2 (
-                    p_data_type   => l_column_list(attr_no).data_type,
-                    p_value       => l_column_list(attr_no).value_list(i),
-                    p_format_mask => fmt
+                    p_data_type => l_column_list(attr_no).data_type,
+                    p_value     => l_column_list(attr_no).value_list(i)
                     ));
         end if;
         return r;
     end varchar2_field;
     
     function number_field (attr_no in number, i in number) return number is
-        r varchar2(4000);
+        r number;
     begin
-        r := varchar2_field(attr_no, i, '99999999999999999999.99999999999999999999');
-        return to_number(r,'99999999999999999999.99999999999999999999');
+        if l_column_list(attr_no).data_type = apex_plugin_util.c_data_type_number then
+            r := l_column_list(attr_no).value_list(i).number_value;
+        else
+            r := to_number(varchar2_field(attr_no, i));
+        end if;
+        return r;
     exception
         when value_error then
-            raise_application_error(-20000, 'Unable to convert data to number "' || r || '"');
+            raise_application_error(-20000, 'Unable to convert data to number [' || varchar2_field(attr_no, i) || ']');
     end number_field;
     
-    -- return a lat/long data as a number formatted as a string suitable for embedding in json
-    function lat_lng_field (attr_no in number, i in number) return varchar2 is
-        r varchar2(4000);
+    -- return a latitude or longitude as a number formatted as a string suitable for embedding in json
+    function lat_or_lng_field (attr_no in number, i in number) return varchar2 is
+        r number;
     begin
-        r := varchar2_field(attr_no, i, g_tochar_format);
-        -- handle edge case where original data was already a varchar and client NLS settings are incompatible with js numbers
-        return to_char(to_number(r, g_tochar_format), g_tochar_format);
+        if l_column_list(attr_no).data_type = apex_plugin_util.c_data_type_number then
+            r := l_column_list(attr_no).value_list(i).number_value;
+        else
+            r := to_number(varchar2_field(attr_no, i));
+        end if;
+        return to_char(r, g_tochar_format);
     exception
         when value_error then
-            raise_application_error(-20000, 'Unable to convert data to lat or long "' || r || '"');
-    end lat_lng_field;
-        
+            raise_application_error(-20000, 'Unable to convert data to '
+                || case attr_no when 1 then 'latitude' when 2 then 'longitude' else 'lat/lng' end
+                || ' [' || varchar2_field(attr_no, i) || ']');
+    end lat_or_lng_field;
+
     function flex_field (attr_no in number, i in number, offset in number) return varchar2 is
       d varchar2(4000);
     begin
@@ -279,9 +288,9 @@ begin
             for i in 1 .. l_column_list(1).value_list.count loop
             
                 -- minimise size of data to be sent by encoding it as an array of arrays
-                l_buf := '[' || lat_lng_field(1,i)
-                      || ',' || lat_lng_field(2,i)
-                      || ',' || greatest(nvl(round(number_field(3,i)),1),1)
+                l_buf := '[' || lat_or_lng_field(1,i)
+                      || ',' || lat_or_lng_field(2,i)
+                      || ',' || greatest( nvl( round( number_field(3,i) ), 1), 1)
                       || ']';
 
                 if i < 8 /*don't send the whole dataset to debug log*/ then
@@ -293,6 +302,8 @@ begin
                 end if;
 
                 sys.htp.prn(l_buf);
+                
+                l_rows_emitted := l_rows_emitted + 1;
               
             end loop;
 
@@ -358,7 +369,11 @@ begin
                            '"f":{' || rtrim(l_flex,',') || '}'
                          end;
                 
+                l_buf := rtrim(l_buf, ',');
+                
                 sys.htp.prn(l_buf || '}');
+
+                l_rows_emitted := l_rows_emitted + 1;
 
             end loop;
             
@@ -381,8 +396,8 @@ begin
                     l_flex := l_flex || flex_field(attr_no, i, offset => 7);
                 end loop;
 
-                l_buf := '"x":' || lat_lng_field(1,i) || ',' /*lat*/
-                      || '"y":' || lat_lng_field(2,i) || ',' /*lng*/
+                l_buf := '"x":' || lat_or_lng_field(1,i) || ',' /*lat*/
+                      || '"y":' || lat_or_lng_field(2,i) || ',' /*lng*/
                       || apex_javascript.add_attribute('n',varchar2_field(3,i)) /*name*/
                       || apex_javascript.add_attribute('d',varchar2_field(4,i)) /*id*/
                       || apex_javascript.add_attribute('i',varchar2_field(5,i)) /*info*/
@@ -403,6 +418,8 @@ begin
                 end if;
 
                 sys.htp.prn(l_buf);
+
+                l_rows_emitted := l_rows_emitted + 1;
               
             end loop;
 
@@ -415,7 +432,8 @@ exception
         apex_debug.error(sqlerrm);
         apex_debug.message(dbms_utility.format_error_stack);
         apex_debug.message(dbms_utility.format_call_stack);
-        sys.htp.p('{"error":' || apex_escape.js_literal(sqlerrm,'"') || '}');
+        sys.htp.p(case when l_rows_emitted>0 then ',' end
+            || '{"error":' || apex_escape.js_literal(sqlerrm,'"') || '}');
 end prn_mapdata;
 
 function render
