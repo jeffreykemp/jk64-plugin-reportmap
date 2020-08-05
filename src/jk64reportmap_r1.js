@@ -1118,6 +1118,15 @@ $( function() {
 
         this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),mapOptions);
 
+        if (this.options.initFn) {
+            apex.debug("init_javascript_code running...");
+            //inside the init() function we want "this" to refer to this
+            this.init=this.options.initFn;
+            this.init();
+            this.init.delete;
+            apex.debug("init_javascript_code finished.");
+        }
+
         this._initFeatures();
 
         if (this.options.drawingModes) {
@@ -1128,15 +1137,6 @@ $( function() {
             this._initDragDropGeoJSON();
         }
         
-        if (this.options.initFn) {
-            apex.debug("init_javascript_code running...");
-            //inside the init() function we want "this" to refer to this
-            this.init=this.options.initFn;
-            this.init();
-            this.init.delete;
-            apex.debug("init_javascript_code finished.");
-        }
-
         if (apex.debug.getLevel()>0) {
             this._initDebug();
         }
