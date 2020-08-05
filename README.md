@@ -48,9 +48,9 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 
 ## PRE-REQUISITES
 
-* Oracle Application Express **5.0.3** or later
+* Oracle Application Express **18.2** or later
 
-  > *Deprecation notice: release 1.3.1 is the last version that includes support for versions prior to APEX 18.2. Release 1.4 of the plugin will only support APEX 18.2 and later.*
+  > *NOTE: Release 1.3.1 was the last version that includes a backport for versions prior to APEX 18.2.*
 
 * Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key)**
 
@@ -66,11 +66,7 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 
 2. In your application, go to **Shared Components** -> **Plug-ins** and click **Import**
 
-2. Choose your version from the list below:
-   * If you are on APEX 18.2 or later: **`region_type_plugin_com_jk64_report_google_map_r1.sql`**
-   * If you are on APEX 5.0.3 to 18.1: **`backport/region_type_plugin_com_jk64_report_google_map_r1_503.sql`**
-
-     > *Deprecation notice: release 1.3.1 is the last version that includes support for versions prior to APEX 18.2. Release 1.4 of the plugin will only support APEX 18.2 and later.*
+2. Import the region plugin: **`region_type_plugin_com_jk64_report_google_map_r1.sql`**
 
 3. Supply your public **Google API Key** (Component Settings)
 
@@ -83,6 +79,8 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
    ```
    
    (if you just want a map with no data, enter a dummy query (e.g. `select 1 from dual`); then in the map region properties, set **Source** -> **Location** to `- Select -`)
+
+6. *(OPTIONAL)* To add dynamic action features, import the companion Action plugin: **`dynamic_action_plugin_com_jk64_report_google_map_da_r1.sql`**
 
 **IF YOU ARE UPGRADING** from any prior release, refer to the **[Upgrade Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/Upgrading)**.
 
