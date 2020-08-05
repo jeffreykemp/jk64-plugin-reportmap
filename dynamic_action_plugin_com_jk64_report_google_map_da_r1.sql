@@ -31,7 +31,7 @@ wwv_flow_api.create_plugin(
 ,p_category=>'EXECUTE'
 ,p_supported_ui_types=>'DESKTOP'
 ,p_plsql_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'-- jk64 ReportMap Action v1.0 May 2020',
+'-- jk64 ReportMap Action v1.0 Aug 2020',
 '-- https://github.com/jeffreykemp/jk64-plugin-reportmap',
 '-- Copyright (c) 2020 Jeffrey Kemp',
 '-- Released under the MIT licence: http://opensource.org/licenses/mit-license',
@@ -51,8 +51,8 @@ wwv_flow_api.create_plugin(
 '    l_js_expression  plugin_attr := p_dynamic_action.attribute_06;',
 '    l_option         plugin_attr := p_dynamic_action.attribute_07;',
 '    ',
-'    l_action_js      varchar2(1000);',
-'    l_val_js         varchar2(1000);',
+'    l_action_js      varchar2(32767);',
+'    l_val_js         varchar2(32767);',
 '    l_result         apex_plugin.t_dynamic_action_render_result;',
 '',
 'begin',
