@@ -60,12 +60,13 @@ $( function() {
         click                  : null, //simulate a click on a marker
         deleteAllFeatures      : null, //delete all features (drawing manager)
         deleteSelectedFeatures : null, //delete selected features (drawing manager)
-        hideMessage            : null, //hide the warning/error message
+        fitBounds              : null, //pan/zoom the map to the given bounds
         geolocate              : null, //find the user's device location
         getAddressByPos        : null, //get closest address to the given location
         gotoAddress            : null, //search by address and place the pin there
         gotoPos                : null, //place the pin at a given position {lat,lng}
         gotoPosByString        : null, //place the pin at a given position (lat,lng provided as a string or LatLngLiteral)
+        hideMessage            : null, //hide the warning/error message
         loadGeoJsonString      : null, //load features from a GeoJSON document
         panTo                  : null, //pan map to given location (lat,lng)
         panToByString          : null, //pan map to given position (lat,lng provided as a string or LatLngLiteral)
@@ -392,6 +393,24 @@ $( function() {
         var latlng = this.parseLatLng(v);
         if (latlng) {
             this.panTo(latlng.lat(),latlng.lng());
+        }
+    },
+    
+    //pan/zoom the map to the given bounds
+    fitBounds: function (v) {
+        apex.debug("reportmap.fitBounds", v);
+        if (v !== null && v !== undefined) {
+            var bounds;
+            if (v.hasOwnProperty("east")&&v.hasOwnProperty("north")&&v.hasOwnProperty("south")&&v.hasOwnProperty("west")) {
+                // parse as google.maps.LatLngBoundsLiteral
+                bounds = new google.maps.LatLngBoundsLiteral(v);
+            } else {
+                bounds = JSON.parse(v);
+            }
+            
+            if (bounds) {
+                this.map.fitBounds(bounds);
+            }
         }
     },
 
