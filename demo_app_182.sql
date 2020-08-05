@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   11:17 Wednesday August 5, 2020
+--   Date and Time:   11:42 Wednesday August 5, 2020
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -115,7 +115,7 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20200805111727'
+,p_last_upd_yyyymmddhh24miss=>'20200805114005'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>19
 ,p_ui_type_name => null
@@ -1467,7 +1467,7 @@ wwv_flow_api.create_plugin_setting(
  p_id=>wwv_flow_api.id(44658048572715472)
 ,p_plugin_type=>'REGION TYPE'
 ,p_plugin=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
-,p_attribute_01=>'(enter your api key here)'
+,p_attribute_01=>'AIzaSyDN1n03b7SUyRZAn0hYFqIG5tHcDoy1RQI'
 ,p_attribute_05=>'1'
 ,p_attribute_06=>'18'
 ,p_attribute_07=>'10000'
@@ -12746,7 +12746,7 @@ wwv_flow_api.create_plugin(
 ,p_supported_ui_types=>'DESKTOP'
 ,p_image_prefix => nvl(wwv_flow_application_install.get_static_plugin_file_prefix('DYNAMIC ACTION','COM.JK64.REPORT_GOOGLE_MAP_DA_R1'),'')
 ,p_plsql_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'-- jk64 ReportMap Action v1.0 May 2020',
+'-- jk64 ReportMap Action v1.0 Aug 2020',
 '-- https://github.com/jeffreykemp/jk64-plugin-reportmap',
 '-- Copyright (c) 2020 Jeffrey Kemp',
 '-- Released under the MIT licence: http://opensource.org/licenses/mit-license',
@@ -13439,37 +13439,41 @@ wwv_flow_api.create_plugin(
 '    where  r.region_id = p_region.id;',
 '',
 '    apex_debug.message(''source type: '' || l_region.query_type_code || '' ('' || l_region.location || '' - '' || l_region.query_type || '')'');',
-'    ',
-'    if l_region.location_code = ''LOCAL'' then',
-'        ',
-'        l_result := case l_region.query_type_code',
-'                    when ''SQL''',
-'                        then p_region.source',
-'                    when ''FUNC_BODY_RETURNING_SQL''',
-'                        then apex_plugin_util.get_plsql_function_result(p_region.source)',
-'                    when ''TABLE''',
-'                        then ''select ''',
-'                          || case l_visualisation',
-'                             when g_visualisation_heatmap then ''lat,lng,weight''',
-'                             when g_visualisation_geojson then ''geojson''',
-'                             else case when l_region.include_rowid_column = ''Yes''',
-'                                  then ''lat,lng,name,rowid as id''',
-'                                  else ''lat,lng,name,id''',
-'                                  end',
-'                             end',
-'                          || '' from ''',
-'                          || case when l_region.table_owner is not null then ''"'' || l_region.table_owner || ''".'' end',
-'                          || ''"'' || l_region.table_name || ''" "'' || l_region.table_name || ''"''',
-'                          || case when l_region.where_clause is not null then '' where ('' || l_region.where_clause || '')'' end',
-'                          || case when l_region.order_by_clause is not null then '' order by '' || l_region.order_by_clause end',
-'                    end;',
-'        ',
-'        if l_result is null then',
-'            raise_application_error(-20001, ''Unsupported region source ('' || l_region.query_type || ''); must be Table/View, SQL Query or PL/SQL Function Body returning SQL'');',
+'',
+'    if l_region.query_type is not null then',
+'',
+'        if l_region.location_code = ''LOCAL'' then',
+'            ',
+'            l_result := case l_region.query_type_code',
+'                        when ''SQL''',
+'                            then p_region.source',
+'                        when ''FUNC_BODY_RETURNING_SQL''',
+'                            then apex_plugin_util.get_plsql_function_result(p_region.source)',
+'                        when ''TABLE''',
+'                            then ''select ''',
+'                              || case l_visualisation',
+'                                 when g_visualisation_heatmap then ''lat,lng,weight''',
+'                                 when g_visualisation_geojson then ''geojson''',
+'                                 else case when l_region.include_rowid_column = ''Yes''',
+'                                      then ''lat,lng,name,rowid as id''',
+'                                      else ''lat,lng,name,id''',
+'                                      end',
+'                                 end',
+'                              || '' from ''',
+'                              || case when l_region.table_owner is not null then ''"'' || l_region.table_owner || ''".'' end',
+'                              || ''"'' || l_region.table_name || ''" "'' || l_region.table_name || ''"''',
+'                              || case when l_region.where_clause is not null then '' where ('' || l_region.where_clause || '')'' end',
+'                              || case when l_region.order_by_clause is not null then '' order by '' || l_region.order_by_clause end',
+'                        end;',
+'            ',
+'            if l_result is null then',
+'                raise_application_error(-20001, ''Unsupported region source ('' || l_region.query_type || ''); must be Table/View, SQL Query or PL/SQL Function Body returning SQL'');',
+'            end if;',
+'',
+'        elsif l_region.location is not null then',
+'            raise_application_error(-20001, ''Unsupported source location ('' || l_region.location || ''); must be Local Database'');',
 '        end if;',
 '',
-'    elsif l_region.location is not null then',
-'        raise_application_error(-20001, ''Unsupported source location ('' || l_region.location || ''); must be Local Database'');',
 '    end if;',
 '',
 '    apex_debug.message(''source: '' || l_result);',
