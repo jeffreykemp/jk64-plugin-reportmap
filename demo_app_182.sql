@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   11:42 Wednesday August 5, 2020
+--   Date and Time:   14:52 Wednesday August 5, 2020
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -102,7 +102,7 @@ wwv_flow_api.create_flow(
 ,p_public_user=>'APEX_PUBLIC_USER'
 ,p_proxy_server=>nvl(wwv_flow_application_install.get_proxy,'')
 ,p_no_proxy_domains=>nvl(wwv_flow_application_install.get_no_proxy_domains,'')
-,p_flow_version=>'release 1.4 May 2020'
+,p_flow_version=>'release 1.4 Aug 2020'
 ,p_flow_status=>'AVAILABLE_W_EDIT_LINK'
 ,p_flow_unavailable_text=>'This application is currently unavailable at this time.'
 ,p_exact_substitutions_only=>'Y'
@@ -115,7 +115,7 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20200805114005'
+,p_last_upd_yyyymmddhh24miss=>'20200805145249'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>19
 ,p_ui_type_name => null
@@ -1467,7 +1467,7 @@ wwv_flow_api.create_plugin_setting(
  p_id=>wwv_flow_api.id(44658048572715472)
 ,p_plugin_type=>'REGION TYPE'
 ,p_plugin=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
-,p_attribute_01=>'AIzaSyDN1n03b7SUyRZAn0hYFqIG5tHcDoy1RQI'
+,p_attribute_01=>'(enter your api key here)'
 ,p_attribute_05=>'1'
 ,p_attribute_06=>'18'
 ,p_attribute_07=>'10000'
