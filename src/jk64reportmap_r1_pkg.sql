@@ -1,4 +1,4 @@
-/**********************************************************
+--/**********************************************************
 create or replace package jk64reportmap_r1_pkg as
 -- jk64 ReportMap v1.4 Aug 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
@@ -23,7 +23,7 @@ end jk64reportmap_r1_pkg;
 /
 
 create or replace package body jk64reportmap_r1_pkg as
-**********************************************************/
+--**********************************************************/
 -- jk64 ReportMap v1.4 Aug 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
@@ -699,7 +699,7 @@ exception
         raise;
 end ajax;
 
-/**********************************************************
+--/**********************************************************
 end jk64reportmap_r1_pkg;
 /
-**********************************************************/
+--**********************************************************/
