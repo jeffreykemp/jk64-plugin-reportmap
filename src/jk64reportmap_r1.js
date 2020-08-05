@@ -138,6 +138,11 @@ $( function() {
         messageInner.innerHTML = msg;
         messageUI.appendChild(messageInner);
         
+        this.msgDiv.addEventListener('click', function() {
+            apex.debug("on click - hide message");
+            this.remove();
+        });
+        
         this.map.controls[google.maps.ControlPosition.LEFT_CENTER].push(this.msgDiv);
     },
     
