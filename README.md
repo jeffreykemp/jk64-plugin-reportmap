@@ -50,7 +50,7 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
 
 * Oracle Application Express **18.2** or later
 
-  > *NOTE: Release 1.3.1 was the last version that includes a backport for versions prior to APEX 18.2.*
+  > *NOTE: [Release 1.3.1](https://github.com/jeffreykemp/jk64-plugin-reportmap/releases/tag/v1.3.1) was the last version that includes a backport for versions prior to APEX 18.2.*
 
 * Your **[Google Maps API Key](https://developers.google.com/maps/documentation/javascript/get-api-key)**
 
