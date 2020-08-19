@@ -1,5 +1,5 @@
 /*
-jk64 ReportMap v1.4 Aug 2020
+jk64 ReportMap v1.5 Aug 2020
 https://github.com/jeffreykemp/jk64-plugin-reportmap
 Copyright (c) 2016 - 2020 Jeffrey Kemp
 Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -949,7 +949,7 @@ $( function() {
         }
     },
 
-    _loadGeoJson : function (geojson, options) {
+    _loadGeoJson : function (geojson, filename, options) {
         apex.debug("_loadGeoJson", geojson);
         
         // render the features on the map
@@ -964,17 +964,22 @@ $( function() {
             this.map.fitBounds(this.bounds);
         }
         
-        apex.jQuery("#"+this.options.regionId).trigger("loadedgeojson", {map:this.map, geoJson:geojson, features:features});
+        apex.jQuery("#"+this.options.regionId).trigger("loadedgeojson", {
+            map      : this.map,
+            geoJson  : geojson,
+            features : features,
+            filename : filename
+        });
     },
 
-    loadGeoJsonString : function (geoString) {
-        apex.debug("reportmap.loadGeoJsonString", geoString);
+    loadGeoJsonString : function (geoString, filename) {
+        apex.debug("reportmap.loadGeoJsonString", geoString, filename);
         if (geoString) {
             var geojson = JSON.parse(geoString);
 
             this.bounds = new google.maps.LatLngBounds;
             
-            this._loadGeoJson(geojson);
+            this._loadGeoJson(geojson, filename);
         }
     },
 
@@ -1013,9 +1018,10 @@ $( function() {
                 // process file(s) being dropped
                 // grab the file data from each file
                 for (var i = 0, file; file = files[i]; i++) {
-                    var reader = new FileReader();
+                    var reader = new FileReader(),
+                        filename = file.name;
                     reader.onload = function(e) {
-                        _this.loadGeoJsonString(e.target.result);
+                        _this.loadGeoJsonString(e.target.result, filename);
                     };
                     reader.onerror = function(e) {
                         apex.error('reading failed');
@@ -1276,7 +1282,7 @@ $( function() {
                         
                         $.extend(row.geojson, {"properties":properties});
                         
-                        this._loadGeoJson(row.geojson, {"idPropertyName":"id"});
+                        this._loadGeoJson(row.geojson, null, {"idPropertyName":"id"});
                         
                     } else {
                         // each row is a pin info structure with x, y, etc. attributes
