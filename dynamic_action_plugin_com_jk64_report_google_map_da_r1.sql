@@ -440,14 +440,6 @@ wwv_flow_api.create_plugin_attr_value(
 ,p_help_text=>'set to false to make map icons (points of interest) unclickable'
 );
 wwv_flow_api.create_plugin_attr_value(
- p_id=>wwv_flow_api.id(117089876949145066)
-,p_plugin_attribute_id=>wwv_flow_api.id(117037157548651808)
-,p_display_sequence=>20
-,p_display_value=>'Control size'
-,p_return_value=>'controlSize'
-,p_help_text=>'size in pixels of the Maps controls (e.g. zoom controls)'
-);
-wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(117090228817146772)
 ,p_plugin_attribute_id=>wwv_flow_api.id(117037157548651808)
 ,p_display_sequence=>30
