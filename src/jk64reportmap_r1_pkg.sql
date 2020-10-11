@@ -1,6 +1,6 @@
 --/**********************************************************
 create or replace package jk64reportmap_r1_pkg as
--- jk64 ReportMap v1.4 Aug 2020
+-- jk64 ReportMap v1.5 Aug 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -24,7 +24,7 @@ end jk64reportmap_r1_pkg;
 
 create or replace package body jk64reportmap_r1_pkg as
 --**********************************************************/
--- jk64 ReportMap v1.4 Aug 2020
+-- jk64 ReportMap v1.5 Aug 2020
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license

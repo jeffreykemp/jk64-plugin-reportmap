@@ -32,6 +32,7 @@ $( function() {
         restrictCountry        : "",
         mapStyle               : "",
         travelMode             : "DRIVING",
+        unitSystem             : "METRIC",
         optimizeWaypoints      : false,
         allowZoom              : true,
         allowPan               : true,
@@ -569,7 +570,8 @@ $( function() {
                 this.directionsService.route({
                     origin      : this.origin,
                     destination : this.destination,
-                    travelMode  : google.maps.TravelMode[travelMode?travelMode:"DRIVING"]
+                    travelMode  : google.maps.TravelMode[travelMode?travelMode:this.options.travelMode],
+                    unitSystem  : google.maps.UnitSystem[this.options.unitSystem]
                 }, function(response,status){
                     _this._directionsResponse(response,status)
                 });
@@ -609,7 +611,8 @@ $( function() {
                 destination       : dest,
                 waypoints         : waypoints,
                 optimizeWaypoints : this.options.optimizeWaypoints,
-                travelMode        : google.maps.TravelMode[this.options.travelMode]
+                travelMode        : google.maps.TravelMode[this.options.travelMode],
+                unitSystem        : google.maps.UnitSystem[this.options.unitSystem]
             }, function(response,status){
                 _this._directionsResponse(response,status)
             });
