@@ -1,6 +1,5 @@
---/**********************************************************
 create or replace package jk64reportmap_r1_pkg as
--- jk64 ReportMap v1.5 Aug 2020
+-- jk64 ReportMap v1.5 Jan 2021
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -23,8 +22,7 @@ end jk64reportmap_r1_pkg;
 /
 
 create or replace package body jk64reportmap_r1_pkg as
---**********************************************************/
--- jk64 ReportMap v1.5 Aug 2020
+-- jk64 ReportMap v1.5 Jan 2021
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
 -- Copyright (c) 2016 - 2020 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -62,6 +60,9 @@ g_option_zoom_allowed          constant varchar2(30) := ':ZOOM_ALLOWED:';     --
 g_option_drag_drop_geojson     constant varchar2(30) := ':GEOJSON_DRAGDROP:';
 g_option_disable_autofit       constant varchar2(30) := ':DISABLEFITBOUNDS:';
 g_option_spinner               constant varchar2(30) := ':SPINNER:';          -- default
+
+g_unitsystem_metric            constant varchar2(30) := 'METRIC';             -- default
+g_unitsystem_imperial          constant varchar2(30) := 'IMPERIAL';
 
 subtype plugin_attr is varchar2(32767);
 
@@ -129,7 +130,7 @@ begin
     if l_region.query_type is not null then
 
         if l_region.location_code = 'LOCAL' then
-            
+
             l_result := case l_region.query_type_code
                         when 'SQL'
                             then p_region.source
@@ -151,7 +152,7 @@ begin
                               || case when l_region.where_clause is not null then ' where (' || l_region.where_clause || ')' end
                               || case when l_region.order_by_clause is not null then ' order by ' || l_region.order_by_clause end
                         end;
-            
+
             if l_result is null then
                 raise_application_error(-20001, 'Unsupported region source (' || l_region.query_type || '); must be Table/View, SQL Query or PL/SQL Function Body returning SQL');
             end if;
@@ -168,7 +169,7 @@ begin
 end get_source;
 
 procedure prn_mapdata (p_region in apex_plugin.t_region) is
-    
+
     l_source                varchar2(32767);
     l_flex                  varchar2(32767);
     l_buf                   varchar2(32767);
@@ -194,7 +195,7 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
         end if;
         return r;
     end varchar2_field;
-    
+
     function number_field (attr_no in number, i in number) return number is
         r number;
     begin
@@ -208,7 +209,7 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
         when value_error then
             raise_application_error(-20000, 'Unable to convert data to number [' || varchar2_field(attr_no, i) || ']');
     end number_field;
-    
+
     -- return a latitude or longitude as a number formatted as a string suitable for embedding in json
     function lat_or_lng_field (attr_no in number, i in number) return varchar2 is
         r number;
@@ -240,21 +241,21 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
         end if;
         return apex_javascript.add_attribute('a'||attr_no,d);
     end flex_field;
-    
+
 begin
     apex_debug.message('reportmap x01 (first row): ' || apex_application.g_x01);
     apex_debug.message('reportmap x02 (max rows): ' || apex_application.g_x02);
-    
+
     l_first_row := to_number(apex_application.g_x01);
     l_max_rows := to_number(apex_application.g_x02);
 
     l_source := get_source(p_region);
-    
+
     if l_source is not null then
-        
+
         /*
            For the "pin" type visualisations, column list is as follows:
-        
+
            1.     lat            -- required
            2.     lng            -- required
            3.     name           -- required
@@ -263,22 +264,22 @@ begin
            6.     icon           -- optional
            7.     label          -- optional
            8-17.  flex01..flex10 -- optional flex fields
-           
+
            For the "Heatmap" visualisation:
-           
+
            1.     lat            -- required
            2.     lng            -- required
            3.     weight         -- required
-           
+
            For the "GeoJson" visualisation:
-           
+
            1.     geojson        -- required
            2.     name           -- optional
            3.     id             -- optional
            4-13.  flex01..flex10 -- optional flex fields
-        
+
         */
-        
+
         case
         when l_visualisation = g_visualisation_heatmap then
 
@@ -288,9 +289,9 @@ begin
                 ,p_max_columns    => 3
                 ,p_component_name => p_region.name
                 ,p_max_rows       => l_max_rows);
-      
+
             for i in 1 .. l_column_list(1).value_list.count loop
-            
+
                 -- minimise size of data to be sent by encoding it as an array of arrays
                 l_buf := '[' || lat_or_lng_field(1,i)
                       || ',' || lat_or_lng_field(2,i)
@@ -300,19 +301,19 @@ begin
                 if i < 8 /*don't send the whole dataset to debug log*/ then
                     apex_debug.message('#' || i || ': ' || l_buf);
                 end if;
-                
+
                 if i>1 then
                     sys.htp.prn(',');
                 end if;
 
                 sys.htp.prn(l_buf);
-                
+
                 l_rows_emitted := l_rows_emitted + 1;
-              
+
             end loop;
 
         when l_visualisation = g_visualisation_geojson then
-        
+
             l_column_list := apex_plugin_util.get_data2
                 (p_sql_statement  => l_source
                 ,p_min_columns    => 1
@@ -323,17 +324,17 @@ begin
                 );
 
             for i in 1 .. l_column_list(1).value_list.count loop
-            
+
                 if i>1 then
                     sys.htp.prn(',');
                 end if;
-                
+
                 sys.htp.prn('{"geojson":');
 
                 if l_column_list(1).data_type = apex_plugin_util.c_data_type_clob then
 
                     l_geojson_clob := l_column_list(1).value_list(i).clob_value;
-                    
+
                     -- send the clob down in chunks
 
                     for j in 0 .. floor(length(l_geojson_clob)/l_chunk_size) loop
@@ -347,15 +348,15 @@ begin
                         sys.htp.prn(l_buf);
 
                     end loop;
-                
+
                 else
-                
+
                     l_buf := varchar2_field(1,i);
-                
+
                     if i < 8 /*don't send the whole dataset to debug log*/ then
                         apex_debug.message('#' || i || ': ' || substr(l_buf,1,1000));
                     end if;
-                    
+
                     sys.htp.prn(l_buf);
 
                 end if;
@@ -365,25 +366,25 @@ begin
                 for attr_no in 1..10 loop
                     l_flex := l_flex || flex_field(attr_no, i, offset => 3);
                 end loop;
-                
+
                 l_buf := ','
                       || apex_javascript.add_attribute('n',varchar2_field(2,i)) /*name*/
                       || apex_javascript.add_attribute('d',varchar2_field(3,i)) /*id*/
                       || case when l_flex is not null then
                            '"f":{' || rtrim(l_flex,',') || '}'
                          end;
-                
+
                 l_buf := rtrim(l_buf, ',');
-                
+
                 sys.htp.prn(l_buf || '}');
 
                 l_rows_emitted := l_rows_emitted + 1;
 
             end loop;
-            
+
         else
             -- "pin" type visualisations
-      
+
             l_column_list := apex_plugin_util.get_data2
                 (p_sql_statement  => l_source
                 ,p_min_columns    => 4
@@ -391,7 +392,7 @@ begin
                 ,p_component_name => p_region.name
                 ,p_first_row      => l_first_row
                 ,p_max_rows       => l_max_rows);
-        
+
             for i in 1..l_column_list(1).value_list.count loop
 
                 -- get flex fields, if any
@@ -410,7 +411,7 @@ begin
                       || case when l_flex is not null then
                            '"f":{' || rtrim(l_flex,',') || '}'
                          end;
-                
+
                 l_buf := '{' || rtrim(l_buf,',') || '}';
 
                 if i < 8 /*don't send the whole dataset to debug log*/ then
@@ -424,13 +425,13 @@ begin
                 sys.htp.prn(l_buf);
 
                 l_rows_emitted := l_rows_emitted + 1;
-              
+
             end loop;
 
         end case;
-    
+
     end if;
-    
+
 exception
     when others then
         apex_debug.error(sqlerrm);
@@ -445,7 +446,7 @@ function render
     ,p_plugin in apex_plugin.t_plugin
     ,p_is_printer_friendly in boolean
     ) return apex_plugin.t_region_render_result is
-    
+
     l_result                       apex_plugin.t_region_render_result;
 
     -- Component settings
@@ -453,37 +454,32 @@ function render
     l_no_address_results_msg       plugin_attr := p_plugin.attribute_02;
     l_directions_not_found_msg     plugin_attr := p_plugin.attribute_03;
     l_directions_zero_results_msg  plugin_attr := p_plugin.attribute_04;
-    l_min_zoom                     number;      --p_plugin.attribute_05;
-    l_max_zoom                     number;      --p_plugin.attribute_06;
-    l_max_rows                     number;      --p_plugin.attribute_07;
+    l_min_zoom                     number;      --attribute_05
+    l_max_zoom                     number;      --attribute_06
+    l_max_rows                     number;      --attribute_07
+    l_unit_system                  plugin_attr := p_plugin.attribute_08;
 
     -- Plugin attributes
     l_map_height                   plugin_attr := p_region.attribute_01;
     l_visualisation                plugin_attr := p_region.attribute_02;
-    l_click_zoom_level             number;      --p_region.attribute_03;
+    l_click_zoom_level             number;      --attribute_03
     l_options                      plugin_attr := p_region.attribute_04;
-    l_initial_zoom_level           number;      --p_region.attribute_05;
+    l_initial_zoom_level           number;      --attribute_05
     l_initial_center               plugin_attr := p_region.attribute_06;
-    l_rows_per_batch               number;      --p_region.attribute_07;
+    l_rows_per_batch               number;      --attribute_07
     l_language                     plugin_attr := p_region.attribute_08;
     l_region                       plugin_attr := p_region.attribute_09;
     l_restrict_country             plugin_attr := p_region.attribute_10;
     l_mapstyle                     plugin_attr := p_region.attribute_11;
     l_heatmap_dissipating          plugin_attr := p_region.attribute_12;
-    l_heatmap_opacity              number;      --p_region.attribute_13;
-    l_heatmap_radius               number;      --p_region.attribute_14;
+    l_heatmap_opacity              number;      --attribute_13
+    l_heatmap_radius               number;      --attribute_14
     l_travel_mode                  plugin_attr := p_region.attribute_15;
     l_drawing_modes                plugin_attr := p_region.attribute_16;
-    -- unused                      plugin_attr := p_region.attribute_17;
-    -- unused                      plugin_attr := p_region.attribute_18;
-    -- unused                      plugin_attr := p_region.attribute_19;
-    -- unused                      plugin_attr := p_region.attribute_20;
     l_optimizewaypoints            plugin_attr := p_region.attribute_21;
     l_maptype                      plugin_attr := p_region.attribute_22;
-    -- unused                      plugin_attr := p_region.attribute_23;
-    -- unused                      plugin_attr := p_region.attribute_24;
     l_gesture_handling             plugin_attr := p_region.attribute_25;
-    
+
     l_source                       varchar2(32767);
     l_region_id                    varchar2(100);
     l_lat                          number;
@@ -492,7 +488,7 @@ function render
     l_js_options                   varchar2(1000);
     l_dragdrop_geojson             boolean;
     l_init_js_code                 plugin_attr;
-    
+
 begin
     if apex_application.g_debug then
         apex_plugin_util.debug_region
@@ -500,24 +496,20 @@ begin
             ,p_region => p_region
             ,p_is_printer_friendly => p_is_printer_friendly);
     end if;
-    
+
     if l_api_key is null or instr(l_api_key,'(') > 0 then
       raise_application_error(-20000, 'Google Maps API Key is required (set in Component Settings)');
     end if;
-    
+
     l_region_id := case
                    when p_region.static_id is not null
                    then p_region.static_id
                    else 'R'||p_region.id
                    end;
     apex_debug.message('map region: ' || l_region_id);
-    
-    l_source := get_source(p_region);
 
-/*******************************************************************/
-/* Remove this for apex 5.0 or earlier                             */
+    l_source := get_source(p_region);
     l_init_js_code := p_region.init_javascript_code;
-/*******************************************************************/
 
     -- Component settings
     l_min_zoom           := valid_zoom_level(p_plugin.attribute_05, 'Min. Zoom');
@@ -530,7 +522,7 @@ begin
     l_heatmap_opacity    := apex_plugin_util.get_attribute_as_number(p_region.attribute_13, 'Heatmap Opacity');
     l_heatmap_radius     := apex_plugin_util.get_attribute_as_number(p_region.attribute_14, 'Heatmap Radius');
     l_dragdrop_geojson   := instr(':'||l_options||':',g_option_drag_drop_geojson)>0;
-    
+
     if l_initial_center is not null then
         parse_latlng(l_initial_center, p_label=>'Initial Map Center', p_lat=>l_lat, p_lng=>l_lng);
     end if;
@@ -538,13 +530,13 @@ begin
     if l_visualisation not in (g_visualisation_heatmap, g_visualisation_directions) then
         l_rows_per_batch := apex_plugin_util.get_attribute_as_number(p_region.attribute_07, 'Rows per Batch');
     end if;
-    
+
     if l_drawing_modes is not null then
         -- convert colon-delimited list "marker:polygon:polyline:rectangle:circle"
         -- to a javascript array "'marker','polygon','polyline','rectangle','circle'"
         l_drawing_modes := '''' || replace(l_drawing_modes,':',''',''') || '''';
     end if;
-        
+
     if l_visualisation = g_visualisation_heatmap then
 
         l_js_options := l_js_options || '&libraries=visualization';
@@ -554,7 +546,7 @@ begin
         l_js_options := l_js_options || '&libraries=drawing';
 
     end if;
-    
+
     if l_language is not null then
         l_js_options := l_js_options || '&language=' || l_language;
     end if;
@@ -585,7 +577,7 @@ begin
             ,p_directory => p_plugin.file_prefix);
 
     end if;
-    
+
     -- use nullif to convert default values to null; this reduces the footprint of the generated code
     l_opt := '{'
       || apex_javascript.add_attribute('regionId', l_region_id)
@@ -616,6 +608,7 @@ begin
             apex_javascript.add_attribute('travelMode', nullif(l_travel_mode,g_travelmode_driving))
          || apex_javascript.add_attribute('optimizeWaypoints', nullif(l_optimizewaypoints='Y',false))
          end
+      || apex_javascript.add_attribute('unitSystem', nullif(l_unit_system,g_unitsystem_metric))
       || apex_javascript.add_attribute('allowZoom', nullif(instr(':'||l_options||':',g_option_zoom_allowed)>0,true))
       || apex_javascript.add_attribute('allowPan', nullif(instr(':'||l_options||':',g_option_pan_allowed)>0,true))
       || apex_javascript.add_attribute('gestureHandling', nullif(l_gesture_handling,'auto'))
@@ -643,13 +636,13 @@ begin
       || '}';
 
     apex_debug.message('map options: ' || l_opt);
-  
+
     apex_javascript.add_onload_code(p_code =>
       '$("#map_' || l_region_id || '").reportmap(' || l_opt || ');'
       );
-  
+
     sys.htp.p('<div id="map_' || l_region_id || '" class="reportmap" style="min-height:' || l_map_height || 'px"></div>');
-    
+
     if l_dragdrop_geojson then
         sys.htp.p('<div id="drop_' || l_region_id || '" class="reportmap-drop-container"><div class="reportmap-drop-silhouette"></div></div>');
     end if;
@@ -677,12 +670,12 @@ begin
             ,p_region => p_region);
     end if;
     apex_debug.message('ajax');
-    
+
     sys.owa_util.mime_header('text/plain', false);
     sys.htp.p('Cache-Control: no-cache');
     sys.htp.p('Pragma: no-cache');
     sys.owa_util.http_header_close;
-    
+
     sys.htp.p('{"mapdata":[');
 
     prn_mapdata(p_region => p_region);
@@ -699,7 +692,5 @@ exception
         raise;
 end ajax;
 
---/**********************************************************
 end jk64reportmap_r1_pkg;
 /
---**********************************************************/

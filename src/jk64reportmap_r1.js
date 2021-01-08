@@ -1,5 +1,5 @@
 /*
-jk64 ReportMap v1.5 Aug 2020
+jk64 ReportMap v1.5 Jan 2021
 https://github.com/jeffreykemp/jk64-plugin-reportmap
 Copyright (c) 2016 - 2020 Jeffrey Kemp
 Released under the MIT licence: http://opensource.org/licenses/mit-license
@@ -22,7 +22,7 @@ $( function() {
         maxZoom                : null,
         initialZoom            : 2,
         visualisation          : "pins",
-        mapType                : "roadmap",
+        mapType                : "roadmap", //google.maps.MapTypeId
         clickZoomLevel         : null,
         isDraggable            : false,
         heatmapDissipating     : false,
@@ -31,8 +31,8 @@ $( function() {
         panOnClick             : true,
         restrictCountry        : "",
         mapStyle               : "",
-        travelMode             : "DRIVING",
-        unitSystem             : "METRIC",
+        travelMode             : "DRIVING", //google.maps.TravelMode
+        unitSystem             : "METRIC", //google.maps.UnitSystem
         optimizeWaypoints      : false,
         allowZoom              : true,
         allowPan               : true,
@@ -77,7 +77,7 @@ $( function() {
 		showInfoWindow         : null, //set and show info window (popup) for a pin
         showMessage            : null  //show a warning/error message
     },
-    
+
     //return google maps LatLng based on parsing the given string
     //the delimiter may be a space ( ) or a semicolon (;) or a comma (,) with one exception:
     //if the decimal point is indicated by a comma (,) the separator must be a space ( ) or semicolon (;)
@@ -126,9 +126,9 @@ $( function() {
 	 */
     showMessage: function (msg) {
         apex.debug("reportmap.showMessage", msg);
-        
+
         this.hideMessage();
-        
+
         this.msgDiv = document.createElement('div');
 
         var messageUI = document.createElement('div');
@@ -139,15 +139,15 @@ $( function() {
         messageInner.className = 'reportmap-messageInner';
         messageInner.innerHTML = msg;
         messageUI.appendChild(messageInner);
-        
+
         this.msgDiv.addEventListener('click', function() {
             apex.debug("on click - hide message");
             this.remove();
         });
-        
+
         this.map.controls[google.maps.ControlPosition.LEFT_CENTER].push(this.msgDiv);
     },
-    
+
     hideMessage: function() {
         apex.debug("reportmap.hideMessage");
         if (this.msgDiv) {
@@ -160,7 +160,7 @@ $( function() {
 	 * REPORT PINS
 	 *
 	 */
-    
+
     _eventPinData: function (marker) {
         //get pin data for passing to an event handler
         var d = {
@@ -172,7 +172,7 @@ $( function() {
         $.extend(d, marker.data);
         return d;
     },
-	
+
 	//show the info window for a pin; set the content for it
 	showInfoWindow: function (marker) {
 		apex.debug("reportmap.showInfoWindow", marker);
@@ -199,7 +199,7 @@ $( function() {
               label     : pinData.l,
               draggable : this.options.isDraggable
             });
-        
+
         //load our own data into the marker
         marker.data = {
             id   : pinData.d,
@@ -212,7 +212,7 @@ $( function() {
                 marker.data["attr"+('0'+i).slice(-2)] = pinData.f["a"+i];
             }
         }
-        
+
         //if a marker formatting function has been supplied, call it
         if (this.options.markerFormatFn) {
             this.options.markerFormatFn(marker);
@@ -232,7 +232,7 @@ $( function() {
                 if (_this.options.clickZoomLevel) {
                     _this.map.setZoom(_this.options.clickZoomLevel);
                 }
-                apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._eventPinData(marker));	
+                apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._eventPinData(marker));
             });
 
         google.maps.event.addListener(marker, "dragend", function () {
@@ -249,12 +249,12 @@ $( function() {
 		}
         return marker;
     },
-    
+
     // set up the Spiderfier visualisation
     _spiderfy: function() {
         apex.debug("reportmap._spiderfy");
         // refer to: https://github.com/jawj/OverlappingMarkerSpiderfier
-        
+
         var _this = this,
             opt = {
                 keepSpiderfied    : true,
@@ -265,9 +265,9 @@ $( function() {
 
         // allow the developer to set / override spiderfy options
         $.extend(opt, this.options.spiderfier);
-        
+
         this.oms = new OverlappingMarkerSpiderfier(this.map, opt);
-        
+
         // format the markers using the provided format function (options.spiderfyFormatFn),
         // or if not specified, provide a default function
         this.oms.addListener('format',
@@ -300,7 +300,7 @@ $( function() {
         });
 
     },
-    
+
     _removeMarkers: function() {
         apex.debug("reportmap._removeMarkers");
         this.totalRows = 0;
@@ -361,7 +361,7 @@ $( function() {
                             lng    : pos.lng(),
                             marker : this
                         })
-                    });                        
+                    });
                 }
             }
         } else if (this.userpin) {
@@ -396,7 +396,7 @@ $( function() {
             this.panTo(latlng.lat(),latlng.lng());
         }
     },
-    
+
     //pan/zoom the map to the given bounds
     fitBounds: function (v) {
         apex.debug("reportmap.fitBounds", v);
@@ -408,7 +408,7 @@ $( function() {
             } else {
                 bounds = JSON.parse(v);
             }
-            
+
             if (bounds) {
                 this.map.fitBounds(bounds);
             }
@@ -420,7 +420,7 @@ $( function() {
 	 * GEOCODING
 	 *
 	 */
-	
+
     //search the map for an address; if found, put a pin at that location and raise addressfound trigger
     gotoAddress: function (addressText) {
         apex.debug("reportmap.gotoAddress", addressText);
@@ -518,7 +518,7 @@ $( function() {
         switch(status) {
         case google.maps.DirectionsStatus.OK:
             this.directionsDisplay.setDirections(response);
-            var totalDistance = 0, totalDuration = 0, legCount = 0;
+            var totalDistance = 0, totalDuration = 0, legCount = 0, units = "meters";
             for (var i=0; i < response.routes.length; i++) {
                 legCount = legCount + response.routes[i].legs.length;
                 for (var j=0; j < response.routes[i].legs.length; j++) {
@@ -527,10 +527,16 @@ $( function() {
                     totalDuration = totalDuration + leg.duration.value;
                 }
             }
+            if (this.options.unitSystem === "IMPERIAL") {
+                //convert meters to miles
+                totalDistance *= 0.00062137119224;
+                units = "miles";
+            }
             var _this = this;
             apex.jQuery("#"+this.options.regionId).trigger("directions",{
                 map        : _this.map,
                 distance   : totalDistance,
+                units      : units,
                 duration   : totalDuration,
                 legs       : legCount,
                 directions : response
@@ -546,7 +552,7 @@ $( function() {
             apex.debug("Directions request failed", status);
         }
     },
-    
+
     //show simple route between two points
     showDirections: function (origin, destination, travelMode) {
         apex.debug("reportmap.showDirections", origin, destination, travelMode);
@@ -582,7 +588,7 @@ $( function() {
             apex.debug("Unable to show directions: no data, no origin/destination");
         }
     },
-    
+
     //directions visualisation based on query data
     _directions: function () {
         apex.debug("reportmap._directions "+this.markers.length+" waypoints");
@@ -620,13 +626,13 @@ $( function() {
             apex.debug("not enough waypoints - need at least an origin and a destination point");
         }
     },
-	
+
 	/*
 	 *
 	 * DRAWING LAYER
 	 *
 	 */
-        
+
     deleteSelectedFeatures: function() {
         apex.debug("reportmap.deleteSelectedFeatures");
         var dataLayer = this.map.data;
@@ -646,9 +652,9 @@ $( function() {
             dataLayer.remove(feature);
         });
     },
-    
+
     _addControl: function(icon, hint, callback) {
-        
+
         var controlDiv = document.createElement('div');
 
         // Set CSS for the control border.
@@ -661,19 +667,19 @@ $( function() {
         var controlInner = document.createElement('div');
         controlInner.className = 'reportmap-controlInner';
         controlInner.style.backgroundImage = icon;
-        
+
         //controlInner.innerHTML = label; // this would be for a text button
         controlUI.appendChild(controlInner);
 
         // Setup the click event listener
         controlUI.addEventListener('click', callback);
-        
+
         this.map.controls[google.maps.ControlPosition.TOP_CENTER].push(controlDiv);
 
     },
 
     _addCheckbox: function(name, label, hint) {
-        
+
         var controlDiv = document.createElement('div');
 
         // Set CSS for the control border.
@@ -685,7 +691,7 @@ $( function() {
         // Set CSS for the control interior.
         var controlInner = document.createElement('div');
         controlInner.className = 'reportmap-controlInner';
-        
+
         //controlInner.innerHTML = label; // this would be for a text button
         controlUI.appendChild(controlInner);
 
@@ -695,33 +701,33 @@ $( function() {
         controlCheckbox.setAttribute('name', name);
         controlCheckbox.setAttribute('value', 'Y');
         controlCheckbox.className = 'reportmap-controlCheckbox';
-        
+
         controlCheckbox.className = 'reportmap-checkbox';
-        
+
         controlInner.appendChild(controlCheckbox);
-        
+
         var controlLabel = document.createElement('label');
         controlLabel.setAttribute('for',name+'_'+this.options.regionId);
         controlLabel.innerHTML = label;
         controlLabel.className = 'reportmap-controlCheckboxLabel';
-        
+
         controlInner.appendChild(controlLabel);
-        
+
         this.map.controls[google.maps.ControlPosition.TOP_CENTER].push(controlDiv);
 
     },
-    
+
     _addPoint: function(dataLayer, pos) {
         apex.debug("reportmap._addPoint",dataLayer,pos);
-        
+
         dataLayer.add(new google.maps.Data.Feature({
             geometry: new google.maps.Data.Point(pos)
         }));
     },
-    
+
     _addPolygon: function(dataLayer, arr) {
         apex.debug("reportmap._addPolygon",dataLayer,arr);
-        
+
         if ($("#hole_"+this.options.regionId).prop("checked")) {
             dataLayer.forEach(function(feature) {
                 if (feature.getProperty('isSelected')) {
@@ -741,14 +747,14 @@ $( function() {
             }));
         }
     },
-    
+
     // initialisation for data layer when not in drawing mode
     _initFeatures: function() {
         apex.debug("reportmap._initFeatures");
 
         var _this = this,
             dataLayer = this.map.data;
-        
+
         // Change the color when the isSelected property is set to true.
         dataLayer.setStyle(this.options.featureStyleFn||function(feature) {
             var color = _this.options.featureColor;
@@ -763,7 +769,7 @@ $( function() {
                 editable     : false
             });
         });
-        
+
         if (this.options.featureSelectable) {
             // When the user clicks, set 'isSelected', changing the color of the shape.
             dataLayer.addListener('click', function(event) {
@@ -807,15 +813,15 @@ $( function() {
         apex.debug("reportmap._initDrawing",this.options.drawingModes);
         var _this = this,
             dataLayer = this.map.data;
-        
-        if (this.options.drawingModes.indexOf("polygon")>-1) {        
+
+        if (this.options.drawingModes.indexOf("polygon")>-1) {
             this._addCheckbox(
                 'hole', //name
                 'Hole', //label
                 'Subtract hole from polygon', //hint
             );
         }
-        
+
         this._addControl(
 			//trashcan icon
             "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAA5ElEQVQ4jc3UP0oDQRTH8U9URGSx9ASewcoz5AAL9rYexc4T2FhY6gEE0TMIQS2VFEHEgCYpfMU62cz+0SI/GPbxfr/58mYYlnXXoMEvcZD0HnGxasNWBnaEY5wl/VM847YrcB93uEn6h+G10gjzjmuUAw57AIc54AamEXzBddT3fo4/j95T1NPY8wtQ1QzjqMe4jPohFlwlmVkOCG/x3cOkxp+EV83+GVj0ARb/PeE2vmr8T+z0AZJceEN2JfC1AdI5W2r/qMs2Ey4dI6OlbN3vq8AJdiu9TXwnuQ+c473DAGugBV7oWWGmvidcAAAAAElFTkSuQmCC')",
@@ -823,7 +829,7 @@ $( function() {
             function(e) {
                 _this.deleteSelectedFeatures();
             });
-        
+
         // from https://jsfiddle.net/geocodezip/ezfe2wLg/57/
 
         var drawingManager = new google.maps.drawing.DrawingManager({
@@ -834,7 +840,7 @@ $( function() {
             }
         });
         drawingManager.setMap(this.map);
-        
+
         // from http://stackoverflow.com/questions/25072069/export-geojson-data-from-google-maps
         // from http://jsfiddle.net/doktormolle/5F88D/
         google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
@@ -897,7 +903,7 @@ $( function() {
             }
             return $.extend(styleOptions, {draggable:editable, editable:editable});
         });
-        
+
         dataLayer.addListener('addfeature', function(event) {
             apex.debug("reportmap.map.data","addfeature",event);
             apex.jQuery("#"+_this.options.regionId).trigger("addfeature", {map:_this.map, feature:event.feature});
@@ -917,21 +923,21 @@ $( function() {
 				oldGeometry : event.oldGeometry
 			});
         });
-                
+
         document.addEventListener('keydown', function(event) {
             if (event.key === "Delete") {
                 _this.deleteSelectedFeatures();
             }
         });
-        
+
     },
-    
+
 	/*
 	 *
 	 * GEOJSON
 	 *
 	 */
-    
+
     /**
      * Process each point in a Geometry, regardless of how deep the points may lie.
      * @param {google.maps.Data.Geometry} geometry - structure to process
@@ -954,11 +960,11 @@ $( function() {
 
     _loadGeoJson : function (geojson, filename, options) {
         apex.debug("_loadGeoJson", geojson);
-        
+
         // render the features on the map
         features = this.map.data.addGeoJson(geojson, options);
 
-        //Update a map's viewport to fit each geometry in a dataset        
+        //Update a map's viewport to fit each geometry in a dataset
         var _this = this;
         this.map.data.forEach(function(feature) {
             _this._processPoints(feature.getGeometry(), _this.bounds.extend, _this.bounds);
@@ -966,7 +972,7 @@ $( function() {
         if (this.options.autoFitBounds) {
             this.map.fitBounds(this.bounds);
         }
-        
+
         apex.jQuery("#"+this.options.regionId).trigger("loadedgeojson", {
             map      : this.map,
             geoJson  : geojson,
@@ -981,7 +987,7 @@ $( function() {
             var geojson = JSON.parse(geoString);
 
             this.bounds = new google.maps.LatLngBounds;
-            
+
             this._loadGeoJson(geojson, filename);
         }
     },
@@ -1044,7 +1050,7 @@ $( function() {
             return false;
         }, false);
     },
-    
+
 	/*
 	 *
 	 * UTILITIES
@@ -1054,7 +1060,7 @@ $( function() {
 	_initDebug: function() {
         apex.debug("reportmap._initDebug");
         var _this = this;
-        
+
         var controlDiv = document.createElement('div');
 
         // Set CSS for the control border.
@@ -1062,9 +1068,9 @@ $( function() {
         controlUI.className = 'reportmap-debugPanel';
         controlUI.innerHTML = '[debug mode]';
         controlDiv.appendChild(controlUI);
-        
+
         this.map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(controlDiv);
-        
+
         // as mouse is moved over the map, show the current coordinates in the debug panel
         google.maps.event.addListener(this.map, "mousemove", function (event) {
             controlUI.innerHTML = 'mouse position ' + JSON.stringify(event.latLng);
@@ -1075,10 +1081,10 @@ $( function() {
             controlUI.innerHTML = 'map bounds ' + JSON.stringify(_this.map.getBounds());
         });
     },
-    
+
     _getWindowPath: function() {
         apex.debug("reportmap._getWindowPath");
-        
+
         var path = window.location.origin + window.location.pathname;
 
         if (path.indexOf("/r/") > -1) {
@@ -1110,7 +1116,7 @@ $( function() {
             // now it is something like:
             // https://apex.oracle.com/pls/apex
         }
-        
+
         apex.debug("path", path);
 
         return path;
@@ -1131,7 +1137,7 @@ $( function() {
         // get absolute URL for this site, including /apex/ or /ords/ (this is required by some google maps APIs)
         this.imagePrefix = this._getWindowPath() + "/" + this.options.pluginFilePrefix + "images/m";
         apex.debug('imagePrefix', this.imagePrefix);
-        
+
         var mapOptions = {
             minZoom                : this.options.minZoom,
             maxZoom                : this.options.maxZoom,
@@ -1144,7 +1150,7 @@ $( function() {
             disableDoubleClickZoom : !(this.options.allowZoom),
             gestureHandling        : this.options.gestureHandling
         };
-        
+
         if (this.options.mapStyle) {
             mapOptions.styles = this.options.mapStyle;
         }
@@ -1165,11 +1171,11 @@ $( function() {
         if (this.options.drawingModes) {
             this._initDrawing();
         }
-        
+
         if (this.options.dragDropGeoJSON) {
             this._initDragDropGeoJSON();
         }
-        
+
         if (apex.debug.getLevel()>0) {
             this._initDebug();
         }
@@ -1196,25 +1202,25 @@ $( function() {
         apex.jQuery("#"+this.options.regionId).bind("apexrefresh",function(){
             $("#map_"+_this.options.regionId).reportmap("refresh");
         });
-        
+
         // put some useful info in the console log for developers to have fun with
         if (apex.debug.getLevel()>0) {
 
             // pretty it up (for browsers that support this)
             var console_css = 'font-size:18px;background-color:#0076ff;color:white;line-height:30px;display:block;padding:10px;'
                ,sample_code = '$("#map_' + _this.options.regionId + '").reportmap("instance").map';
-            
+
             apex.debug("%cThank you for using the jk64 Report Map plugin!\n"
                 + "To access the Google Map object on this page, use:\n"
                 + sample_code + "\n"
                 + "More info: https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki",
                 console_css);
-            
+
         }
 
         apex.debug("reportmap._create finished");
     },
-    
+
     _afterRefresh: function() {
         apex.debug("_afterRefresh");
 
@@ -1228,27 +1234,27 @@ $( function() {
         // Trigger a callback/event
         this._trigger( "change" );
     },
-    
+
     _renderPage: function(pData, startRow) {
         apex.debug("_renderPage", startRow);
 
         if (pData.mapdata) {
             apex.debug("pData.mapdata length:", pData.mapdata.length);
-            
+
             var errorMsg;
 
             // render the map data
             if (pData.mapdata.length>0) {
-                
+
                 for (var i = 0; i < pData.mapdata.length; i++) {
-                    
+
                     if (pData.mapdata[i].error) {
                         errorMsg = pData.mapdata[i].error;
                         break;
                     }
-                    
+
                     var row = pData.mapdata[i];
-                    
+
                     if (this.options.visualisation=="heatmap") {
                         // each row is an array [x,y,weight]
 
@@ -1263,13 +1269,13 @@ $( function() {
                         // the data should have a GeoJson document, along with optional name, id and flex fields
                         // the name, id and flex fields will be added to the geoJson properties
                         // (alternatively, the geojson might already have the properties embedded in it)
-                        
+
                         var properties = {};
-                        
+
                         if (row.n) {
                             properties.name = row.n;
                         }
-                        
+
                         if (row.d) {
                             properties.id = row.d;
                         }
@@ -1282,27 +1288,27 @@ $( function() {
                                 }
                             }
                         }
-                        
+
                         $.extend(row.geojson, {"properties":properties});
-                        
+
                         this._loadGeoJson(row.geojson, null, {"idPropertyName":"id"});
-                        
+
                     } else {
                         // each row is a pin info structure with x, y, etc. attributes
 
                         this.bounds.extend({lat:row.x,lng:row.y});
-                        
+
                         var marker = this._newMarker(row);
-                        
+
                         // put the marker into the array of markers
                         this.markers.push(marker);
-                        
+
                         // also put the id into the ID Map
                         this.newIdMap.set(row.d, i);
 
                     }
                 }
-                
+
                 if (this.options.autoFitBounds) {
 
                     apex.debug("fitBounds",
@@ -1316,7 +1322,7 @@ $( function() {
                 this.totalRows += pData.mapdata.length;
 
             }
-            
+
             if (errorMsg) {
 
                 apex.debug.error(errorMsg);
@@ -1336,16 +1342,16 @@ $( function() {
                     southwest : this.bounds.getSouthWest().toJSON(),
                     northeast : this.bounds.getNorthEast().toJSON()
                 });
-                
+
                 startRow += this.options.rowsPerBatch;
-                
+
                 var batchSize = this.options.rowsPerBatch;
 
                 // don't exceed the maximum rows
                 if (this.totalRows + batchSize > this.options.maximumRows) {
                     batchSize = this.options.maximumRows - this.totalRows;
                 }
-                
+
                 var _this = this;
 
                 apex.server.plugin(
@@ -1363,26 +1369,26 @@ $( function() {
 
             } else {
                 // no more data to render, finish rendering
-                
+
                 if (this.totalRows == 0) {
-                
+
                     delete this.idMap;
-                    
+
                     if (this.options.noDataMessage !== "") {
                         apex.debug("show No Data Found infowindow");
                         this.showMessage(this.options.noDataMessage);
                     }
-                
+
                 } else {
 
                     switch (this.options.visualisation) {
                     case "directions":
                         this._directions();
-                    
+
                         break;
                     case "cluster":
                         // Add a marker clusterer to manage the markers.
-                
+
                         // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
                         var markerCluster = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
 
@@ -1406,12 +1412,12 @@ $( function() {
                             opacity     : this.options.heatmapOpacity,
                             radius      : this.options.heatmapRadius
                         });
-                        
+
                         this.weightedLocations.delete;
 
                         break;
                     }
-                    
+
                 }
 
                 apex.jQuery("#"+this.options.regionId).trigger(
@@ -1421,13 +1427,13 @@ $( function() {
                     southwest : this.bounds.getSouthWest().toJSON(),
                     northeast : this.bounds.getNorthEast().toJSON()
                 });
-                
+
                 this.maploaded = true;
 
                 // rememember the ID Map for the next refresh
                 this.idMap = this.newIdMap;
                 delete this.newIdMap;
-            
+
                 this._afterRefresh();
             }
 
@@ -1436,7 +1442,7 @@ $( function() {
         }
 
     },
-    
+
     // Called when created, and later when changing options
     refresh: function() {
         apex.debug("reportmap.refresh");
@@ -1454,11 +1460,11 @@ $( function() {
 
             var _this = this,
                 batchSize = this.options.rowsPerBatch;
-            
+
             if (this.options.maximumRows < batchSize) {
                 batchSize = this.options.maximumRows;
             }
-            
+
             apex.server.plugin(
                 this.options.ajaxIdentifier,
                 { pageItems : this.options.ajaxItems,
@@ -1467,26 +1473,26 @@ $( function() {
                 },
                 { dataType : "json",
                   success: function(pData) {
-                      apex.debug("first batch received");      
+                      apex.debug("first batch received");
 
                       _this._removeMarkers();
 
                       _this.weightedLocations = [];
                       _this.markers = [];
                       _this.bounds = new google.maps.LatLngBounds;
-                      
+
                       // idMap is a data map of id to the data for a pin
                       _this.newIdMap = new Map();
 
                         if (pData.mapdata&&pData.mapdata[0]&&pData.mapdata[0].error) {
-                            
+
                             _this.showMessage(pData.mapdata[0].error);
                             _this._afterRefresh();
-                            
+
                         } else {
-                                    
+
                             _this._renderPage(pData, 1);
-                            
+
                         }
                   }
                 });
@@ -1519,82 +1525,82 @@ $( function() {
     // _setOption is called for each individual option that is changing
     _setOption: function( key, value ) {
         apex.debug(key, value);
-        
+
         // dev note: to get a boolean from a value which might be a string
         // ("true" or "false") or already a boolean, we use value+''=='true'
         switch (key) {
         case "clickableIcons":
             this.map.setOptions({clickableIcons:(value+''=='true')});
-            
+
             break;
         case "disableDefaultUI":
             this.map.setOptions({disableDefaultUI:(value+''=='true')});
-            
+
             break;
         case "fullscreenControl":
             this.map.setOptions({fullscreenControl:(value+''=='true')});
-            
+
             break;
         case "heading":
             this.map.setOptions({heading:parseInt(value)});
-            
+
             break;
         case "keyboardShortcuts":
             this.map.setOptions({keyboardShortcuts:(value+''=='true')});
-            
+
             break;
         case "mapType":
             this.map.setMapTypeId(value.toLowerCase());
             this._super( key, value );
-        
+
             break;
         case "mapTypeControl":
             this.map.setOptions({mapTypeControl:(value+''=='true')});
-            
+
             break;
         case "maxZoom":
             this.map.setOptions({maxZoom:parseInt(value)});
             this._super( key, value );
-            
+
             break;
         case "minZoom":
             this.map.setOptions({minZoom:parseInt(value)});
             this._super( key, value );
-            
+
             break;
         case "rotateControl":
             this.map.setOptions({rotateControl:(value+''=='true')});
-            
+
             break;
         case "scaleControl":
             this.map.setOptions({scaleControl:(value+''=='true')});
-            
+
             break;
         case "streetViewControl":
             this.map.setOptions({streetViewControl:(value+''=='true')});
-            
+
             break;
         case "styles":
             this.map.setOptions({styles:value});
             this._super( "mapStyle", value );
-            
+
             break;
         case "zoomControl":
             this.map.setOptions({zoomControl:(value+''=='true')});
-            
+
             break;
         case "tilt":
             this.map.setTilt(parseInt(value));
-            
+
             break;
         case "zoom":
             this.map.setZoom(parseInt(value));
-            
+
             break;
         default:
             this._super( key, value );
         }
-    }      
+    }
 
   });
 });
