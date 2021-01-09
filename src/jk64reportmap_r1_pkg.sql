@@ -220,7 +220,7 @@ procedure prn_mapdata (p_region in apex_plugin.t_region) is
         else
             r := to_number(varchar2_field(attr_no, i));
         end if;
-        return to_char(r, g_tochar_format);
+        return nvl(to_char(r, g_tochar_format),'null');
     exception
         when value_error then
             raise_application_error(-20000, 'Unable to convert data to '

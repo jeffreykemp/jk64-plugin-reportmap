@@ -1257,13 +1257,15 @@ $( function() {
 
                     if (this.options.visualisation=="heatmap") {
                         // each row is an array [x,y,weight]
+                        
+                        if(row[0]&&row[1]) {
+                            this.bounds.extend({lat:row[0],lng:row[1]});
 
-                        this.bounds.extend({lat:row[0],lng:row[1]});
-
-                        this.weightedLocations.push({
-                            location:new google.maps.LatLng(row[0], row[1]),
-                            weight:row[2]
-                        });
+                            this.weightedLocations.push({
+                                location:new google.maps.LatLng(row[0], row[1]),
+                                weight:row[2]
+                            });
+                        }
 
                     } else if (this.options.visualisation=="geojson") {
                         // the data should have a GeoJson document, along with optional name, id and flex fields
@@ -1295,17 +1297,20 @@ $( function() {
 
                     } else {
                         // each row is a pin info structure with x, y, etc. attributes
+                        
+                        if(row.x&&row.y) {
+                            this.bounds.extend({lat:row.x,lng:row.y});
 
-                        this.bounds.extend({lat:row.x,lng:row.y});
+                            var marker = this._newMarker(row);
 
-                        var marker = this._newMarker(row);
+                            // put the marker into the array of markers
+                            this.markers.push(marker);
 
-                        // put the marker into the array of markers
-                        this.markers.push(marker);
-
-                        // also put the id into the ID Map
-                        this.newIdMap.set(row.d, i);
-
+                            if (row.d) {
+                                // also put the id into the ID Map
+                                this.newIdMap.set(row.d, i);
+                            }
+                        }
                     }
                 }
 
