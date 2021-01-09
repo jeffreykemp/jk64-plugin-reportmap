@@ -1,7 +1,7 @@
 create or replace package jk64reportmap_r1_pkg as
 -- jk64 ReportMap v1.5 Jan 2021
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
--- Copyright (c) 2016 - 2020 Jeffrey Kemp
+-- Copyright (c) 2016 - 2021 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
 
 -- If you compile this on your database, make sure to edit the plugin to clear
@@ -24,7 +24,7 @@ end jk64reportmap_r1_pkg;
 create or replace package body jk64reportmap_r1_pkg as
 -- jk64 ReportMap v1.5 Jan 2021
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
--- Copyright (c) 2016 - 2020 Jeffrey Kemp
+-- Copyright (c) 2016 - 2021 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
 
 -- format to use to convert a lat/lng number to string for passing via javascript
@@ -60,6 +60,7 @@ g_option_zoom_allowed          constant varchar2(30) := ':ZOOM_ALLOWED:';     --
 g_option_drag_drop_geojson     constant varchar2(30) := ':GEOJSON_DRAGDROP:';
 g_option_disable_autofit       constant varchar2(30) := ':DISABLEFITBOUNDS:';
 g_option_spinner               constant varchar2(30) := ':SPINNER:';          -- default
+g_option_suppress_ndf          constant varchar2(30) := ':SUPPRESS_NDF:';
 
 g_unitsystem_metric            constant varchar2(30) := 'METRIC';             -- default
 g_unitsystem_imperial          constant varchar2(30) := 'IMPERIAL';
@@ -625,7 +626,9 @@ begin
       || apex_javascript.add_attribute('dragDropGeoJSON', nullif(l_dragdrop_geojson,false))
 	  || apex_javascript.add_attribute('autoFitBounds', nullif(instr(':'||l_options||':',g_option_disable_autofit)=0,true))
       || apex_javascript.add_attribute('showSpinner', nullif(instr(':'||l_options||':',g_option_spinner)>0,true))
-      || apex_javascript.add_attribute('noDataMessage', p_region.no_data_found_message)
+      || apex_javascript.add_attribute('noDataMessage', case when instr(':'||l_options||':',g_option_suppress_ndf)=0
+                                                        then p_region.no_data_found_message
+                                                        end)
       || apex_javascript.add_attribute('noAddressResults', l_no_address_results_msg)
       || apex_javascript.add_attribute('directionsNotFound', l_directions_not_found_msg)
       || apex_javascript.add_attribute('directionsZeroResults', l_directions_zero_results_msg)

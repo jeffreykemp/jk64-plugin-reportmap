@@ -1,7 +1,7 @@
 /*
 jk64 ReportMap v1.5 Jan 2021
 https://github.com/jeffreykemp/jk64-plugin-reportmap
-Copyright (c) 2016 - 2020 Jeffrey Kemp
+Copyright (c) 2016 - 2021 Jeffrey Kemp
 Released under the MIT licence: http://opensource.org/licenses/mit-license
 */
 
@@ -52,7 +52,7 @@ $( function() {
         spiderfyFormatFn       : null,
         showSpinner            : true,
         iconBasePath           : "",
-        noDataMessage          : "No data to show",
+        noDataMessage          : "",
         noAddressResults       : "Address not found",
         directionsNotFound     : "At least one of the origin, destination, or waypoints could not be geocoded.",
         directionsZeroResults  : "No route could be found between the origin and destination.",
