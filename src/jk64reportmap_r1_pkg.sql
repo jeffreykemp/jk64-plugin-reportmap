@@ -61,6 +61,7 @@ g_option_drag_drop_geojson     constant varchar2(30) := ':GEOJSON_DRAGDROP:';
 g_option_disable_autofit       constant varchar2(30) := ':DISABLEFITBOUNDS:';
 g_option_spinner               constant varchar2(30) := ':SPINNER:';          -- default
 g_option_suppress_ndf          constant varchar2(30) := ':SUPPRESS_NDF:';
+g_option_detailed_mouse        constant varchar2(30) := ':DETAILED_MOUSE_EVENTS:';
 
 g_unitsystem_metric            constant varchar2(30) := 'METRIC';             -- default
 g_unitsystem_imperial          constant varchar2(30) := 'IMPERIAL';
@@ -579,7 +580,7 @@ begin
 
     end if;
 
-    -- use nullif to convert default values to null; this reduces the footprint of the generated code
+    -- use nullif to convert default values to null; this can reduce the footprint of the generated code
     l_opt := '{'
       || apex_javascript.add_attribute('regionId', l_region_id)
       || apex_javascript.add_attribute('expectData', nullif(l_source is not null,true))
@@ -624,9 +625,10 @@ begin
          '"drawingModes":[' || l_drawing_modes || '],'
          end
       || apex_javascript.add_attribute('dragDropGeoJSON', nullif(l_dragdrop_geojson,false))
-	  || apex_javascript.add_attribute('autoFitBounds', nullif(instr(':'||l_options||':',g_option_disable_autofit)=0,true))
+	  || apex_javascript.add_attribute('autoFitBounds', nullif(instr(':'||l_options||':',g_option_disable_autofit)=0,true)) --reverse meaning of option
       || apex_javascript.add_attribute('showSpinner', nullif(instr(':'||l_options||':',g_option_spinner)>0,true))
-      || apex_javascript.add_attribute('noDataMessage', case when instr(':'||l_options||':',g_option_suppress_ndf)=0
+      || apex_javascript.add_attribute('detailedMouseEvents', nullif(instr(':'||l_options||':',g_option_detailed_mouse)>0,false))
+      || apex_javascript.add_attribute('noDataMessage', case when instr(':'||l_options||':',g_option_suppress_ndf)=0 -- set to null if message suppressed
                                                         then p_region.no_data_found_message
                                                         end)
       || apex_javascript.add_attribute('noAddressResults', l_no_address_results_msg)

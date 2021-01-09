@@ -51,6 +51,7 @@ $( function() {
         spiderfier             : {},
         spiderfyFormatFn       : null,
         showSpinner            : true,
+        detailedMouseEvents    : false,
         iconBasePath           : "",
         noDataMessage          : "",
         noAddressResults       : "Address not found",
@@ -496,8 +497,8 @@ $( function() {
                     lng : position.coords.longitude
                 };
                 _this.map.panTo(pos);
-                if (_this.options.geolocateZoom) {
-                    _this.map.setZoom(_this.options.geolocateZoom);
+                if (_this.options.clickZoomLevel) {
+                    _this.map.setZoom(_this.options.clickZoomLevel);
                 }
                 apex.jQuery("#"+_this.options.regionId).trigger("geolocate", {map:_this.map, lat:pos.lat, lng:pos.lng});
             });
@@ -1122,6 +1123,98 @@ $( function() {
         return path;
     },
 
+    // add a listener for each Map event that raises a plugin event
+    _initMapEvents: function() {
+        var _this = this;
+
+        ["bounds_changed"
+        ,"center_changed"
+        ,"heading_changed"
+        ,"idle"
+        ,"maptypeid_changed"
+        ,"projection_changed"
+        ,"tilesloaded"
+        ,"tilt_changed"
+        ,"zoom_changed"
+        ].forEach(function(eventName) {
+            apex.debug("add listener for map "+eventName);
+            google.maps.event.addListener(_this.map, eventName, function() {
+                apex.debug("map "+eventName);
+                var bounds = _this.map.getBounds();
+                apex.jQuery("#"+_this.options.regionId).trigger("map"+eventName, {
+                    map       : _this.map,
+                    center    : _this.map.getCenter().toJSON(),
+                    southwest : bounds.getSouthWest().toJSON(),
+                    northeast : bounds.getNorthEast().toJSON(),
+                    zoom      : _this.map.getZoom(),
+                    heading   : _this.map.getHeading(),
+                    tilt      : _this.map.getTilt(),
+                    mapType   : _this.map.getMapTypeId()
+                });
+            });
+        });
+        
+        if(this.options.detailedMouseEvents) {
+
+            ["drag"
+            ,"dragend"
+            ,"dragstart"
+            ].forEach(function(eventName) {
+                apex.debug("add listener for map "+eventName);
+                google.maps.event.addListener(_this.map, eventName, function() {
+                    apex.debug("map "+eventName);
+                    var bounds = _this.map.getBounds();
+                    apex.jQuery("#"+_this.options.regionId).trigger("map"+eventName, {
+                        map       : _this.map,
+                        center    : _this.map.getCenter().toJSON(),
+                        southwest : bounds.getSouthWest().toJSON(),
+                        northeast : bounds.getNorthEast().toJSON(),
+                        zoom      : _this.map.getZoom(),
+                        heading   : _this.map.getHeading(),
+                        tilt      : _this.map.getTilt(),
+                        mapType   : _this.map.getMapTypeId()
+                    });
+                });
+            });
+            
+            // these events get a MapMouseEvent object
+            ["contextmenu"
+            ,"dblclick"
+            ,"mousemove"
+            ,"mouseout"
+            ,"mouseover"
+            ].forEach(function(eventName) {
+                apex.debug("add listener for map "+eventName);
+                google.maps.event.addListener(_this.map, eventName, function(mapMouseEvent) {
+                    apex.debug("map "+eventName, mapMouseEvent.latLng);
+                    apex.jQuery("#"+_this.options.regionId).trigger("map"+eventName, {
+                        map : _this.map,
+                        lat : mapMouseEvent.latLng.lat(),
+                        lng : mapMouseEvent.latLng.lng()
+                    });
+                });
+            });
+
+        }
+
+        apex.debug("add listener for map click");
+        google.maps.event.addListener(this.map, "click", function (mapMouseEvent) {
+            apex.debug("map click", mapMouseEvent.latLng);
+            if (_this.options.clickZoomLevel) {
+                if (_this.options.panOnClick) {
+                    _this.map.panTo(mapMouseEvent.latLng);
+                }
+                _this.map.setZoom(_this.options.clickZoomLevel);
+            }
+            apex.jQuery("#"+_this.options.regionId).trigger("mapclick", {
+				map : _this.map,
+				lat : mapMouseEvent.latLng.lat(),
+				lng : mapMouseEvent.latLng.lng()
+			});
+        });
+
+    },
+
 	/*
 	 *
 	 * MAIN
@@ -1184,20 +1277,7 @@ $( function() {
             this.refresh();
         }
 
-        google.maps.event.addListener(this.map, "click", function (event) {
-            apex.debug("map clicked", event.latLng);
-            if (_this.options.clickZoomLevel) {
-                if (_this.options.panOnClick) {
-                    _this.map.panTo(event.latLng);
-                }
-                _this.map.setZoom(_this.options.clickZoomLevel);
-            }
-            apex.jQuery("#"+_this.options.regionId).trigger("mapclick", {
-				map : _this.map,
-				lat : event.latLng.lat(),
-				lng : event.latLng.lng()
-			});
-        });
+        this._initMapEvents();
 
         apex.jQuery("#"+this.options.regionId).bind("apexrefresh",function(){
             $("#map_"+_this.options.regionId).reportmap("refresh");
@@ -1257,7 +1337,7 @@ $( function() {
 
                     if (this.options.visualisation=="heatmap") {
                         // each row is an array [x,y,weight]
-                        
+
                         if(row[0]&&row[1]) {
                             this.bounds.extend({lat:row[0],lng:row[1]});
 
@@ -1297,7 +1377,7 @@ $( function() {
 
                     } else {
                         // each row is a pin info structure with x, y, etc. attributes
-                        
+
                         if(row.x&&row.y) {
                             this.bounds.extend({lat:row.x,lng:row.y});
 
