@@ -1472,11 +1472,18 @@ $( function() {
 
                         break;
                     case "cluster":
-                        // Add a marker clusterer to manage the markers.
-
                         // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
-                        var markerCluster = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
-
+                    
+                        if (!this.markerClusterer) {
+                            apex.debug("create markerClusterer");
+                            this.markerClusterer = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
+                        } else {
+                            apex.debug("clear markers");
+                            this.markerClusterer.clearMarkers();
+                            apex.debug("add markers");
+                            this.markerClusterer.addMarkers(this.markers);
+                        }
+                        
                         break;
                     case "spiderfier":
                         this._spiderfy();
