@@ -1382,6 +1382,8 @@ $( function() {
                             this.markerClusterer.clearMarkers();
                             apex.debug("add markers");
                             this.markerClusterer.addMarkers(this.markers);
+                            apex.debug("repaint markers");
+                            this.markerClusterer.repaint();
                         }
                         
                         break;
