@@ -1473,16 +1473,14 @@ $( function() {
                         break;
                     case "cluster":
                         // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
-                    
-                        if (!this.markerClusterer) {
-                            apex.debug("create markerClusterer");
-                            this.markerClusterer = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
-                        } else {
-                            apex.debug("clear markers");
+                        
+                        if (this.markerClusterer) {
+                            apex.debug("markerClusterer.clearMarkers");
                             this.markerClusterer.clearMarkers();
-                            apex.debug("add markers");
-                            this.markerClusterer.addMarkers(this.markers);
                         }
+                    
+                        apex.debug("create markerClusterer");
+                        this.markerClusterer = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
                         
                         break;
                     case "spiderfier":
