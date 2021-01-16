@@ -37,6 +37,7 @@ g_coord_precision              constant number := 6;
 g_single_row_lat_margin        constant number := 0.005;
 
 g_visualisation_pins           constant varchar2(10) := 'PINS';               -- default
+g_visualisation_infolayer      constant varchar2(10) := 'INFOLAYER';
 g_visualisation_cluster        constant varchar2(10) := 'CLUSTER';
 g_visualisation_spiderfier     constant varchar2(10) := 'SPIDERFIER';
 g_visualisation_heatmap        constant varchar2(10) := 'HEATMAP';

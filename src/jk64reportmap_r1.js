@@ -50,6 +50,10 @@ $( function() {
         directionsPanel        : null,
         spiderfier             : {},
         spiderfyFormatFn       : null,
+        showPins               : true,  //show the Pins (pin type visualisations only)
+        showInfoPopups         : true,  //show the Info popup when pin is clicked
+        showInfoLayer          : false, //show the Info layer (pin type visualisations only)
+        infoLayerFormatFn      : null,
         showSpinner            : true,
         detailedMouseEvents    : false,
         iconBasePath           : "",
@@ -170,8 +174,17 @@ $( function() {
             lng    : marker.position.lng(),
 			marker : marker
         };
+        if (marker.overlay&&marker.overlay.div) {
+            d.infoDiv = marker.overlay.div;
+        }
         $.extend(d, marker.data);
         return d;
+    },
+
+    _unescapeInfo: function(info) {
+		//unescape the html for the info window contents
+		var ht = new DOMParser().parseFromString(info, "text/html");
+		return ht.documentElement.textContent;
     },
 
 	//show the info window for a pin; set the content for it
@@ -181,9 +194,7 @@ $( function() {
 		if (!this.infoWindow) {
 			this.infoWindow = new google.maps.InfoWindow();
 		}
-		//unescape the html for the info window contents
-		var ht = new DOMParser().parseFromString(marker.data.info, "text/html");
-		this.infoWindow.setContent(ht.documentElement.textContent);
+		this.infoWindow.setContent(this._unescapeInfo(marker.data.info));
 		//associate the info window with the marker and show on the map
 		this.infoWindow.open(this.map, marker);
 	},
@@ -214,9 +225,40 @@ $( function() {
             }
         }
 
+        if (!this.options.showPins) {
+            marker.setVisible(false);
+        }
+
         //if a marker formatting function has been supplied, call it
         if (this.options.markerFormatFn) {
             this.options.markerFormatFn(marker);
+        }
+
+        if (marker.data.info && this.options.showInfoLayer) {
+            var overlayOptions = {
+                    horizontalAlign  : "center", // left, center, right
+                    verticalAlign    : "middle", // top, middle, bottom
+                    horizontalOffset : 0,
+                    verticalOffset   : 0,
+                    minZoom          : 0,   // hide if zoomed out past this level
+                    maxZoom          : 99,  // hide if zoomed in past this level
+                    bounds           : null // TODO: scale the object to match this range of lat,long coordinates (e.g. to show a map image on top of the map)
+                },
+                onClickHandler = function () {
+                    apex.debug("infoLayer clicked", marker.data.id);
+                    if (_this.options.panOnClick) {
+                        _this.map.panTo(marker.position);
+                    }
+                    if (_this.options.clickZoomLevel) {
+                        _this.map.setZoom(_this.options.clickZoomLevel);
+                    }
+                    apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._eventPinData(marker));
+                };
+            marker.overlay = new InfoLayerOverlay(this._unescapeInfo(marker.data.info), marker.position, overlayOptions, onClickHandler);
+            if (this.options.infoLayerFormatFn) {
+                this.options.infoLayerFormatFn(marker.overlay, marker);
+            }
+            marker.overlay.setMap(this.map);
         }
 
         google.maps.event.addListener(marker,
@@ -224,7 +266,7 @@ $( function() {
             function () {
                 apex.debug("marker clicked", marker.data.id);
                 var pos = this.getPosition();
-                if (marker.data.info) {
+                if (marker.data.info && _this.options.showInfoPopups) {
                     _this.showInfoWindow(this);
                 }
                 if (_this.options.panOnClick) {
@@ -242,7 +284,7 @@ $( function() {
             apex.jQuery("#"+_this.options.regionId).trigger("markerdrag", _this._eventPinData(marker));
         });
 
-		if (["pins","cluster","spiderfier"].indexOf(this.options.visualisation) > -1) {
+		if (["pins","infolayer","cluster","spiderfier"].indexOf(this.options.visualisation) > -1) {
 			// if the marker was not previously shown in the last refresh, raise the marker added event
 			if (!this.idMap||!this.idMap.has(marker.data.id)) {
 				apex.jQuery("#"+_this.options.regionId).trigger("markeradded", _this._eventPinData(marker));
@@ -669,7 +711,6 @@ $( function() {
         controlInner.className = 'reportmap-controlInner';
         controlInner.style.backgroundImage = icon;
 
-        //controlInner.innerHTML = label; // this would be for a text button
         controlUI.appendChild(controlInner);
 
         // Setup the click event listener
@@ -693,7 +734,6 @@ $( function() {
         var controlInner = document.createElement('div');
         controlInner.className = 'reportmap-controlInner';
 
-        //controlInner.innerHTML = label; // this would be for a text button
         controlUI.appendChild(controlInner);
 
         var controlCheckbox = document.createElement('input');
@@ -986,9 +1026,7 @@ $( function() {
         apex.debug("reportmap.loadGeoJsonString", geoString, filename);
         if (geoString) {
             var geojson = JSON.parse(geoString);
-
             this.bounds = new google.maps.LatLngBounds;
-
             this._loadGeoJson(geojson, filename);
         }
     },
@@ -1062,15 +1100,10 @@ $( function() {
         apex.debug("reportmap._initDebug");
         var _this = this;
 
-        var controlDiv = document.createElement('div');
-
-        // Set CSS for the control border.
         var controlUI = document.createElement('div');
         controlUI.className = 'reportmap-debugPanel';
         controlUI.innerHTML = '[debug mode]';
-        controlDiv.appendChild(controlUI);
-
-        this.map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(controlDiv);
+        this.map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(controlUI);
 
         // as mouse is moved over the map, show the current coordinates in the debug panel
         google.maps.event.addListener(this.map, "mousemove", function (event) {
@@ -1153,7 +1186,7 @@ $( function() {
                 });
             });
         });
-        
+
         if(this.options.detailedMouseEvents) {
 
             ["drag"
@@ -1176,7 +1209,7 @@ $( function() {
                     });
                 });
             });
-            
+
             // these events get a MapMouseEvent object
             ["contextmenu"
             ,"dblclick"
@@ -1249,6 +1282,12 @@ $( function() {
         }
 
         this.map = new google.maps.Map(document.getElementById(this.element.prop("id")),mapOptions);
+
+        if (this.options.visualisation=="infolayer") {
+            this.options.showPins = false;
+            this.options.showInfoPopups = false;
+            this.options.showInfoLayer = true;
+        }
 
         if (this.options.initFn) {
             apex.debug("init_javascript_code running...");
@@ -1473,15 +1512,15 @@ $( function() {
                         break;
                     case "cluster":
                         // More info: https://developers.google.com/maps/documentation/javascript/marker-clustering
-                        
+
                         if (this.markerClusterer) {
                             apex.debug("markerClusterer.clearMarkers");
                             this.markerClusterer.clearMarkers();
                         }
-                    
+
                         apex.debug("create markerClusterer");
                         this.markerClusterer = new MarkerClusterer(this.map, this.markers, {imagePath:this.imagePrefix});
-                        
+
                         break;
                     case "spiderfier":
                         this._spiderfy();
@@ -1692,4 +1731,129 @@ $( function() {
     }
 
   });
+
+    class InfoLayerOverlay extends google.maps.OverlayView {
+        constructor(content, pos, options, onClickHandler) {
+            super();
+            this._content = content;
+            this._pos = pos;
+            this._options = options;
+            this._onClickHandler = onClickHandler;
+        }
+        get options() { return this._options; }
+        set options(o) { this._options = o; }
+        get content() { return this._content; }
+        set content(c) { this._content = c; }
+        get pos() { return this._pos; }
+        set pos(p) { this._pos = p; }
+        get div() { return this._div; }
+        onAdd() {
+            // this is called when the map's panes are ready and the overlay has been added to the map.
+            this._div = document.createElement("div");
+            this._div.style.borderStyle = "none";
+            this._div.style.borderWidth = "0px";
+            this._div.style.position = "absolute";
+            this._div.innerHTML = this._content;
+            // there are 5 panes we can add content to - refer: https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes
+            const panes = this.getPanes();
+            if (this._onClickHandler) {
+                // overlayMouseTarget (pane 3): overlays that receive DOM events
+                // https://stackoverflow.com/questions/3361823/make-custom-overlay-clickable-google-maps-api-v3
+                panes.overlayMouseTarget.appendChild(this._div);
+                google.maps.OverlayView.preventMapHitsFrom(this._div);
+                apex.debug("add listener for overlay click");
+                google.maps.event.addDomListener(this._div, "click", this._onClickHandler);
+            } else {
+                // overlayLayer (pane 1): overlays that do not receive DOM events
+                panes.overlayLayer.appendChild(this._div);
+            }
+        }
+        draw() {
+            if (this._div) {
+                const overlayProjection = this.getProjection(),
+                      projPos = overlayProjection.fromLatLngToDivPixel(this._pos),
+                      map = this.getMap(),
+                      zoom = map.getZoom();
+                if ((zoom >= (this._options.minZoom||0)) && (zoom <= (this._options.maxZoom||99))) {
+                    if (this._options.bounds) {
+                        const sw = overlayProjection.fromLatLngToDivPixel(
+                            this._options.bounds.getSouthWest()
+                        );
+                        const ne = overlayProjection.fromLatLngToDivPixel(
+                            this._options.bounds.getNorthEast()
+                        );
+                        // Resize the div to fit the indicated dimensions.
+                        if (this._div) {
+                            this._div.style.left = sw.x + "px";
+                            this._div.style.top = ne.y + "px";
+                            this._div.style.width = ne.x - sw.x + "px";
+                            this._div.style.height = sw.y - ne.y + "px";
+                        }
+                    } else {
+                        var offsetX, offsetY;
+                        switch(this._options.horizontalAlign.toLowerCase()) {
+                        case 'center':
+                            offsetX = -this._div.offsetWidth/2;
+                            break;
+                        case 'right':
+                            offsetX = -this._div.offsetWidth;
+                            break;
+                        default: //left
+                            offsetX = 0;
+                        }
+                        switch(this._options.verticalAlign.toLowerCase()) {
+                        case 'bottom':
+                            offsetY = -this._div.offsetHeight;
+                            break;
+                        case 'middle':
+                            offsetY = -this._div.offsetHeight/2;
+                            break;
+                        default: //top
+                            offsetY = 0;
+                        }
+                        offsetX += this._options.horizontalOffset||0;
+                        offsetY += this._options.verticalOffset||0;
+                        this._div.style.left = (projPos.x + offsetX) + "px";
+                        this._div.style.top = (projPos.y + offsetY) + "px";
+                    }
+                    this.show();
+                } else {
+                    this.hide();
+                }
+            }
+        }
+        onRemove() {
+            if (this._div) {
+                this._div.parentNode.removeChild(this._div);
+                delete this._div;
+            }
+        }
+        hide() {
+            if (this._div) {
+                this._div.style.visibility = "hidden";
+            }
+        }
+        show() {
+            if (this._div) {
+                this._div.style.visibility = "visible";
+            }
+        }
+        toggle() {
+            if (this._div) {
+                if (this._div.style.visibility === "hidden") {
+                    this.show();
+                } else {
+                    this.hide();
+                }
+            }
+        }
+        toggleDOM(map) {
+            if (this.getMap()) {
+                this.setMap(null);
+            } else {
+                this.setMap(map);
+            }
+        }
+    }
+
 });
