@@ -63,6 +63,7 @@ $( function() {
         directionsZeroResults  : "No route could be found between the origin and destination.",
 
         // Callbacks
+        addOverlay             : null, //add an overlay (e.g. map or info box) on top of the map
         click                  : null, //simulate a click on a marker
         deleteAllFeatures      : null, //delete all features (drawing manager)
         deleteSelectedFeatures : null, //delete selected features (drawing manager)
@@ -123,6 +124,30 @@ $( function() {
         }
         return pos;
     },
+    
+    /*
+     *
+     * Map Overlay
+     *
+     */
+    addOverlay: function (content, options) {
+        apex.debug("addOverlay", content, options);
+        var overlayOptions = $.extend({
+                //default options
+                horizontalAlign  : "center", // left, center, right
+                verticalAlign    : "middle", // top, middle, bottom
+                horizontalOffset : 0,
+                verticalOffset   : 0,
+                minZoom          : 0,    // hide if zoomed out past this level
+                maxZoom          : 99,   // hide if zoomed in past this level
+                pos              : null, // position the object at this point
+                bounds           : null, // scale the object to match this range of lat,long coordinates (e.g. to show a map image on top of the map)
+                onClickHandler   : null  // function to call if overlay clicked (null to make not clickable)
+            }, options);
+        var overlay = new MapOverlay(content, overlayOptions);
+        overlay.setMap(this.map);
+        return overlay;
+    },
 
 	/*
 	 *
@@ -151,6 +176,7 @@ $( function() {
         });
 
         this.map.controls[google.maps.ControlPosition.LEFT_CENTER].push(this.msgDiv);
+        return this.msgDiv;
     },
 
     hideMessage: function() {
@@ -197,13 +223,13 @@ $( function() {
 		this.infoWindow.setContent(this._unescapeInfo(marker.data.info));
 		//associate the info window with the marker and show on the map
 		this.infoWindow.open(this.map, marker);
+        return this.infoWindow;
 	},
 
     //place a report pin on the map
     _newMarker: function (pinData) {
-        var _this = this;
-
-        var marker = new google.maps.Marker({
+        var _this = this,
+            marker = new google.maps.Marker({
               map       : this.map,
               position  : new google.maps.LatLng(pinData.x, pinData.y),
               title     : pinData.n,
@@ -235,16 +261,9 @@ $( function() {
         }
 
         if (marker.data.info && this.options.showInfoLayer) {
-            var overlayOptions = {
-                    horizontalAlign  : "center", // left, center, right
-                    verticalAlign    : "middle", // top, middle, bottom
-                    horizontalOffset : 0,
-                    verticalOffset   : 0,
-                    minZoom          : 0,   // hide if zoomed out past this level
-                    maxZoom          : 99,  // hide if zoomed in past this level
-                    bounds           : null // TODO: scale the object to match this range of lat,long coordinates (e.g. to show a map image on top of the map)
-                },
-                onClickHandler = function () {
+            marker.overlay = this.addOverlay(this._unescapeInfo(marker.data.info), {
+                pos            : marker.position,
+                onClickHandler : function () {
                     apex.debug("infoLayer clicked", marker.data.id);
                     if (_this.options.panOnClick) {
                         _this.map.panTo(marker.position);
@@ -253,12 +272,11 @@ $( function() {
                         _this.map.setZoom(_this.options.clickZoomLevel);
                     }
                     apex.jQuery("#"+_this.options.regionId).trigger("markerclick", _this._eventPinData(marker));
-                };
-            marker.overlay = new InfoLayerOverlay(this._unescapeInfo(marker.data.info), marker.position, overlayOptions, onClickHandler);
+                }
+            });
             if (this.options.infoLayerFormatFn) {
                 this.options.infoLayerFormatFn(marker.overlay, marker);
             }
-            marker.overlay.setMap(this.map);
         }
 
         google.maps.event.addListener(marker,
@@ -342,6 +360,7 @@ $( function() {
 			apex.jQuery("#"+_this.options.regionId).trigger("unspiderfy", { map:_this.map, markers:markers });
         });
 
+        return this.oms;
     },
 
     _removeMarkers: function() {
@@ -366,6 +385,7 @@ $( function() {
         } else {
             apex.debug("id not found", id);
         }
+        return marker;
     },
 
 	/*
@@ -420,15 +440,18 @@ $( function() {
         if (latlng) {
             this.gotoPos(latlng.lat(),latlng.lng());
         }
+        return latlng;
     },
 
     //place or move the user pin to the given location
     panTo: function (lat,lng) {
         apex.debug("reportmap.panTo",lat,lng);
+        var pos;
         if (lat!==null && lng!==null) {
-            var pos = new google.maps.LatLng(lat,lng);
+            pos = new google.maps.LatLng(lat,lng);
             this.map.panTo(pos);
         }
+        return pos;
     },
 
     //parse the given string as a lat,long pair, pan to that location
@@ -438,13 +461,14 @@ $( function() {
         if (latlng) {
             this.panTo(latlng.lat(),latlng.lng());
         }
+        return latlng;
     },
 
     //pan/zoom the map to the given bounds
     fitBounds: function (v) {
         apex.debug("reportmap.fitBounds", v);
+        var bounds;
         if (v !== null && v !== undefined) {
-            var bounds;
             if (v.hasOwnProperty("east")&&v.hasOwnProperty("north")&&v.hasOwnProperty("south")&&v.hasOwnProperty("west")) {
                 // parse as google.maps.LatLngBoundsLiteral
                 bounds = new google.maps.LatLngBoundsLiteral(v);
@@ -456,6 +480,7 @@ $( function() {
                 this.map.fitBounds(bounds);
             }
         }
+        return bounds;
     },
 
 	/*
@@ -718,6 +743,7 @@ $( function() {
 
         this.map.controls[google.maps.ControlPosition.TOP_CENTER].push(controlDiv);
 
+        return controlDiv;
     },
 
     _addCheckbox: function(name, label, hint) {
@@ -756,14 +782,16 @@ $( function() {
 
         this.map.controls[google.maps.ControlPosition.TOP_CENTER].push(controlDiv);
 
+        return controlDiv;
     },
 
     _addPoint: function(dataLayer, pos) {
         apex.debug("reportmap._addPoint",dataLayer,pos);
-
-        dataLayer.add(new google.maps.Data.Feature({
+        var feature = new google.maps.Data.Feature({
             geometry: new google.maps.Data.Point(pos)
-        }));
+        });
+        dataLayer.add(feature);
+        return feature;
     },
 
     _addPolygon: function(dataLayer, arr) {
@@ -1003,7 +1031,7 @@ $( function() {
         apex.debug("_loadGeoJson", geojson);
 
         // render the features on the map
-        features = this.map.data.addGeoJson(geojson, options);
+        let features = this.map.data.addGeoJson(geojson, options);
 
         //Update a map's viewport to fit each geometry in a dataset
         var _this = this;
@@ -1732,20 +1760,20 @@ $( function() {
 
   });
 
-    class InfoLayerOverlay extends google.maps.OverlayView {
-        constructor(content, pos, options, onClickHandler) {
+    class MapOverlay extends google.maps.OverlayView {
+        constructor(content, options) {
             super();
-            this._content = content;
-            this._pos = pos;
+            this._content = $(content).get();
             this._options = options;
-            this._onClickHandler = onClickHandler;
         }
         get options() { return this._options; }
         set options(o) { this._options = o; }
         get content() { return this._content; }
         set content(c) { this._content = c; }
-        get pos() { return this._pos; }
-        set pos(p) { this._pos = p; }
+        get pos() { return this._options.pos; }
+        set pos(p) { this._options.pos = p; }
+        get bounds() { return this._options.bounds; }
+        set bounds(b) { this._options.bounds = b; }
         get div() { return this._div; }
         onAdd() {
             // this is called when the map's panes are ready and the overlay has been added to the map.
@@ -1753,16 +1781,20 @@ $( function() {
             this._div.style.borderStyle = "none";
             this._div.style.borderWidth = "0px";
             this._div.style.position = "absolute";
-            this._div.innerHTML = this._content;
+            if (Array.isArray(this._content)) {
+                this._content.forEach(e => this._div.appendChild(e)); 
+            } else {
+                this._div.appendChild(this._content);
+            }
             // there are 5 panes we can add content to - refer: https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes
             const panes = this.getPanes();
-            if (this._onClickHandler) {
+            if (this._options.onClickHandler) {
                 // overlayMouseTarget (pane 3): overlays that receive DOM events
                 // https://stackoverflow.com/questions/3361823/make-custom-overlay-clickable-google-maps-api-v3
                 panes.overlayMouseTarget.appendChild(this._div);
                 google.maps.OverlayView.preventMapHitsFrom(this._div);
                 apex.debug("add listener for overlay click");
-                google.maps.event.addDomListener(this._div, "click", this._onClickHandler);
+                google.maps.event.addDomListener(this._div, "click", this._options.onClickHandler);
             } else {
                 // overlayLayer (pane 1): overlays that do not receive DOM events
                 panes.overlayLayer.appendChild(this._div);
@@ -1771,7 +1803,6 @@ $( function() {
         draw() {
             if (this._div) {
                 const overlayProjection = this.getProjection(),
-                      projPos = overlayProjection.fromLatLngToDivPixel(this._pos),
                       map = this.getMap(),
                       zoom = map.getZoom();
                 if ((zoom >= (this._options.minZoom||0)) && (zoom <= (this._options.maxZoom||99))) {
@@ -1789,7 +1820,8 @@ $( function() {
                             this._div.style.width = ne.x - sw.x + "px";
                             this._div.style.height = sw.y - ne.y + "px";
                         }
-                    } else {
+                    } else if (this._options.pos) {
+                        const projPos = overlayProjection.fromLatLngToDivPixel(this._options.pos);
                         var offsetX, offsetY;
                         switch(this._options.horizontalAlign.toLowerCase()) {
                         case 'center':
@@ -1815,6 +1847,8 @@ $( function() {
                         offsetY += this._options.verticalOffset||0;
                         this._div.style.left = (projPos.x + offsetX) + "px";
                         this._div.style.top = (projPos.y + offsetY) + "px";
+                    } else {
+                        apex.debug("error: unable to show overlay (no pos or bounds defined)");
                     }
                     this.show();
                 } else {
