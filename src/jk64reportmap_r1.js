@@ -134,15 +134,15 @@ $( function() {
         apex.debug("addOverlay", content, options);
         var overlayOptions = $.extend({
                 //default options
-                horizontalAlign  : "center", // left, center, right
-                verticalAlign    : "middle", // top, middle, bottom
-                horizontalOffset : 0,
-                verticalOffset   : 0,
-                minZoom          : 0,    // hide if zoomed out past this level
-                maxZoom          : 99,   // hide if zoomed in past this level
-                pos              : null, // position the object at this point
-                bounds           : null, // scale the object to match this range of lat,long coordinates (e.g. to show a map image on top of the map)
-                onClickHandler   : null  // function to call if overlay clicked (null to make not clickable)
+                bounds           : null,     // scale the object to match this range of lat,long coordinates (e.g. to show a map image on top of the map)
+                pos              : null,     // (pos only) position the object at this point (don't scale it)
+                horizontalAlign  : "center", // (pos only) left, center, right
+                verticalAlign    : "middle", // (pos only) top, middle, bottom
+                horizontalOffset : 0,        // (pos only) pixel offset (x)
+                verticalOffset   : 0,        // (pos only) pixel offset (y)
+                minZoom          : 0,        // hide if zoomed out past this level
+                maxZoom          : 99,       // hide if zoomed in past this level
+                onClickHandler   : null      // function to call if overlay clicked (null to make not clickable)
             }, options);
         var overlay = new MapOverlay(content, overlayOptions);
         overlay.setMap(this.map);
@@ -1786,7 +1786,7 @@ $( function() {
             } else {
                 this._div.appendChild(this._content);
             }
-            // there are 5 panes we can add content to - refer: https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes
+            // there are 5 panes we may add content to - refer: https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes
             const panes = this.getPanes();
             if (this._options.onClickHandler) {
                 // overlayMouseTarget (pane 3): overlays that receive DOM events
@@ -1817,8 +1817,8 @@ $( function() {
                         if (this._div) {
                             this._div.style.left = sw.x + "px";
                             this._div.style.top = ne.y + "px";
-                            this._div.style.width = ne.x - sw.x + "px";
-                            this._div.style.height = sw.y - ne.y + "px";
+                            this._div.style.width = (ne.x - sw.x) + "px";
+                            this._div.style.height = (sw.y - ne.y) + "px";
                         }
                     } else if (this._options.pos) {
                         const projPos = overlayProjection.fromLatLngToDivPixel(this._options.pos);
@@ -1850,9 +1850,6 @@ $( function() {
                     } else {
                         apex.debug("error: unable to show overlay (no pos or bounds defined)");
                     }
-                    this.show();
-                } else {
-                    this.hide();
                 }
             }
         }
