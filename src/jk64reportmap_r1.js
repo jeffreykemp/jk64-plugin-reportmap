@@ -13,6 +13,7 @@ $( function() {
         regionId               : "",
         ajaxIdentifier         : "",
         ajaxItems              : "",
+        pluginResourcePath     : "",
         pluginFilePrefix       : "",
         expectData             : true,
         maximumRows            : null,
@@ -336,11 +337,12 @@ $( function() {
             ||  function(marker, status) {
                     // if basicFormatEvents = true, status will be SPIDERFIED, SPIDERFIABLE, or UNSPIDERFIABLE
                     // if basicFormatEvents = false, status will be SPIDERFIED or UNSPIDERFIED
-                    var iconURL = status == OverlappingMarkerSpiderfier.markerStatus.SPIDERFIED ?
-                                  'https://mt.googleapis.com/vt/icon/name=icons/spotlight/spotlight-waypoint-blue.png' :
-                                  status == OverlappingMarkerSpiderfier.markerStatus.SPIDERFIABLE ?
-                                  'https://mt.googleapis.com/vt/icon/name=icons/spotlight/spotlight-waypoint-a.png' :
-                                  'https://mt.googleapis.com/vt/icon/name=icons/spotlight/spotlight-poi.png';
+                    var iconURL = _this._getWindowPath() + "/" + _this.options.pluginFilePrefix +
+                        (status == OverlappingMarkerSpiderfier.markerStatus.SPIDERFIED ?
+                                   'images/spotlight-waypoint-blue.png' :
+                         status == OverlappingMarkerSpiderfier.markerStatus.SPIDERFIABLE ?
+                                   'images/spotlight-waypoint-a.png' :
+                                   'images/spotlight-poi.png');
                     //apex.debug("spiderfy.format", marker, status, iconURL);
                     marker.setIcon({url: iconURL});
                 });
@@ -1146,37 +1148,44 @@ $( function() {
 
     _getWindowPath: function() {
         apex.debug("reportmap._getWindowPath");
-
-        var path = window.location.origin + window.location.pathname;
-
-        if (path.indexOf("/r/") > -1) {
-            // Friendly URLs in use
-            apex.debug("Friendly URL detected", path);
-
-            // Expected: https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map_dev/clustering
-
-            // strip off everything including and after the "/r/" bit
-            path = path.substring(0, path.lastIndexOf("/r/"));
-
-            // now it is something like:
-            // https://apex.oracle.com/pls/apex/jk64
-
-            // strip off the path prefix
-            path = path.substring(0, path.lastIndexOf("/"));
-
-            // now it is something like:
-            // https://apex.oracle.com/pls/apex
+        
+        var path = this.options.pluginResourcePath;
+        
+        if (path !== "") {
+            apex.debug("Using supplied plugin resource path");
         } else {
-            // Legacy URLs in use
-            apex.debug("Legacy URL detected", path);
 
-            // Expected: https://apex.oracle.com/pls/apex/f
+            path = window.location.origin + window.location.pathname;
 
-            // strip off the "/f" bit
-            path = path.substring(0, path.lastIndexOf("/"));
+            if (path.indexOf("/r/") > -1) {
+                // Friendly URLs in use
+                apex.debug("Friendly URL detected", path);
 
-            // now it is something like:
-            // https://apex.oracle.com/pls/apex
+                // Expected: https://apex.oracle.com/pls/apex/jk64/r/jk64_report_map_dev/clustering
+
+                // strip off everything including and after the "/r/" bit
+                path = path.substring(0, path.lastIndexOf("/r/"));
+
+                // now it is something like:
+                // https://apex.oracle.com/pls/apex/jk64
+
+                // strip off the path prefix
+                path = path.substring(0, path.lastIndexOf("/"));
+
+                // now it is something like:
+                // https://apex.oracle.com/pls/apex
+            } else {
+                // Legacy URLs in use
+                apex.debug("Legacy URL detected", path);
+
+                // Expected: https://apex.oracle.com/pls/apex/f
+
+                // strip off the "/f" bit
+                path = path.substring(0, path.lastIndexOf("/"));
+
+                // now it is something like:
+                // https://apex.oracle.com/pls/apex
+            }
         }
 
         apex.debug("path", path);
@@ -1763,7 +1772,7 @@ $( function() {
     class MapOverlay extends google.maps.OverlayView {
         constructor(content, options) {
             super();
-            this._content = $(content).get();
+            this._content = content;
             this._options = options;
         }
         get options() { return this._options; }
@@ -1781,11 +1790,7 @@ $( function() {
             this._div.style.borderStyle = "none";
             this._div.style.borderWidth = "0px";
             this._div.style.position = "absolute";
-            if (Array.isArray(this._content)) {
-                this._content.forEach(e => this._div.appendChild(e)); 
-            } else {
-                this._div.appendChild(this._content);
-            }
+            this._div.innerHTML = this._content;
             // there are 5 panes we may add content to - refer: https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes
             const panes = this.getPanes();
             if (this._options.onClickHandler) {

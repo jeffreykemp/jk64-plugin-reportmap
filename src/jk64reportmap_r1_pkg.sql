@@ -461,6 +461,7 @@ function render
     l_max_zoom                     number;      --attribute_06
     l_max_rows                     number;      --attribute_07
     l_unit_system                  plugin_attr := p_plugin.attribute_08;
+    l_plugin_resource_path         plugin_attr := p_plugin.attribute_09;
 
     -- Plugin attributes
     l_map_height                   plugin_attr := p_region.attribute_01;
@@ -637,6 +638,7 @@ begin
       || apex_javascript.add_attribute('directionsZeroResults', l_directions_zero_results_msg)
       || apex_javascript.add_attribute('ajaxIdentifier', apex_plugin.get_ajax_identifier)
       || apex_javascript.add_attribute('ajaxItems', apex_plugin_util.page_item_names_to_jquery(p_region.ajax_items_to_submit))
+      || apex_javascript.add_attribute('pluginResourcePath', l_plugin_resource_path)
       || apex_javascript.add_attribute('pluginFilePrefix', p_plugin.file_prefix
          ,false,false)
       || '}';
