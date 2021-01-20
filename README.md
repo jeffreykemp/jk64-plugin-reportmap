@@ -80,7 +80,10 @@ Allow users to interactively draw shapes (points, lines, polygons, and holes in 
    
    (if you just want a map with no data, enter a dummy query (e.g. `select 1 from dual`); then in the map region properties, set **Source** -> **Location** to `- Select -`)
 
-6. *(OPTIONAL)* To add dynamic action features, import the companion Action plugin: **`dynamic_action_plugin_com_jk64_report_google_map_da_r1.sql`**
+6. *(OPTIONAL)* To add dynamic action features, import the companion Dynamic Action plugins:
+
+    **`dynamic_action_plugin_com_jk64_report_google_map_da_r1.sql`**
+    **`dynamic_action_plugin_com_jk64_report_google_map_directions_da.sql`**
 
 **IF YOU ARE UPGRADING** from any prior release, refer to the **[Upgrade Notes](https://github.com/jeffreykemp/jk64-plugin-reportmap/wiki/Upgrading)**.
 
