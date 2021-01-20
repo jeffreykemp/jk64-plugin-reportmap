@@ -34,6 +34,12 @@ This is suitable for a large volume of data points. Each data point can have a "
 
 Up to 10 points (origin, destination, plus up to 8 waypoints) may be supplied to derive a route. Google Maps can generate a route for Driving, Walking, Bicycling, or Transit (public transport). The plugin can also get the calculated total Distance and Time for the route.
 
+### Visualisation: Info Layer
+
+![plugin-reportmap-infolayer.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/demo_src/images/plugin-reportmap-infolayer.png)
+
+Renders the Info column containing any arbitrary HTML (including text, formatting, icons, and images) on the map.
+
 ### Drawing & GeoJSON
 
 ![plugin-reportmap-drawing.png](https://raw.githubusercontent.com/jeffreykemp/jk64-plugin-reportmap/master/demo_src/images/plugin-reportmap-drawing.png)
