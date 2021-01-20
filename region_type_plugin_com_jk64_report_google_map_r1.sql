@@ -962,7 +962,7 @@ wwv_flow_api.create_plugin_attr_value(
  p_id=>wwv_flow_api.id(196443628094656044)
 ,p_plugin_attribute_id=>wwv_flow_api.id(196442290547656045)
 ,p_display_sequence=>20
-,p_display_value=>'Draggable'
+,p_display_value=>'Draggable pins'
 ,p_return_value=>'DRAGGABLE'
 ,p_help_text=>'Allow user to move pins to new locations on the map.'
 );
