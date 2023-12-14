@@ -1,6 +1,6 @@
--- jk64 ReportMap Action v1.0 Aug 2020
+-- jk64 ReportMap Action v1.1 Feb 2021
 -- https://github.com/jeffreykemp/jk64-plugin-reportmap
--- Copyright (c) 2020 Jeffrey Kemp
+-- Copyright (c) 2020-2021 Jeffrey Kemp
 -- Released under the MIT licence: http://opensource.org/licenses/mit-license
 
 subtype plugin_attr is varchar2(32767);
@@ -30,6 +30,8 @@ begin
     end if;
     
     l_action_js := case l_action
+        when 'click' then
+            '$("#map_"+e.id).reportmap("click",#VAL#);'
         when 'deleteAllFeatures' then
             '$("#map_"+e.id).reportmap("deleteAllFeatures");'
         when 'deleteSelectedFeatures' then
