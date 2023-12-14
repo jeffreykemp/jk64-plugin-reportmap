@@ -27,7 +27,7 @@ prompt APPLICATION 15181 - Demo Report Map Plugin
 -- Application Export:
 --   Application:     15181
 --   Name:            Demo Report Map Plugin
---   Date and Time:   11:21 Thursday December 14, 2023
+--   Date and Time:   11:28 Thursday December 14, 2023
 --   Exported By:     JEFF
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -115,7 +115,7 @@ wwv_flow_api.create_flow(
 ,p_substitution_string_01=>'REPOSITORY'
 ,p_substitution_value_01=>'https://github.com/jeffreykemp/jk64-plugin-reportmap'
 ,p_last_updated_by=>'JEFF'
-,p_last_upd_yyyymmddhh24miss=>'20231214112103'
+,p_last_upd_yyyymmddhh24miss=>'20231214112758'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>19
 ,p_ui_type_name => null
@@ -1525,7 +1525,7 @@ wwv_flow_api.create_plugin_setting(
  p_id=>wwv_flow_api.id(44658048572715472)
 ,p_plugin_type=>'REGION TYPE'
 ,p_plugin=>'PLUGIN_COM.JK64.REPORT_GOOGLE_MAP_R1'
-,p_attribute_01=>'AIzaSyDN1n03b7SUyRZAn0hYFqIG5tHcDoy1RQI'
+,p_attribute_01=>'--- enter key here ---'
 ,p_attribute_05=>'1'
 ,p_attribute_06=>'18'
 ,p_attribute_07=>'10000'
