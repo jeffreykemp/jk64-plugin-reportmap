@@ -1157,17 +1157,21 @@ $( function() {
 
             path = window.location.origin + window.location.pathname;
 
-            if (path.indexOf("/ords/r/") > -1) {
+            if ((path.indexOf("/ords/r/") > -1)
+             || (path.indexOf("/apex/r/") > -1)) {
                 // hack to handle hosted cloud instance URL?
                 apex.debug("Friendly URL detected (hosted cloud)", path);
 
-                // Expected: https://prefix.adb.eu-frankfurt-1.oraclecloudapps.com/ords/r/hms_fire/appalias/pagealias?session=12345
+                // Expected:
+                // https://prefix.adb.eu-frankfurt-1.oraclecloudapps.com/ords/r/hms_fire/appalias/pagealias?session=12345
+                // https://apex.oracle.com/pls/apex/r/jk64/jk64_report_map/clustering
 
                 // strip off everything including and after the "/r/" bit
                 path = path.substring(0, path.lastIndexOf("/r/"));
 
                 // now it is something like:
                 // https://prefix.adb.eu-frankfurt-1.oraclecloudapps.com/ords
+                // https://apex.oracle.com/pls/apex
 
             } else if (path.indexOf("/r/") > -1) {
                 // Friendly URLs in use

@@ -33,7 +33,7 @@ wwv_flow_api.create_plugin(
 ,p_plsql_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '-- jk64 ReportMap Action v1.1 Feb 2021',
 '-- https://github.com/jeffreykemp/jk64-plugin-reportmap',
-'-- Copyright (c) 2020-2021 Jeffrey Kemp',
+'-- Copyright (c) 2020-2023 Jeffrey Kemp',
 '-- Released under the MIT licence: http://opensource.org/licenses/mit-license',
 '',
 'subtype plugin_attr is varchar2(32767);',
@@ -157,7 +157,7 @@ wwv_flow_api.create_plugin(
 ,p_version_identifier=>'1.1'
 ,p_about_url=>'https://jeffreykemp.github.io/jk64-plugin-reportmap/'
 ,p_plugin_comment=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'Copyright (c) 2020 Jeffrey Kemp',
+'Copyright (c) 2020-2023 Jeffrey Kemp',
 'Released under the MIT licence: http://opensource.org/licenses/mit-license'))
 );
 wwv_flow_api.create_plugin_attribute(
